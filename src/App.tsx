@@ -1,7 +1,6 @@
-import { ChangeEvent, useMemo, useState } from 'react'
+import { ChangeEvent, useEffect, useMemo, useState } from 'react'
 
 type Page = 'resumo' | 'gerencial' | 'equipe' | 'estoque' | 'conferencia' | 'upload'
-
 type Network = { name: string; target: number; sellOut: number; previous: number }
 type Seller = { code: string; name: string; target: number; sellOut: number; positives: number; positiveTarget: number }
 type StockLine = { name: string; cost: number; sale: number; transit: number; rule: string }
@@ -16,8 +15,6 @@ type AppState = {
   stockSale: number
   stockTransit: number
   sellOutTarget: number
-  industryTarget: number
-  industryPositiveTarget: number
   networks: Network[]
   sellers: Seller[]
   stockLines: StockLine[]
@@ -26,30 +23,26 @@ type AppState = {
 }
 
 const STORAGE_KEY = 'painel-sell-out-milenio:v1'
-
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2 })
 const integer = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 })
 const percent = new Intl.NumberFormat('pt-BR', { style: 'percent', minimumFractionDigits: 1, maximumFractionDigits: 1 })
+const now = new Date()
+const monthDays = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
 
-const today = new Date()
-const monthDays = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate()
-
-const dailySeed = Array.from({ length: monthDays }, (_, index) => {
-  const samples = [182400, 224890, 196320, 0, 0, 281950, 307840, 247650, 265440, 312730, 298510, 326820]
-  return index < samples.length ? samples[index] : 0
+const seedDaily = Array.from({ length: monthDays }, (_, index) => {
+  const sample = [182400, 224890, 196320, 0, 0, 281950, 307840, 247650, 265440, 312730, 298510, 326820]
+  return index < sample.length ? sample[index] : 0
 })
 
-const defaultState: AppState = {
+const initialState: AppState = {
   sellOut: 3742680.45,
-  billed: 3512300.1,
+  billed: 3512300.10,
   toInvoice: 230380.35,
   potentialPositives: 312,
   stockCost: 1824940.72,
   stockSale: 2341508.66,
   stockTransit: 418400,
   sellOutTarget: 5000000,
-  industryTarget: 5000000,
-  industryPositiveTarget: 950,
   networks: [
     { name: 'ABV', target: 950000, sellOut: 781420, previous: 726800 },
     { name: 'MEGA', target: 740000, sellOut: 608900, previous: 590100 },
@@ -66,42 +59,34 @@ const defaultState: AppState = {
     { code: '705', name: 'Equipe 705', target: 620000, sellOut: 451280, positives: 96, positiveTarget: 130 },
   ],
   stockLines: [
-    { name: 'Creme Dental', cost: 578420.1, sale: 741870.3, transit: 126000, rule: 'A validar no cadastro 286' },
-    { name: 'Sabonetes', cost: 337800.75, sale: 432910.4, transit: 84000, rule: 'A validar no cadastro 286' },
-    { name: 'Hair', cost: 258340.62, sale: 331120.6, transit: 57600, rule: 'A validar no cadastro 286' },
-    { name: 'Esc + Enx + Fio', cost: 224790.2, sale: 288210.3, transit: 50400, rule: 'A validar no cadastro 286' },
-    { name: 'Limpeza', cost: 198440.55, sale: 254390.4, transit: 42600, rule: 'A validar no cadastro 286' },
-    { name: 'Outros', cost: 227148.5, sale: 292?996.66, transit: 57800, rule: 'A validar no cadastro 286' },
+    { name: 'Creme Dental', cost: 578420.10, sale: 741870.30, transit: 126000, rule: 'A validar no cadastro 286' },
+    { name: 'Sabonetes', cost: 337800.75, sale: 432910.40, transit: 84000, rule: 'A validar no cadastro 286' },
+    { name: 'Hair', cost: 258340.62, sale: 331120.60, transit: 57600, rule: 'A validar no cadastro 286' },
+    { name: 'Esc + Enx + Fio', cost: 224790.20, sale: 288210.30, transit: 50400, rule: 'A validar no cadastro 286' },
+    { name: 'Limpeza', cost: 198440.55, sale: 254390.40, transit: 42600, rule: 'A validar no cadastro 286' },
+    { name: 'Outros', cost: 227148.50, sale: 292996.66, transit: 57800, rule: 'A validar no cadastro 286' },
   ],
-  daily: dailySeed,
-  uploads: {
-    sales: null,
-    stock: null,
-    targets: null,
-    cost: null,
-    transit: null,
-    history: null,
-  },
+  daily: seedDaily,
+  uploads: { sales: null, stock: null, targets: null, cost: null, transit: null, history: null },
 }
 
-function loadInitialState(): AppState {
+function loadState(): AppState {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return defaultState
-    const saved = JSON.parse(raw) as Partial<AppState>
-    return { ...defaultState, ...saved }
+    const saved = localStorage.getItem(STORAGE_KEY)
+    if (!saved) return initialState
+    return { ...initialState, ...JSON.parse(saved) } as AppState
   } catch {
-    return defaultState
+    return initialState
   }
 }
 
-function parseMoneyInput(value: string) {
-  const cleaned = value.replace(/\s/g, '').replace(/R\$/gi, '').replace(/\./g, '').replace(',', '.').replace(/[^0-9.-]/g, '')
-  const parsed = Number(cleaned)
-  return Number.isFinite(parsed) ? parsed : 0
+function parseCurrency(raw: string) {
+  const cleaned = raw.replace(/\s/g, '').replace(/R\$/gi, '').replace(/\./g, '').replace(',', '.').replace(/[^0-9.-]/g, '')
+  const value = Number(cleaned)
+  return Number.isFinite(value) ? value : 0
 }
 
-function CurrencyField({ value, onChange }: { value: number; onChange: (value: number) => void }) {
+function CurrencyInput({ value, onChange }: { value: number; onChange: (value: number) => void }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState('')
   return (
@@ -110,235 +95,203 @@ function CurrencyField({ value, onChange }: { value: number; onChange: (value: n
       value={editing ? draft : money.format(value)}
       onFocus={() => { setEditing(true); setDraft(value.toFixed(2).replace('.', ',')) }}
       onChange={(event) => setDraft(event.target.value)}
-      onBlur={() => { onChange(parseMoneyInput(draft)); setEditing(false) }}
+      onBlur={() => { onChange(parseCurrency(draft)); setEditing(false) }}
     />
+  )
+}
+
+function Metric({ label, value, hint, tone = '' }: { label: string; value: string; hint?: string; tone?: string }) {
+  return <article className={`metric ${tone}`}><span>{label}</span><strong>{value}</strong>{hint && <small>{hint}</small>}</article>
+}
+
+function Title({ kicker, title, subtitle }: { kicker: string; title: string; subtitle?: string }) {
+  return <div className="title"><span>{kicker}</span><h2>{title}</h2>{subtitle && <p>{subtitle}</p>}</div>
+}
+
+function TargetFooter({ state, setState }: { state: AppState; setState: React.Dispatch<React.SetStateAction<AppState>> }) {
+  const achievement = state.sellOutTarget > 0 ? state.sellOut / state.sellOutTarget : 0
+  return (
+    <section className="target-footer">
+      <div className="target-copy"><span>META SELL OUT • T&C</span><h3>Referência gerencial do mês</h3><p>Meta manual, separada das metas individuais importadas da Bússola.</p></div>
+      <div className="target-field"><label>Meta do mês</label><CurrencyInput value={state.sellOutTarget} onChange={(value) => setState(current => ({ ...current, sellOutTarget: value }))} /></div>
+      <div className="target-result"><strong>{percent.format(achievement)}</strong><span>atingido</span><div className="progress"><i style={{ width: `${Math.min(100, achievement * 100)}%` }} /></div></div>
+    </section>
   )
 }
 
 function App() {
   const [page, setPage] = useState<Page>('resumo')
-  const [state, setState] = useState<AppState>(loadInitialState)
+  const [state, setState] = useState<AppState>(loadState)
 
-  const setPersistedState = (updater: AppState | ((current: AppState) => AppState)) => {
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+  }, [state])
+
+  const networkTarget = useMemo(() => state.networks.reduce((sum, item) => sum + item.target, 0), [state.networks])
+  const networkSellOut = useMemo(() => state.networks.reduce((sum, item) => sum + item.sellOut, 0), [state.networks])
+  const monthName = now.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+
+  function changeNetworkPool(value: number) {
     setState(current => {
-      const next = typeof updater === 'function' ? updater(current) : updater
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
-      return next
+      const total = current.networks.reduce((sum, item) => sum + item.target, 0)
+      if (total <= 0) return current
+      return { ...current, networks: current.networks.map(item => ({ ...item, target: item.target * value / total })) }
     })
   }
 
-  const totalNetworkTarget = useMemo(() => state.networks.reduce((sum, item) => sum + item.target, 0), [state.networks])
-  const totalNetworkSellOut = useMemo(() => state.networks.reduce((sum, item) => sum + item.sellOut, 0), [state.networks])
-
-  const updateSellOutTarget = (value: number) => setPersistedState(current => ({ ...current, sellOutTarget: value }))
-
-  const updateNetworkPool = (value: number) => {
-    setPersistedState(current => {
-      const old = current.networks.reduce((sum, item) => sum + item.target, 0)
-      if (old <= 0) return current
-      return { ...current, networks: current.networks.map(item => ({ ...item, target: item.target * value / old })) }
-    })
-  }
-
-  const updateNetworkTarget = (index: number, requested: number) => {
-    setPersistedState(current => {
+  function changeNetworkTarget(index: number, requested: number) {
+    setState(current => {
       const networks = current.networks.map(item => ({ ...item }))
       const total = networks.reduce((sum, item) => sum + item.target, 0)
-      const oldValue = networks[index].target
-      const newValue = Math.max(0, Math.min(total, requested))
-      const othersTotal = total - oldValue
-      networks[index].target = newValue
-      if (othersTotal > 0) {
-        const remaining = total - newValue
+      const old = networks[index].target
+      const value = Math.max(0, Math.min(total, requested))
+      const others = total - old
+      networks[index].target = value
+      if (others > 0) {
+        const remaining = total - value
         networks.forEach((item, itemIndex) => {
-          if (itemIndex !== index) item.target = item.target / othersTotal * remaining
+          if (itemIndex !== index) item.target = item.target / others * remaining
         })
       }
       return { ...current, networks }
     })
   }
 
-  const handleUpload = (key: string, event: ChangeEvent<HTMLInputElement>) => {
+  function registerUpload(key: string, event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
     if (!file) return
-    setPersistedState(current => ({
-      ...current,
-      uploads: {
-        ...current.uploads,
-        [key]: { name: file.name, size: file.size, updatedAt: new Date().toISOString() },
-      },
-    }))
+    setState(current => ({ ...current, uploads: { ...current.uploads, [key]: { name: file.name, size: file.size, updatedAt: new Date().toISOString() } } }))
   }
 
-  const resetLocal = () => {
-    if (!window.confirm('Apagar a base local e voltar ao estado de demonstração?')) return
+  function resetLocal() {
+    if (!window.confirm('Apagar a base local e voltar para a demonstração?')) return
     localStorage.removeItem(STORAGE_KEY)
-    setState(defaultState)
+    setState(initialState)
   }
-
-  const monthName = today.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
 
   return (
-    <div className="app-shell">
-      <header className="topbar">
-        <div>
-          <div className="eyebrow light">MILÊNIO • INTELIGÊNCIA COMERCIAL</div>
-          <h1>Painel Sell Out</h1>
-        </div>
-        <div className="topbar-meta">
-          <span className="status-dot" /> Base local ativa
-          <strong>{monthName}</strong>
-        </div>
+    <div className="app">
+      <header className="header">
+        <div><span>MILÊNIO • INTELIGÊNCIA COMERCIAL</span><h1>Painel Sell Out</h1></div>
+        <div className="header-status"><b><i /> Base local ativa</b><strong>{monthName}</strong></div>
       </header>
 
-      <nav className="nav-tabs">
-        {[
-          ['resumo', 'Resumo'], ['gerencial', 'Gerencial'], ['equipe', 'Equipe'], ['estoque', 'Estoque'], ['conferencia', 'Conferência'], ['upload', 'Upload de dados'],
-        ].map(([key, label]) => (
-          <button key={key} className={page === key ? 'active' : ''} onClick={() => setPage(key as Page)}>{label}</button>
+      <nav className="tabs">
+        {([['resumo', 'Resumo'], ['gerencial', 'Gerencial'], ['equipe', 'Equipe'], ['estoque', 'Estoque'], ['conferencia', 'Conferência'], ['upload', 'Upload de dados']] as [Page, string][]).map(([key, label]) => (
+          <button key={key} className={page === key ? 'active' : ''} onClick={() => setPage(key)}>{label}</button>
         ))}
       </nav>
 
       <main>
-        {page === 'resumo' && <Resumo state={state} monthName={monthName} onTarget={updateSellOutTarget} />}
-        {page === 'gerencial' && <Gerencial state={state} totalTarget={totalNetworkTarget} totalSellOut={totalNetworkSellOut} onNetworkTarget={updateNetworkTarget} onNetworkPool={updateNetworkPool} onSellOutTarget={updateSellOutTarget} />}
-        {page === 'equipe' && <Equipe state={state} onSellOutTarget={updateSellOutTarget} />}
+        {page === 'resumo' && <Resumo state={state} setState={setState} monthName={monthName} />}
+        {page === 'gerencial' && <Gerencial state={state} setState={setState} totalTarget={networkTarget} totalSellOut={networkSellOut} changePool={changeNetworkPool} changeTarget={changeNetworkTarget} />}
+        {page === 'equipe' && <Equipe state={state} setState={setState} />}
         {page === 'estoque' && <Estoque state={state} />}
         {page === 'conferencia' && <Conferencia state={state} />}
-        {page === 'upload' && <Upload state={state} onUpload={handleUpload} onReset={resetLocal} />}
+        {page === 'upload' && <Upload state={state} registerUpload={registerUpload} resetLocal={resetLocal} />}
       </main>
     </div>
   )
 }
 
-function MetricCard({ label, value, hint, tone = 'default' }: { label: string; value: string; hint?: string; tone?: 'default' | 'red' | 'navy' | 'green' }) {
-  return <div className={`metric-card ${tone}`}><div className="eyebrow">{label}</div><div className="metric-value">{value}</div>{hint && <div className="metric-hint">{hint}</div>}</div>
-}
-
-function SectionTitle({ kicker, title, subtitle }: { kicker: string; title: string; subtitle?: string }) {
-  return <div className="section-title"><div className="eyebrow red-text">{kicker}</div><h2>{title}</h2>{subtitle && <p>{subtitle}</p>}</div>
-}
-
-function TargetFooter({ state, onTarget }: { state: AppState; onTarget: (value: number) => void }) {
-  const achievement = state.sellOutTarget > 0 ? state.sellOut / state.sellOutTarget : 0
-  return (
-    <section className="target-footer">
-      <div>
-        <div className="eyebrow light">META SELL OUT • T&C</div>
-        <h3>Referência gerencial do mês</h3>
-        <p>Meta definida manualmente. Ela é independente das metas individuais dos vendedores importadas da Bússola.</p>
-      </div>
-      <div className="target-edit"><span>Meta do mês</span><CurrencyField value={state.sellOutTarget} onChange={onTarget} /></div>
-      <div className="target-progress"><strong>{percent.format(achievement)}</strong><span>atingido</span><div className="progress"><i style={{ width: `${Math.min(100, achievement * 100)}%` }} /></div></div>
-    </section>
-  )
-}
-
-function Resumo({ state, monthName, onTarget }: { state: AppState; monthName: string; onTarget: (value: number) => void }) {
-  const daysElapsed = Math.min(today.getDate(), monthDays)
-  const workingReference = Math.max(1, daysElapsed)
-  const average = state.sellOut / workingReference
-  const remaining = Math.max(0, state.sellOutTarget - state.sellOut)
+function Resumo({ state, setState, monthName }: { state: AppState; setState: React.Dispatch<React.SetStateAction<AppState>>; monthName: string }) {
   const maxDaily = Math.max(...state.daily, 1)
+  const elapsed = Math.max(1, Math.min(now.getDate(), monthDays))
   return (
     <>
-      <section className="hero-strip">
-        <div><div className="eyebrow light">VISÃO EXECUTIVA • {monthName.toUpperCase()}</div><h2>Venda, estoque e abastecimento.</h2><p>Uma leitura rápida do mês com separação entre faturado, a faturar e disponibilidade.</p></div>
-        <div className="hero-number"><span>Sell Out atual</span><strong>{money.format(state.sellOut)}</strong></div>
+      <section className="hero">
+        <div><span>VISÃO EXECUTIVA • {monthName.toUpperCase()}</span><h2>Venda, estoque e abastecimento.</h2><p>Leitura do mês com faturado, a faturar e disponibilidade separados.</p></div>
+        <div><small>Sell Out atual</small><strong>{money.format(state.sellOut)}</strong></div>
       </section>
 
-      <section className="metrics-grid five">
-        <MetricCard label="SELL OUT TOTAL" value={money.format(state.sellOut)} hint="Faturado + venda a faturar" tone="red" />
-        <MetricCard label="FATURADO" value={money.format(state.billed)} hint={percent.format(state.billed / Math.max(1, state.sellOut)) + ' do Sell Out'} tone="navy" />
-        <MetricCard label="VENDA A FATURAR" value={money.format(state.toInvoice)} hint="Pedidos ainda não faturados" />
-        <MetricCard label="POSITIVAÇÃO POTENCIAL" value={integer.format(state.potentialPositives)} hint="Referência comercial" />
-        <MetricCard label="ESTOQUE AO CUSTO" value={money.format(state.stockCost)} hint="Posição disponível" />
+      <section className="metrics five">
+        <Metric label="SELL OUT TOTAL" value={money.format(state.sellOut)} hint="Faturado + venda a faturar" tone="red" />
+        <Metric label="FATURADO" value={money.format(state.billed)} hint={`${percent.format(state.billed / Math.max(1, state.sellOut))} do Sell Out`} tone="navy" />
+        <Metric label="VENDA A FATURAR" value={money.format(state.toInvoice)} hint="Pedidos ainda não faturados" />
+        <Metric label="POSITIVAÇÃO POTENCIAL" value={integer.format(state.potentialPositives)} hint="Referência comercial" />
+        <Metric label="ESTOQUE AO CUSTO" value={money.format(state.stockCost)} hint="Posição disponível" />
       </section>
 
-      <section className="two-columns dashboard-gap">
-        <div className="panel">
-          <SectionTitle kicker="MOVIMENTO DIÁRIO" title="Sell Out por dia" subtitle="O eixo mostra todos os dias do mês; dias futuros permanecem sem valor até acontecerem." />
-          <div className="bar-chart">
+      <section className="split summary-split">
+        <article className="panel chart-panel">
+          <Title kicker="MOVIMENTO DIÁRIO" title="Sell Out por dia" subtitle="Todos os dias do mês aparecem no eixo. Dias futuros ficam vazios, sem inventar venda." />
+          <div className="bars">
             {state.daily.map((value, index) => {
               const day = index + 1
-              const future = day > today.getDate()
-              return <div className={`bar-slot ${future ? 'future' : ''}`} key={day} title={`${day}: ${money.format(value)}`}><div className="bar" style={{ height: `${value > 0 ? Math.max(5, value / maxDaily * 100) : 2}%` }} /><span>{day}</span></div>
+              const future = day > now.getDate()
+              return <div className={`bar-slot ${future ? 'future' : ''}`} key={day} title={`${day} • ${money.format(value)}`}><i style={{ height: `${value > 0 ? Math.max(5, value / maxDaily * 100) : 2}%` }} /><span>{day}</span></div>
             })}
           </div>
-        </div>
-        <div className="panel rhythm-panel">
-          <SectionTitle kicker="RITMO DO MÊS" title="Referência de dias úteis" />
-          <div className="rhythm-number"><span>Média por dia corrido</span><strong>{money.format(average)}</strong></div>
-          <div className="rhythm-number"><span>Falta para a meta</span><strong>{money.format(remaining)}</strong></div>
-          <div className="rhythm-number"><span>Progresso da meta</span><strong>{percent.format(state.sellOut / Math.max(1, state.sellOutTarget))}</strong></div>
-          <p className="note">A referência de ritmo ainda será conectada ao calendário oficial de dias úteis.</p>
-        </div>
+        </article>
+        <article className="panel rhythm">
+          <Title kicker="RITMO DO MÊS" title="Referência operacional" />
+          <div><span>Média por dia corrido</span><strong>{money.format(state.sellOut / elapsed)}</strong></div>
+          <div><span>Falta para a meta</span><strong>{money.format(Math.max(0, state.sellOutTarget - state.sellOut))}</strong></div>
+          <div><span>Progresso da meta</span><strong>{percent.format(state.sellOut / Math.max(1, state.sellOutTarget))}</strong></div>
+          <p className="note">O calendário oficial de dias úteis será ligado ao motor de dados na próxima etapa.</p>
+        </article>
       </section>
-      <TargetFooter state={state} onTarget={onTarget} />
+      <TargetFooter state={state} setState={setState} />
     </>
   )
 }
 
-function Gerencial({ state, totalTarget, totalSellOut, onNetworkTarget, onNetworkPool, onSellOutTarget }: { state: AppState; totalTarget: number; totalSellOut: number; onNetworkTarget: (index: number, value: number) => void; onNetworkPool: (value: number) => void; onSellOutTarget: (value: number) => void }) {
+function Gerencial({ state, setState, totalTarget, totalSellOut, changePool, changeTarget }: { state: AppState; setState: React.Dispatch<React.SetStateAction<AppState>>; totalTarget: number; totalSellOut: number; changePool: (value: number) => void; changeTarget: (index: number, value: number) => void }) {
   return (
     <>
-      <section className="page-head"><SectionTitle kicker="GERENCIAL" title="Redes estratégicas" subtitle="Participação, meta e histórico em uma leitura com mais contraste." /><div className="head-kpi"><span>Sell Out das redes</span><strong>{money.format(totalSellOut)}</strong></div></section>
-      <section className="two-columns wide-left">
-        <div className="panel">
-          <div className="panel-toolbar"><div><div className="eyebrow red-text">REDES ESTRATÉGICAS</div><h3>Top redes • parcela da meta</h3></div><div className="network-pool"><span>Meta total das redes</span><CurrencyField value={totalTarget} onChange={onNetworkPool} /><small>{percent.format(totalTarget / Math.max(1, state.sellOutTarget))} da meta Sell Out T&C</small></div></div>
+      <section className="page-head"><Title kicker="GERENCIAL" title="Redes estratégicas" subtitle="Meta, participação, Sell Out e comparativo histórico." /><div><span>Sell Out das redes</span><strong>{money.format(totalSellOut)}</strong></div></section>
+      <section className="split managerial-split">
+        <article className="panel">
+          <div className="panel-toolbar"><div><span>REDES ESTRATÉGICAS</span><h3>Top redes • parcela do Sell Out T&C</h3></div><div className="pool"><label>Meta total das redes</label><CurrencyInput value={totalTarget} onChange={changePool} /><small>{percent.format(totalTarget / Math.max(1, state.sellOutTarget))} da meta T&C</small></div></div>
           <div className="network-list">
             {state.networks.map((network, index) => {
-              const achievement = network.target > 0 ? network.sellOut / network.target : 0
-              const participation = totalTarget > 0 ? network.target / totalTarget : 0
-              return <div className="network-row" key={network.name}>
-                <div className="network-name"><strong>{network.name}</strong><span>{percent.format(participation)} da meta das redes</span></div>
-                <div className="network-cell"><span>Sell Out</span><strong>{money.format(network.sellOut)}</strong></div>
-                <div className="network-cell editable"><span>Meta</span><CurrencyField value={network.target} onChange={value => onNetworkTarget(index, value)} /></div>
-                <div className="network-cell"><span>Atingimento</span><strong className={achievement >= 1 ? 'good' : achievement >= .8 ? 'warn' : ''}>{percent.format(achievement)}</strong></div>
+              const achievement = network.sellOut / Math.max(1, network.target)
+              return <div className="network" key={network.name}>
+                <div className="network-name"><strong>{network.name}</strong><span>{percent.format(network.target / Math.max(1, totalTarget))} da meta das redes</span></div>
+                <div><span>Sell Out</span><strong>{money.format(network.sellOut)}</strong></div>
+                <div className="editable"><span>Meta</span><CurrencyInput value={network.target} onChange={(value) => changeTarget(index, value)} /></div>
+                <div><span>Atingimento</span><strong className={achievement >= 1 ? 'positive' : ''}>{percent.format(achievement)}</strong></div>
                 <div className="mini-progress"><i style={{ width: `${Math.min(100, achievement * 100)}%` }} /></div>
               </div>
             })}
           </div>
-          <p className="note">Ao editar uma rede, as demais metas são redistribuídas proporcionalmente para manter o total das redes.</p>
-        </div>
-        <div className="panel">
-          <SectionTitle kicker="COMPARATIVO HISTÓRICO" title="Atual x referência anterior" />
-          <div className="history-list">{state.networks.map(item => {
-            const growth = item.previous > 0 ? item.sellOut / item.previous - 1 : 0
-            return <div className="history-row" key={item.name}><span>{item.name}</span><strong>{money.format(item.sellOut)}</strong><b className={growth >= 0 ? 'good' : 'bad'}>{growth >= 0 ? '+' : ''}{percent.format(growth)}</b></div>
-          })}</div>
-        </div>
+          <p className="note">Se uma meta de rede for alterada, o restante é redistribuído proporcionalmente para manter a meta total das redes.</p>
+        </article>
+        <article className="panel">
+          <Title kicker="COMPARATIVO HISTÓRICO" title="Atual x referência anterior" />
+          <div className="history">
+            {state.networks.map(network => {
+              const growth = network.sellOut / Math.max(1, network.previous) - 1
+              return <div key={network.name}><span>{network.name}</span><strong>{money.format(network.sellOut)}</strong><b className={growth >= 0 ? 'positive' : 'negative'}>{growth >= 0 ? '+' : ''}{percent.format(growth)}</b></div>
+            })}
+          </div>
+        </article>
       </section>
-      <TargetFooter state={state} onTarget={onSellOutTarget} />
+      <TargetFooter state={state} setState={setState} />
     </>
   )
 }
 
-function Equipe({ state, onSellOutTarget }: { state: AppState; onSellOutTarget: (value: number) => void }) {
-  const sellerTarget = state.sellers.reduce((sum, item) => sum + item.target, 0)
-  const sellerSellOut = state.sellers.reduce((sum, item) => sum + item.sellOut, 0)
-  const positives = state.sellers.reduce((sum, item) => sum + item.positives, 0)
-  const positiveTarget = state.sellers.reduce((sum, item) => sum + item.positiveTarget, 0)
+function Equipe({ state, setState }: { state: AppState; setState: React.Dispatch<React.SetStateAction<AppState>> }) {
+  const sellerTarget = state.sellers.reduce((sum, seller) => sum + seller.target, 0)
+  const sellerSellOut = state.sellers.reduce((sum, seller) => sum + seller.sellOut, 0)
+  const positives = state.sellers.reduce((sum, seller) => sum + seller.positives, 0)
+  const positiveTarget = state.sellers.reduce((sum, seller) => sum + seller.positiveTarget, 0)
   return (
     <>
-      <section className="page-head dark-head"><SectionTitle kicker="EQUIPE COMERCIAL" title="Execução por vendedor" subtitle="A operação vem primeiro; metas consolidadas ficam no fechamento da página." /><div className="head-kpi"><span>Sell Out equipe</span><strong>{money.format(sellerSellOut)}</strong></div></section>
-      <section className="metrics-grid three compact">
-        <MetricCard label="VENDEDORES" value={integer.format(state.sellers.length)} hint="Base demonstrativa desta reconstrução" tone="navy" />
-        <MetricCard label="POSITIVAÇÕES" value={integer.format(positives)} hint={`${integer.format(positiveTarget)} de referência`} tone="red" />
-        <MetricCard label="ATINGIMENTO DA EQUIPE" value={percent.format(sellerSellOut / Math.max(1, sellerTarget))} hint={money.format(sellerTarget) + ' em metas individuais'} />
-      </section>
-      <section className="panel table-panel">
-        <div className="table-head"><div><div className="eyebrow red-text">DESEMPENHO INDIVIDUAL</div><h3>Vendedores</h3></div><span className="demo-badge">BASE DEMO • substituir pela Bússola</span></div>
-        <div className="responsive-table"><table><thead><tr><th>Setor</th><th>Vendedor</th><th>Meta Bússola</th><th>Sell Out</th><th>Atingimento</th><th>Positivação</th><th>Meta Pos.</th><th>Cobertura</th></tr></thead><tbody>
-          {state.sellers.map(seller => { const achieve = seller.sellOut / Math.max(1, seller.target); const pos = seller.positives / Math.max(1, seller.positiveTarget); return <tr key={seller.code}><td><b>{seller.code}</b></td><td>{seller.name}</td><td>{money.format(seller.target)}</td><td><strong>{money.format(seller.sellOut)}</strong></td><td><span className={`pill ${achieve >= 1 ? 'ok' : achieve >= .8 ? 'mid' : ''}`}>{percent.format(achieve)}</span></td><td>{integer.format(seller.positives)}</td><td>{integer.format(seller.positiveTarget)}</td><td>{percent.format(pos)}</td></tr> })}
+      <section className="page-head dark"><Title kicker="EQUIPE COMERCIAL" title="Execução por vendedor" subtitle="A operação vem primeiro; as metas consolidadas fecham a página." /><div><span>Sell Out equipe</span><strong>{money.format(sellerSellOut)}</strong></div></section>
+      <section className="metrics three"><Metric label="VENDEDORES" value={integer.format(state.sellers.length)} tone="navy" /><Metric label="POSITIVAÇÕES" value={integer.format(positives)} hint={`${integer.format(positiveTarget)} de meta`} tone="red" /><Metric label="ATINGIMENTO DA EQUIPE" value={percent.format(sellerSellOut / Math.max(1, sellerTarget))} hint={money.format(sellerTarget)} /></section>
+      <article className="panel table-panel">
+        <div className="table-title"><div><span>DESEMPENHO INDIVIDUAL</span><h3>Vendedores</h3></div><b>BASE DEMO • substituir pela Bússola</b></div>
+        <div className="table-wrap"><table><thead><tr><th>Setor</th><th>Vendedor</th><th>Meta Bússola</th><th>Sell Out</th><th>Atingimento</th><th>Positivação</th><th>Meta Pos.</th><th>Cobertura</th></tr></thead><tbody>
+          {state.sellers.map(seller => {
+            const achievement = seller.sellOut / Math.max(1, seller.target)
+            return <tr key={seller.code}><td><strong>{seller.code}</strong></td><td>{seller.name}</td><td>{money.format(seller.target)}</td><td><strong>{money.format(seller.sellOut)}</strong></td><td><span className={`pill ${achievement >= 1 ? 'ok' : achievement >= .8 ? 'mid' : ''}`}>{percent.format(achievement)}</span></td><td>{integer.format(seller.positives)}</td><td>{integer.format(seller.positiveTarget)}</td><td>{percent.format(seller.positives / Math.max(1, seller.positiveTarget))}</td></tr>
+          })}
         </tbody></table></div>
-      </section>
-      <section className="industry-targets">
-        <div><div className="eyebrow light">METAS COLGATE • BÚSSOLA</div><h3>Consolidação das metas dos vendedores</h3><p>A soma das metas individuais define a referência da indústria. A meta Sell Out T&C permanece separada.</p></div>
-        <MetricCard label="META INDÚSTRIA" value={money.format(sellerTarget)} hint="Soma dos vendedores" tone="red" />
-        <MetricCard label="META POSITIVAÇÃO" value={integer.format(positiveTarget)} hint="Soma dos vendedores" tone="navy" />
-      </section>
-      <TargetFooter state={state} onTarget={onSellOutTarget} />
+      </article>
+      <section className="industry-footer"><div><span>METAS COLGATE • BÚSSOLA</span><h3>Consolidação das metas dos vendedores</h3><p>A soma das metas individuais forma a meta da indústria. Ela não substitui a meta Sell Out T&C.</p></div><Metric label="META INDÚSTRIA" value={money.format(sellerTarget)} tone="red" /><Metric label="META POSITIVAÇÃO" value={integer.format(positiveTarget)} tone="navy" /></section>
+      <TargetFooter state={state} setState={setState} />
     </>
   )
 }
@@ -346,50 +299,41 @@ function Equipe({ state, onSellOutTarget }: { state: AppState; onSellOutTarget: 
 function Estoque({ state }: { state: AppState }) {
   return (
     <>
-      <section className="page-head"><SectionTitle kicker="ESTOQUE" title="Posição financeira e abastecimento" subtitle="Separação entre estoque atual, trânsito e preço de venda." /><div className="head-kpi"><span>Posição + trânsito</span><strong>{money.format(state.stockCost + state.stockTransit)}</strong></div></section>
-      <section className="metrics-grid four">
-        <MetricCard label="ESTOQUE ATUAL AO CUSTO" value={money.format(state.stockCost)} tone="navy" />
-        <MetricCard label="ABASTECIMENTO EM TRÂNSITO" value={money.format(state.stockTransit)} tone="red" />
-        <MetricCard label="POSIÇÃO AO CUSTO + TRÂNSITO" value={money.format(state.stockCost + state.stockTransit)} />
-        <MetricCard label="ESTOQUE A PREÇO DE VENDA" value={money.format(state.stockSale)} />
-      </section>
-      <section className="panel table-panel">
-        <div className="table-head"><div><div className="eyebrow red-text">POSIÇÃO FINANCEIRA POR LINHA</div><h3>Abertura do estoque</h3></div><span className="warning-badge">CLASSIFICAÇÃO A VALIDAR</span></div>
-        <p className="stock-rule">Nesta reconstrução, os nomes de linha reproduzem a estrutura visual do painel original, mas <strong>não estamos tratando esse agrupamento como regra oficial</strong>. O vínculo será feito ao campo correto do cadastro 286 antes de usar os valores para decisão.</p>
-        <div className="responsive-table"><table><thead><tr><th>Linha</th><th>Estoque custo</th><th>Em trânsito</th><th>Custo + trânsito</th><th>Preço de venda</th><th>Regra / origem</th></tr></thead><tbody>
-          {state.stockLines.map(line => <tr key={line.name}><td><strong>{line.name}</strong></td><td>{money.format(line.cost)}</td><td>{money.format(line.transit)}</td><td>{money.format(line.cost + line.transit)}</td><td>{money.format(line.sale)}</td><td><span className="rule-chip">{line.rule}</span></td></tr>)}
+      <section className="page-head"><Title kicker="ESTOQUE" title="Posição financeira e abastecimento" subtitle="Custo, trânsito e preço de venda separados." /><div><span>Posição + trânsito</span><strong>{money.format(state.stockCost + state.stockTransit)}</strong></div></section>
+      <section className="metrics four"><Metric label="ESTOQUE ATUAL AO CUSTO" value={money.format(state.stockCost)} tone="navy" /><Metric label="ABASTECIMENTO EM TRÂNSITO" value={money.format(state.stockTransit)} tone="red" /><Metric label="POSIÇÃO AO CUSTO + TRÂNSITO" value={money.format(state.stockCost + state.stockTransit)} /><Metric label="ESTOQUE A PREÇO DE VENDA" value={money.format(state.stockSale)} /></section>
+      <article className="panel table-panel">
+        <div className="table-title"><div><span>POSIÇÃO FINANCEIRA POR LINHA</span><h3>Abertura do estoque</h3></div><b className="warning">CLASSIFICAÇÃO A VALIDAR</b></div>
+        <p className="stock-warning">Os nomes das linhas reproduzem a estrutura visual que já tínhamos, mas <strong>não são considerados regra oficial</strong>. Antes de usar essa abertura como dado definitivo, vamos ligar cada SKU ao campo correto do cadastro 286.</p>
+        <div className="table-wrap"><table><thead><tr><th>Linha</th><th>Estoque custo</th><th>Em trânsito</th><th>Custo + trânsito</th><th>Preço de venda</th><th>Regra / origem</th></tr></thead><tbody>
+          {state.stockLines.map(line => <tr key={line.name}><td><strong>{line.name}</strong></td><td>{money.format(line.cost)}</td><td>{money.format(line.transit)}</td><td>{money.format(line.cost + line.transit)}</td><td>{money.format(line.sale)}</td><td><span className="rule">{line.rule}</span></td></tr>)}
         </tbody></table></div>
-      </section>
+      </article>
     </>
   )
 }
 
 function Conferencia({ state }: { state: AppState }) {
-  const checks = [
-    ['Sell Out fecha com faturado + a faturar', Math.abs(state.sellOut - state.billed - state.toInvoice) < .02],
+  const checks: [string, boolean][] = [
+    ['Sell Out fecha com faturado + a faturar', Math.abs(state.sellOut - state.billed - state.toInvoice) < 0.02],
     ['Meta Sell Out T&C preenchida', state.sellOutTarget > 0],
-    ['Metas individuais disponíveis', state.sellers.length > 0 && state.sellers.every(item => item.target > 0)],
-    ['Classificação oficial de linhas de estoque', state.stockLines.every(item => !item.rule.toLowerCase().includes('validar'))],
-  ] as const
+    ['Metas individuais disponíveis', state.sellers.length > 0 && state.sellers.every(seller => seller.target > 0)],
+    ['Classificação oficial de linhas de estoque', state.stockLines.every(line => !line.rule.toLowerCase().includes('validar'))],
+  ]
   return (
     <>
-      <section className="page-head"><SectionTitle kicker="CONFERÊNCIA" title="Rastreabilidade antes da leitura" subtitle="O painel não deve esconder pendências de base ou de regra." /></section>
-      <section className="audit-grid">
-        {checks.map(([label, ok]) => <div className={`audit-card ${ok ? 'pass' : 'pending'}`} key={label}><span>{ok ? '✓' : '!'}</span><div><strong>{label}</strong><small>{ok ? 'Conferido nesta base' : 'Pendente de validação'}</small></div></div>)}
-      </section>
-      <section className="panel">
-        <SectionTitle kicker="FONTES" title="Arquivos vinculados nesta sessão local" />
-        <div className="source-list">{Object.entries(state.uploads).map(([key, info]) => <div className="source-row" key={key}><strong>{sourceLabel(key)}</strong>{info ? <><span>{info.name}</span><small>{new Date(info.updatedAt).toLocaleString('pt-BR')}</small></> : <span className="muted">Ainda não carregado nesta reconstrução</span>}</div>)}</div>
-      </section>
+      <section className="page-head"><Title kicker="CONFERÊNCIA" title="Rastreabilidade antes da leitura" subtitle="Pendências de base ou regra ficam visíveis; não são mascaradas." /></section>
+      <section className="audit-grid">{checks.map(([label, ok]) => <article className={ok ? 'pass' : 'pending'} key={label}><b>{ok ? '✓' : '!'}</b><div><strong>{label}</strong><span>{ok ? 'Conferido nesta base' : 'Pendente de validação'}</span></div></article>)}</section>
+      <article className="panel"><Title kicker="FONTES" title="Arquivos vinculados neste navegador" /><div className="sources">{Object.entries(state.uploads).map(([key, info]) => <div key={key}><strong>{sourceLabel(key)}</strong>{info ? <><span>{info.name}</span><small>{new Date(info.updatedAt).toLocaleString('pt-BR')}</small></> : <span className="muted">Ainda não carregado</span>}</div>)}</div></article>
     </>
   )
 }
 
 function sourceLabel(key: string) {
-  return ({ sales: 'Vendas • 8022', stock: 'Estoque físico • 8013', targets: 'Metas • Bússola', cost: 'Custo • Cadastro 286', transit: 'Em trânsito', history: 'Histórico anterior' } as Record<string, string>)[key] ?? key
+  const labels: Record<string, string> = { sales: 'Vendas • 8022', stock: 'Estoque físico • 8013', targets: 'Metas • Bússola', cost: 'Custo • Cadastro 286', transit: 'Em trânsito', history: 'Histórico anterior' }
+  return labels[key] ?? key
 }
 
-function Upload({ state, onUpload, onReset }: { state: AppState; onUpload: (key: string, event: ChangeEvent<HTMLInputElement>) => void; onReset: () => void }) {
+function Upload({ state, registerUpload, resetLocal }: { state: AppState; registerUpload: (key: string, event: ChangeEvent<HTMLInputElement>) => void; resetLocal: () => void }) {
   const cards = [
     ['sales', 'VENDAS • RELATÓRIO 8022', 'Base de faturamento e movimento comercial'],
     ['stock', 'ESTOQUE FÍSICO • RELATÓRIO 8013', 'Saldo físico disponível'],
@@ -400,11 +344,14 @@ function Upload({ state, onUpload, onReset }: { state: AppState; onUpload: (key:
   ]
   return (
     <>
-      <section className="upload-hero"><div className="eyebrow light">CENTRAL DE DADOS</div><h2>Venda, estoque e abastecimento.</h2><p>Os arquivos não são enviados para um servidor por este front-end. A configuração e a base processada permanecem no navegador para que o painel sobreviva ao F5.</p></section>
+      <section className="upload-hero"><span>CENTRAL DE DADOS</span><h2>Venda, estoque e abastecimento.</h2><p>O front-end não envia estes arquivos para um servidor. Configurações e dados processados são preservados localmente para continuar após F5.</p></section>
       <section className="upload-grid">
-        {cards.map(([key, title, description]) => { const info = state.uploads[key]; return <label className="upload-card" key={key}><div className="upload-icon">↥</div><div><div className="eyebrow red-text">{title}</div><h3>{info ? info.name : 'Selecionar arquivo'}</h3><p>{description}</p>{info && <small>Registrado em {new Date(info.updatedAt).toLocaleString('pt-BR')} • {integer.format(info.size / 1024)} KB</small>}</div><input type="file" accept=".xlsx,.xls,.csv,.txt" onChange={event => onUpload(key, event)} /></label> })}
+        {cards.map(([key, title, description]) => {
+          const info = state.uploads[key]
+          return <label className="upload-card" key={key}><b>↥</b><div><span>{title}</span><h3>{info ? info.name : 'Selecionar arquivo'}</h3><p>{description}</p>{info && <small>Registrado em {new Date(info.updatedAt).toLocaleString('pt-BR')} • {integer.format(info.size / 1024)} KB</small>}</div><input type="file" accept=".xlsx,.xls,.csv,.txt" onChange={(event) => registerUpload(key, event)} /></label>
+        })}
       </section>
-      <section className="local-storage-panel"><div><div className="eyebrow">PERSISTÊNCIA LOCAL</div><h3>A última base válida permanece neste navegador</h3><p>Ao atualizar ou fechar a página, metas, configurações e dados processados continuam disponíveis. Os parsers reais dos relatórios serão conectados na próxima etapa.</p></div><button className="danger-button" onClick={onReset}>Limpar base local</button></section>
+      <section className="storage"><div><span>PERSISTÊNCIA LOCAL</span><h3>A última base válida permanece neste navegador</h3><p>Nesta reconstrução inicial os arquivos são registrados e o estado do painel já persiste. Os parsers reais serão conectados aos relatórios na etapa seguinte.</p></div><button onClick={resetLocal}>Limpar base local</button></section>
     </>
   )
 }
