@@ -38,11 +38,12 @@ function candidateHeader(rows: Matrix) {
   for (let r = 0; r < Math.min(rows.length, 100); r += 1) {
     const headers = (rows[r] ?? []).map(normalizeText)
     let score = 0
-    if (headers.some(h => ['PEDIDO', 'NUM PEDIDO', 'NUMERO PEDIDO', 'N PEDIDO'].includes(h))) score += 1
-    if (headers.some(h => ['VALOR ITEM', 'VALOR TOTAL ITEM', 'VLR ITEM', 'TOTAL ITEM'].includes(h))) score += 3
+    if (headers.some(h => ['PEDIDO', 'NUM PEDIDO', 'NUMERO PEDIDO', 'N PEDIDO', 'ORDER NUMBER'].includes(h))) score += 2
+    if (headers.some(h => ['NET VALUE ZINV', 'VALOR ITEM', 'VALOR TOTAL ITEM', 'VLR ITEM', 'TOTAL ITEM'].includes(h))) score += 4
     if (headers.some(h => ['VALOR PEDIDO', 'TOTAL PEDIDO', 'VLR PEDIDO'].includes(h))) score += 3
-    if (headers.some(h => ['VALOR TOTAL', 'TOTAL', 'VLR TOTAL'].includes(h))) score += 1
-    if (headers.some(h => h.includes('PROD') || h.includes('DESCRI'))) score += 1
+    if (headers.some(h => ['MATERIAL', 'PRODUTO', 'COD PRODUTO'].includes(h))) score += 1
+    if (headers.some(h => h === 'DESCRIPTION' || h.includes('DESCRI'))) score += 1
+    if (headers.some(h => ['ORDER QTY', 'QTD PEDIDO', 'QTDE PEDIDO'].includes(h))) score += 1
     if (score > bestScore) {
       bestScore = score
       bestIndex = r
@@ -74,12 +75,12 @@ export async function parseTransitPortfolio(file: File): Promise<TransitResult> 
     const match = candidateHeader(rows)
     if (!best || match.score > best.score) best = { rows, header: match.index, score: match.score, sheet: sheetName }
   }
-  if (!best || best.header < 0 || best.score < 2) throw new Error('Não consegui reconhecer com segurança o layout da Carteira Colgate. Envie esse arquivo no chat para eu mapear as colunas exatas.')
+  if (!best || best.header < 0 || best.score < 3) throw new Error('Não consegui reconhecer com segurança o layout da Carteira Colgate.')
 
   const rows = best.rows
   const headers = rows[best.header] ?? []
-  const orderCol = findExact(headers, ['PEDIDO', 'N PEDIDO', 'NUM PEDIDO', 'NUMERO PEDIDO'])
-  const itemValueCol = findExact(headers, ['VALOR ITEM', 'VALOR TOTAL ITEM', 'VLR ITEM', 'TOTAL ITEM', 'VALOR LIQUIDO ITEM'])
+  const orderCol = findExact(headers, ['ORDER NUMBER', 'PEDIDO', 'N PEDIDO', 'NUM PEDIDO', 'NUMERO PEDIDO'])
+  const itemValueCol = findExact(headers, ['NET VALUE ( ZINV )', 'NET VALUE ZINV', 'VALOR ITEM', 'VALOR TOTAL ITEM', 'VLR ITEM', 'TOTAL ITEM', 'VALOR LIQUIDO ITEM'])
   const orderValueCol = findExact(headers, ['VALOR PEDIDO', 'TOTAL PEDIDO', 'VLR PEDIDO', 'VALOR LIQUIDO PEDIDO'])
 
   let totalValue = 0
@@ -88,16 +89,17 @@ export async function parseTransitPortfolio(file: File): Promise<TransitResult> 
   let valueSource = ''
 
   if (itemValueCol >= 0) {
-    valueSource = String(headers[itemValueCol] ?? 'Valor item')
+    valueSource = String(headers[itemValueCol] ?? 'Net Value ( ZINV )')
     for (let r = best.header + 1; r < rows.length; r += 1) {
-      const value = numberValue(rows[r]?.[itemValueCol])
-      if (!value) continue
-      totalValue += value
-      usedRows += 1
-      if (orderCol >= 0) {
-        const order = String(rows[r]?.[orderCol] ?? '').trim()
-        if (order) orders.add(order)
+      const row = rows[r] ?? []
+      const value = numberValue(row[itemValueCol])
+      const order = orderCol >= 0 ? String(row[orderCol] ?? '').trim() : ''
+      if (!value && !order) continue
+      if (value) {
+        totalValue += value
+        usedRows += 1
       }
+      if (order) orders.add(order)
     }
   } else if (orderValueCol >= 0 && orderCol >= 0) {
     valueSource = String(headers[orderValueCol] ?? 'Valor pedido')
@@ -113,13 +115,13 @@ export async function parseTransitPortfolio(file: File): Promise<TransitResult> 
     valueByOrder.forEach((_, order) => orders.add(order))
   } else {
     const total = grandTotalFromRows(rows)
-    if (total == null) throw new Error('A Carteira foi aberta, mas não encontrei uma coluna inequívoca de Valor do Item/Valor do Pedido nem um Total Geral único. Não vou somar uma coluna por aproximação.')
+    if (total == null) throw new Error('A Carteira foi aberta, mas não encontrei uma coluna de valor reconhecida.')
     totalValue = total
     usedRows = 1
     valueSource = 'Total geral identificado no arquivo'
   }
 
-  if (!Number.isFinite(totalValue) || totalValue <= 0) throw new Error('A Carteira foi reconhecida, mas o valor em trânsito calculado ficou zerado. Envie o arquivo no chat para validar o layout.')
+  if (!Number.isFinite(totalValue) || totalValue <= 0) throw new Error('A Carteira foi reconhecida, mas o valor em trânsito calculado ficou zerado.')
 
   return {
     totalValue,
@@ -128,6 +130,7 @@ export async function parseTransitPortfolio(file: File): Promise<TransitResult> 
     valueSource,
     warnings: [
       `Carteira Colgate: ${valueSource} usada como valor do abastecimento em trânsito.`,
+      'Regra validada para CARTEIRA 08.08: somar Net Value ( ZINV ) linha a linha.',
       'O preço de venda continua considerando somente o estoque físico do relatório 105; a carteira não é adicionada ao estoque a preço de venda.',
     ],
   }
