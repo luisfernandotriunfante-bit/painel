@@ -1,12 +1,34 @@
 import { ChangeEvent, useEffect, useMemo, useState } from 'react'
+import {
+  buildNetworks,
+  CatalogFinance,
+  cleanId,
+  CustomerSales,
+  HistoryResult,
+  mergeSellers,
+  parseBussola,
+  parseCatalog,
+  parseHistory379,
+  parsePremises,
+  parseSales,
+  parseStock,
+  SellerSales,
+  SellerTarget,
+  StockItem,
+  stockFinancial,
+  UploadInfo,
+  UploadKey,
+} from './data'
 
 type Page = 'resumo' | 'gerencial' | 'equipe' | 'estoque' | 'conferencia' | 'upload'
 type Network = { name: string; target: number; sellOut: number; previous: number }
 type Seller = { code: string; name: string; target: number; sellOut: number; positives: number; positiveTarget: number }
-type StockLine = { name: string; cost: number; sale: number; transit: number; rule: string }
-type UploadInfo = { name: string; size: number; updatedAt: string } | null
+type StockLine = { name: string; cost: number; sale: number; units: number; boxes: number; matched: number; total: number; rule: string }
 
 type AppState = {
+  periodYear: number
+  periodMonth: number
+  periodLabel: string
   sellOut: number
   billed: number
   toInvoice: number
@@ -14,67 +36,83 @@ type AppState = {
   stockCost: number
   stockSale: number
   stockTransit: number
+  stockUnits: number
+  stockBoxes: number
+  stockMatched: number
   sellOutTarget: number
+  networkPoolTarget: number
+  industryTarget: number
+  industryPositiveTarget: number
   networks: Network[]
   sellers: Seller[]
   stockLines: StockLine[]
   daily: number[]
-  uploads: Record<string, UploadInfo>
+  salesSellerActuals: SellerSales[]
+  sellerTargets: SellerTarget[]
+  salesCustomers: CustomerSales[]
+  networkByCnpj: Record<string, string>
+  historyByMonth: HistoryResult['byMonth']
+  stockItems: StockItem[]
+  financeByCode: Record<string, CatalogFinance>
+  uploads: Record<UploadKey, UploadInfo>
+  warnings: string[]
 }
 
-const STORAGE_KEY = 'painel-sell-out-milenio:v1'
+const STORAGE_KEY = 'painel-sell-out-milenio:v2'
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2 })
 const integer = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 })
+const decimal = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })
 const percent = new Intl.NumberFormat('pt-BR', { style: 'percent', minimumFractionDigits: 1, maximumFractionDigits: 1 })
 const now = new Date()
-const monthDays = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
 
-const seedDaily = Array.from({ length: monthDays }, (_, index) => {
-  const sample = [182400, 224890, 196320, 0, 0, 281950, 307840, 247650, 265440, 312730, 298510, 326820]
-  return index < sample.length ? sample[index] : 0
-})
+const emptyUploads: Record<UploadKey, UploadInfo> = {
+  sales: null,
+  stock: null,
+  targets: null,
+  catalog: null,
+  premises: null,
+  history: null,
+  transit: null,
+}
 
 const initialState: AppState = {
-  sellOut: 3742680.45,
-  billed: 3512300.10,
-  toInvoice: 230380.35,
-  potentialPositives: 312,
-  stockCost: 1824940.72,
-  stockSale: 2341508.66,
-  stockTransit: 418400,
-  sellOutTarget: 5000000,
-  networks: [
-    { name: 'ABV', target: 950000, sellOut: 781420, previous: 726800 },
-    { name: 'MEGA', target: 740000, sellOut: 608900, previous: 590100 },
-    { name: 'PIRES', target: 620000, sellOut: 487640, previous: 462300 },
-    { name: 'NOVA ESTRELA', target: 520000, sellOut: 401880, previous: 389600 },
-    { name: 'PORTAL / PRINCESA', target: 410000, sellOut: 327440, previous: 301900 },
-  ],
-  sellers: [
-    { code: '910', name: 'Jonatas MCD', target: 860000, sellOut: 691420, positives: 142, positiveTarget: 170 },
-    { code: '701', name: 'Equipe 701', target: 780000, sellOut: 608260, positives: 126, positiveTarget: 155 },
-    { code: '702', name: 'Equipe 702', target: 760000, sellOut: 574980, positives: 119, positiveTarget: 150 },
-    { code: '703', name: 'Equipe 703', target: 720000, sellOut: 542130, positives: 111, positiveTarget: 145 },
-    { code: '704', name: 'Equipe 704', target: 690000, sellOut: 497810, positives: 104, positiveTarget: 140 },
-    { code: '705', name: 'Equipe 705', target: 620000, sellOut: 451280, positives: 96, positiveTarget: 130 },
-  ],
-  stockLines: [
-    { name: 'Creme Dental', cost: 578420.10, sale: 741870.30, transit: 126000, rule: 'A validar no cadastro 286' },
-    { name: 'Sabonetes', cost: 337800.75, sale: 432910.40, transit: 84000, rule: 'A validar no cadastro 286' },
-    { name: 'Hair', cost: 258340.62, sale: 331120.60, transit: 57600, rule: 'A validar no cadastro 286' },
-    { name: 'Esc + Enx + Fio', cost: 224790.20, sale: 288210.30, transit: 50400, rule: 'A validar no cadastro 286' },
-    { name: 'Limpeza', cost: 198440.55, sale: 254390.40, transit: 42600, rule: 'A validar no cadastro 286' },
-    { name: 'Outros', cost: 227148.50, sale: 292996.66, transit: 57800, rule: 'A validar no cadastro 286' },
-  ],
-  daily: seedDaily,
-  uploads: { sales: null, stock: null, targets: null, cost: null, transit: null, history: null },
+  periodYear: now.getFullYear(),
+  periodMonth: now.getMonth() + 1,
+  periodLabel: now.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }),
+  sellOut: 0,
+  billed: 0,
+  toInvoice: 0,
+  potentialPositives: 0,
+  stockCost: 0,
+  stockSale: 0,
+  stockTransit: 0,
+  stockUnits: 0,
+  stockBoxes: 0,
+  stockMatched: 0,
+  sellOutTarget: 0,
+  networkPoolTarget: 0,
+  industryTarget: 0,
+  industryPositiveTarget: 0,
+  networks: [],
+  sellers: [],
+  stockLines: [],
+  daily: Array.from({ length: new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() }, () => 0),
+  salesSellerActuals: [],
+  sellerTargets: [],
+  salesCustomers: [],
+  networkByCnpj: {},
+  historyByMonth: {},
+  stockItems: [],
+  financeByCode: {},
+  uploads: emptyUploads,
+  warnings: [],
 }
 
 function loadState(): AppState {
   try {
     const saved = localStorage.getItem(STORAGE_KEY)
     if (!saved) return initialState
-    return { ...initialState, ...JSON.parse(saved) } as AppState
+    return { ...initialState, ...JSON.parse(saved), uploads: { ...emptyUploads, ...JSON.parse(saved).uploads } } as AppState
   } catch {
     return initialState
   }
@@ -108,13 +146,38 @@ function Title({ kicker, title, subtitle }: { kicker: string; title: string; sub
   return <div className="title"><span>{kicker}</span><h2>{title}</h2>{subtitle && <p>{subtitle}</p>}</div>
 }
 
+function fileInfo(file: File, rows?: number, detail?: string): UploadInfo {
+  return { name: file.name, size: file.size, updatedAt: new Date().toISOString(), rows, detail }
+}
+
+function previousMonthKey(state: AppState) {
+  return `${state.periodYear - 1}-${String(state.periodMonth).padStart(2, '0')}`
+}
+
+function recalcState(current: AppState, patch: Partial<AppState>): AppState {
+  const next = { ...current, ...patch }
+  next.sellers = mergeSellers(next.sellerTargets, next.salesSellerActuals)
+  const stock = stockFinancial(next.stockItems, next.financeByCode)
+  next.stockLines = stock.lines
+  next.stockCost = stock.totalCost
+  next.stockSale = stock.totalSale
+  next.stockMatched = stock.matchedItems
+  next.networks = buildNetworks(
+    next.salesCustomers,
+    next.networkByCnpj,
+    next.historyByMonth[previousMonthKey(next)],
+    next.networkPoolTarget,
+  )
+  return next
+}
+
 function TargetFooter({ state, setState }: { state: AppState; setState: React.Dispatch<React.SetStateAction<AppState>> }) {
   const achievement = state.sellOutTarget > 0 ? state.sellOut / state.sellOutTarget : 0
   return (
     <section className="target-footer">
-      <div className="target-copy"><span>META SELL OUT • T&C</span><h3>Referência gerencial do mês</h3><p>Meta manual, separada das metas individuais importadas da Bússola.</p></div>
+      <div className="target-copy"><span>META SELL OUT • T&C</span><h3>Referência gerencial do mês</h3><p>Meta manual e independente da soma das metas dos vendedores da Bússola.</p></div>
       <div className="target-field"><label>Meta do mês</label><CurrencyInput value={state.sellOutTarget} onChange={(value) => setState(current => ({ ...current, sellOutTarget: value }))} /></div>
-      <div className="target-result"><strong>{percent.format(achievement)}</strong><span>atingido</span><div className="progress"><i style={{ width: `${Math.min(100, achievement * 100)}%` }} /></div></div>
+      <div className="target-result"><strong>{state.sellOutTarget > 0 ? percent.format(achievement) : '—'}</strong><span>atingido</span><div className="progress"><i style={{ width: `${Math.min(100, achievement * 100)}%` }} /></div></div>
     </section>
   )
 }
@@ -122,27 +185,121 @@ function TargetFooter({ state, setState }: { state: AppState; setState: React.Di
 function App() {
   const [page, setPage] = useState<Page>('resumo')
   const [state, setState] = useState<AppState>(loadState)
+  const [processing, setProcessing] = useState<string>('')
+  const [error, setError] = useState<string>('')
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+    } catch {
+      setError('A base processada ficou grande demais para o armazenamento local deste navegador. Se isso persistir, migraremos a persistência para IndexedDB.')
+    }
   }, [state])
 
   const networkTarget = useMemo(() => state.networks.reduce((sum, item) => sum + item.target, 0), [state.networks])
   const networkSellOut = useMemo(() => state.networks.reduce((sum, item) => sum + item.sellOut, 0), [state.networks])
-  const monthName = now.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+  const hasSales = Boolean(state.uploads.sales)
+
+  function addWarnings(current: AppState, source: string, warnings: string[]) {
+    const cleaned = current.warnings.filter(item => !item.startsWith(`${source}:`))
+    return [...cleaned, ...warnings.map(item => `${source}: ${item}`)]
+  }
+
+  async function processUpload(key: UploadKey, event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    if (!file) return
+    setProcessing(`Processando ${file.name}...`)
+    setError('')
+    try {
+      if (key === 'sales') {
+        const result = await parseSales(file)
+        setState(current => recalcState(current, {
+          periodYear: result.periodYear,
+          periodMonth: result.periodMonth,
+          periodLabel: result.periodLabel,
+          sellOut: result.sellOut,
+          billed: result.billed,
+          toInvoice: result.toInvoice,
+          potentialPositives: result.potentialPositives,
+          daily: result.daily,
+          salesSellerActuals: result.sellers,
+          salesCustomers: result.customers,
+          uploads: { ...current.uploads, sales: fileInfo(file, result.rows, `${money.format(result.sellOut)} no período`) },
+          warnings: addWarnings(current, '8022', result.warnings),
+        }))
+      } else if (key === 'targets') {
+        const result = await parseBussola(file)
+        setState(current => recalcState(current, {
+          sellerTargets: result.sellers,
+          industryTarget: result.industryTarget,
+          industryPositiveTarget: result.industryPositiveTarget,
+          uploads: { ...current.uploads, targets: fileInfo(file, result.rows, `${result.sellers.length} vendedores Colgate`) },
+          warnings: addWarnings(current, 'Bússola', result.warnings),
+        }))
+      } else if (key === 'premises') {
+        const result = await parsePremises(file)
+        setState(current => recalcState(current, {
+          networkByCnpj: result.networkByCnpj,
+          uploads: { ...current.uploads, premises: fileInfo(file, result.rows, `${result.networks} redes mapeadas`) },
+          warnings: addWarnings(current, 'Premissas', result.warnings),
+        }))
+      } else if (key === 'stock') {
+        const result = await parseStock(file)
+        setState(current => recalcState(current, {
+          stockItems: result.items,
+          stockUnits: result.totalUnits,
+          stockBoxes: result.totalBoxes,
+          uploads: { ...current.uploads, stock: fileInfo(file, result.rows, `${integer.format(result.totalUnits)} unidades`) },
+          warnings: addWarnings(current, '8013', result.warnings),
+        }))
+      } else if (key === 'catalog') {
+        const result = await parseCatalog(file)
+        setState(current => recalcState(current, {
+          financeByCode: result.financeByCode,
+          uploads: { ...current.uploads, catalog: fileInfo(file, result.rows, result.hasCost ? 'custo localizado' : 'sem coluna de custo') },
+          warnings: addWarnings(current, '286', result.warnings),
+        }))
+      } else if (key === 'history') {
+        const result = await parseHistory379(file)
+        setState(current => recalcState(current, {
+          historyByMonth: result.byMonth,
+          uploads: { ...current.uploads, history: fileInfo(file, result.rows, 'histórico 379 processado') },
+          warnings: addWarnings(current, '379', result.warnings),
+        }))
+      } else if (key === 'transit') {
+        setState(current => ({
+          ...current,
+          uploads: { ...current.uploads, transit: fileInfo(file, undefined, 'aguardando definição do layout') },
+          warnings: addWarnings(current, 'Trânsito', ['Arquivo registrado. O parser será configurado quando validarmos as colunas desse relatório.']),
+        }))
+      }
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Falha ao processar o arquivo.')
+    } finally {
+      setProcessing('')
+      event.target.value = ''
+    }
+  }
 
   function changeNetworkPool(value: number) {
     setState(current => {
-      const total = current.networks.reduce((sum, item) => sum + item.target, 0)
-      if (total <= 0) return current
-      return { ...current, networks: current.networks.map(item => ({ ...item, target: item.target * value / total })) }
+      const networks = current.networks.map(item => ({ ...item }))
+      const total = networks.reduce((sum, item) => sum + item.target, 0)
+      if (networks.length === 0) return { ...current, networkPoolTarget: value }
+      if (total > 0) networks.forEach(item => { item.target = item.target * value / total })
+      else {
+        const sales = networks.reduce((sum, item) => sum + item.sellOut, 0)
+        networks.forEach(item => { item.target = sales > 0 ? value * item.sellOut / sales : value / networks.length })
+      }
+      return { ...current, networkPoolTarget: value, networks }
     })
   }
 
   function changeNetworkTarget(index: number, requested: number) {
     setState(current => {
       const networks = current.networks.map(item => ({ ...item }))
-      const total = networks.reduce((sum, item) => sum + item.target, 0)
+      const total = current.networkPoolTarget
+      if (total <= 0 || !networks[index]) return current
       const old = networks[index].target
       const value = Math.max(0, Math.min(total, requested))
       const others = total - old
@@ -157,14 +314,8 @@ function App() {
     })
   }
 
-  function registerUpload(key: string, event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0]
-    if (!file) return
-    setState(current => ({ ...current, uploads: { ...current.uploads, [key]: { name: file.name, size: file.size, updatedAt: new Date().toISOString() } } }))
-  }
-
   function resetLocal() {
-    if (!window.confirm('Apagar a base local e voltar para a demonstração?')) return
+    if (!window.confirm('Apagar a base processada e todas as configurações salvas neste navegador?')) return
     localStorage.removeItem(STORAGE_KEY)
     setState(initialState)
   }
@@ -173,7 +324,7 @@ function App() {
     <div className="app">
       <header className="header">
         <div><span>MILÊNIO • INTELIGÊNCIA COMERCIAL</span><h1>Painel Sell Out</h1></div>
-        <div className="header-status"><b><i /> Base local ativa</b><strong>{monthName}</strong></div>
+        <div className="header-status"><b><i className={hasSales ? '' : 'off'} /> {hasSales ? 'Base real local ativa' : 'Aguardando 8022'}</b><strong>{state.periodLabel}</strong></div>
       </header>
 
       <nav className="tabs">
@@ -182,53 +333,56 @@ function App() {
         ))}
       </nav>
 
+      {(processing || error) && <div className={`global-message ${error ? 'error' : ''}`}>{error || processing}</div>}
+
       <main>
-        {page === 'resumo' && <Resumo state={state} setState={setState} monthName={monthName} />}
+        {page === 'resumo' && <Resumo state={state} setState={setState} />}
         {page === 'gerencial' && <Gerencial state={state} setState={setState} totalTarget={networkTarget} totalSellOut={networkSellOut} changePool={changeNetworkPool} changeTarget={changeNetworkTarget} />}
         {page === 'equipe' && <Equipe state={state} setState={setState} />}
         {page === 'estoque' && <Estoque state={state} />}
         {page === 'conferencia' && <Conferencia state={state} />}
-        {page === 'upload' && <Upload state={state} registerUpload={registerUpload} resetLocal={resetLocal} />}
+        {page === 'upload' && <Upload state={state} processUpload={processUpload} resetLocal={resetLocal} />}
       </main>
     </div>
   )
 }
 
-function Resumo({ state, setState, monthName }: { state: AppState; setState: React.Dispatch<React.SetStateAction<AppState>>; monthName: string }) {
-  const maxDaily = Math.max(...state.daily, 1)
-  const elapsed = Math.max(1, Math.min(now.getDate(), monthDays))
+function Resumo({ state, setState }: { state: AppState; setState: React.Dispatch<React.SetStateAction<AppState>> }) {
+  const maxDaily = Math.max(...state.daily.map(value => Math.abs(value)), 1)
+  const sameCurrentMonth = state.periodYear === now.getFullYear() && state.periodMonth === now.getMonth() + 1
+  const elapsed = sameCurrentMonth ? Math.max(1, now.getDate()) : Math.max(1, state.daily.filter(value => value !== 0).length)
   return (
     <>
       <section className="hero">
-        <div><span>VISÃO EXECUTIVA • {monthName.toUpperCase()}</span><h2>Venda, estoque e abastecimento.</h2><p>Leitura do mês com faturado, a faturar e disponibilidade separados.</p></div>
-        <div><small>Sell Out atual</small><strong>{money.format(state.sellOut)}</strong></div>
+        <div><span>VISÃO EXECUTIVA • {state.periodLabel.toUpperCase()}</span><h2>Venda, estoque e abastecimento.</h2><p>Valores reais processados localmente a partir dos arquivos carregados no painel.</p></div>
+        <div><small>Sell Out atual</small><strong>{state.uploads.sales ? money.format(state.sellOut) : '—'}</strong></div>
       </section>
 
       <section className="metrics five">
-        <Metric label="SELL OUT TOTAL" value={money.format(state.sellOut)} hint="Faturado + venda a faturar" tone="red" />
-        <Metric label="FATURADO" value={money.format(state.billed)} hint={`${percent.format(state.billed / Math.max(1, state.sellOut))} do Sell Out`} tone="navy" />
-        <Metric label="VENDA A FATURAR" value={money.format(state.toInvoice)} hint="Pedidos ainda não faturados" />
-        <Metric label="POSITIVAÇÃO POTENCIAL" value={integer.format(state.potentialPositives)} hint="Referência comercial" />
-        <Metric label="ESTOQUE AO CUSTO" value={money.format(state.stockCost)} hint="Posição disponível" />
+        <Metric label="SELL OUT TOTAL" value={state.uploads.sales ? money.format(state.sellOut) : '—'} hint="Faturado + venda a faturar do 8022" tone="red" />
+        <Metric label="FATURADO" value={state.uploads.sales ? money.format(state.billed) : '—'} hint={state.sellOut ? `${percent.format(state.billed / state.sellOut)} do Sell Out` : 'Status FATURADO do 8022'} tone="navy" />
+        <Metric label="VENDA A FATURAR" value={state.uploads.sales ? money.format(state.toInvoice) : '—'} hint="Status A FATURAR do 8022" />
+        <Metric label="POSITIVAÇÃO POTENCIAL" value={state.uploads.sales ? integer.format(state.potentialPositives) : '—'} hint="CNPJs únicos com venda faturada ou a faturar" />
+        <Metric label="ESTOQUE FÍSICO" value={state.uploads.stock ? `${integer.format(state.stockUnits)} un.` : '—'} hint="Quantidade disponível do 8013" />
       </section>
 
       <section className="split summary-split">
         <article className="panel chart-panel">
-          <Title kicker="MOVIMENTO DIÁRIO" title="Sell Out por dia" subtitle="Todos os dias do mês aparecem no eixo. Dias futuros ficam vazios, sem inventar venda." />
-          <div className="bars">
+          <Title kicker="MOVIMENTO DIÁRIO" title="Sell Out por dia" subtitle="O eixo mostra o mês inteiro. Dias futuros aparecem, mas sem valor inventado." />
+          {state.uploads.sales ? <div className="bars">
             {state.daily.map((value, index) => {
               const day = index + 1
-              const future = day > now.getDate()
-              return <div className={`bar-slot ${future ? 'future' : ''}`} key={day} title={`${day} • ${money.format(value)}`}><i style={{ height: `${value > 0 ? Math.max(5, value / maxDaily * 100) : 2}%` }} /><span>{day}</span></div>
+              const future = sameCurrentMonth && day > now.getDate()
+              return <div className={`bar-slot ${future ? 'future' : ''}`} key={day} title={`${day} • ${money.format(value)}`}><i style={{ height: `${value !== 0 ? Math.max(5, Math.abs(value) / maxDaily * 100) : 2}%` }} /><span>{day}</span></div>
             })}
-          </div>
+          </div> : <Empty text="Carregue o relatório 8022 na última aba para montar o movimento diário." />}
         </article>
         <article className="panel rhythm">
           <Title kicker="RITMO DO MÊS" title="Referência operacional" />
-          <div><span>Média por dia corrido</span><strong>{money.format(state.sellOut / elapsed)}</strong></div>
-          <div><span>Falta para a meta</span><strong>{money.format(Math.max(0, state.sellOutTarget - state.sellOut))}</strong></div>
-          <div><span>Progresso da meta</span><strong>{percent.format(state.sellOut / Math.max(1, state.sellOutTarget))}</strong></div>
-          <p className="note">O calendário oficial de dias úteis será ligado ao motor de dados na próxima etapa.</p>
+          <div><span>Média por dia com referência</span><strong>{state.uploads.sales ? money.format(state.sellOut / elapsed) : '—'}</strong></div>
+          <div><span>Falta para a meta T&C</span><strong>{state.sellOutTarget > 0 ? money.format(Math.max(0, state.sellOutTarget - state.sellOut)) : '—'}</strong></div>
+          <div><span>Progresso da meta T&C</span><strong>{state.sellOutTarget > 0 ? percent.format(state.sellOut / state.sellOutTarget) : '—'}</strong></div>
+          <p className="note">A meta T&C é manual. A meta da indústria abaixo vem da soma das metas Colgate dos vendedores na Bússola.</p>
         </article>
       </section>
       <TargetFooter state={state} setState={setState} />
@@ -239,32 +393,30 @@ function Resumo({ state, setState, monthName }: { state: AppState; setState: Rea
 function Gerencial({ state, setState, totalTarget, totalSellOut, changePool, changeTarget }: { state: AppState; setState: React.Dispatch<React.SetStateAction<AppState>>; totalTarget: number; totalSellOut: number; changePool: (value: number) => void; changeTarget: (index: number, value: number) => void }) {
   return (
     <>
-      <section className="page-head"><Title kicker="GERENCIAL" title="Redes estratégicas" subtitle="Meta, participação, Sell Out e comparativo histórico." /><div><span>Sell Out das redes</span><strong>{money.format(totalSellOut)}</strong></div></section>
+      <section className="page-head"><Title kicker="GERENCIAL" title="Redes estratégicas" subtitle="Vendas do 8022 ligadas ao CNPJ → rede da Base de Premissas Q3." /><div><span>Sell Out das redes mapeadas</span><strong>{state.networks.length ? money.format(totalSellOut) : '—'}</strong></div></section>
       <section className="split managerial-split">
         <article className="panel">
-          <div className="panel-toolbar"><div><span>REDES ESTRATÉGICAS</span><h3>Top redes • parcela do Sell Out T&C</h3></div><div className="pool"><label>Meta total das redes</label><CurrencyInput value={totalTarget} onChange={changePool} /><small>{percent.format(totalTarget / Math.max(1, state.sellOutTarget))} da meta T&C</small></div></div>
-          <div className="network-list">
+          <div className="panel-toolbar"><div><span>REDES ESTRATÉGICAS</span><h3>Participação, meta e realizado</h3></div><div className="pool"><label>Meta total das redes</label><CurrencyInput value={state.networkPoolTarget} onChange={changePool} /><small>Valor manual; a distribuição inicial segue a participação no Sell Out.</small></div></div>
+          {state.networks.length ? <div className="network-list">
             {state.networks.map((network, index) => {
-              const achievement = network.sellOut / Math.max(1, network.target)
+              const achievement = network.target > 0 ? network.sellOut / network.target : 0
+              const variation = network.previous !== 0 ? network.sellOut / network.previous - 1 : 0
               return <div className="network" key={network.name}>
-                <div className="network-name"><strong>{network.name}</strong><span>{percent.format(network.target / Math.max(1, totalTarget))} da meta das redes</span></div>
-                <div><span>Sell Out</span><strong>{money.format(network.sellOut)}</strong></div>
+                <div className="network-name"><strong>{network.name}</strong><span>{totalSellOut > 0 ? percent.format(network.sellOut / totalSellOut) : '—'} do Sell Out mapeado</span></div>
                 <div className="editable"><span>Meta</span><CurrencyInput value={network.target} onChange={(value) => changeTarget(index, value)} /></div>
-                <div><span>Atingimento</span><strong className={achievement >= 1 ? 'positive' : ''}>{percent.format(achievement)}</strong></div>
+                <div><span>Sell Out</span><strong>{money.format(network.sellOut)}</strong></div>
+                <div><span>Atingimento</span><strong>{network.target > 0 ? percent.format(achievement) : '—'}</strong></div>
                 <div className="mini-progress"><i style={{ width: `${Math.min(100, achievement * 100)}%` }} /></div>
+                {network.previous !== 0 && <small className={variation >= 0 ? 'positive network-variation' : 'negative network-variation'}>{variation >= 0 ? '+' : ''}{percent.format(variation)} vs. histórico</small>}
               </div>
             })}
-          </div>
-          <p className="note">Se uma meta de rede for alterada, o restante é redistribuído proporcionalmente para manter a meta total das redes.</p>
+          </div> : <Empty text="Para montar redes reais, carregue o 8022 e a Nova Base de Premissas Q3." />}
         </article>
         <article className="panel">
-          <Title kicker="COMPARATIVO HISTÓRICO" title="Atual x referência anterior" />
-          <div className="history">
-            {state.networks.map(network => {
-              const growth = network.sellOut / Math.max(1, network.previous) - 1
-              return <div key={network.name}><span>{network.name}</span><strong>{money.format(network.sellOut)}</strong><b className={growth >= 0 ? 'positive' : 'negative'}>{growth >= 0 ? '+' : ''}{percent.format(growth)}</b></div>
-            })}
-          </div>
+          <Title kicker="COMPARATIVO HISTÓRICO" title="Mesmo mês de 2025" subtitle="O 379 25 é cruzado pelo CNPJ com a rede atual. A regra de operações ainda aparece como pendência de validação." />
+          {state.networks.some(item => item.previous !== 0) ? <div className="history">
+            {state.networks.slice(0, 8).map(network => <div key={network.name}><span>{network.name}</span><strong>{money.format(network.previous)}</strong><b>{network.previous ? percent.format(network.sellOut / network.previous - 1) : '—'}</b></div>)}
+          </div> : <Empty text="Carregue o 379 25 para habilitar o comparativo histórico." />}
         </article>
       </section>
       <TargetFooter state={state} setState={setState} />
@@ -273,87 +425,89 @@ function Gerencial({ state, setState, totalTarget, totalSellOut, changePool, cha
 }
 
 function Equipe({ state, setState }: { state: AppState; setState: React.Dispatch<React.SetStateAction<AppState>> }) {
-  const sellerTarget = state.sellers.reduce((sum, seller) => sum + seller.target, 0)
+  const sellerTargetTotal = state.sellers.reduce((sum, seller) => sum + seller.target, 0)
   const sellerSellOut = state.sellers.reduce((sum, seller) => sum + seller.sellOut, 0)
-  const positives = state.sellers.reduce((sum, seller) => sum + seller.positives, 0)
-  const positiveTarget = state.sellers.reduce((sum, seller) => sum + seller.positiveTarget, 0)
   return (
     <>
-      <section className="page-head dark"><Title kicker="EQUIPE COMERCIAL" title="Execução por vendedor" subtitle="A operação vem primeiro; as metas consolidadas fecham a página." /><div><span>Sell Out equipe</span><strong>{money.format(sellerSellOut)}</strong></div></section>
-      <section className="metrics three"><Metric label="VENDEDORES" value={integer.format(state.sellers.length)} tone="navy" /><Metric label="POSITIVAÇÕES" value={integer.format(positives)} hint={`${integer.format(positiveTarget)} de meta`} tone="red" /><Metric label="ATINGIMENTO DA EQUIPE" value={percent.format(sellerSellOut / Math.max(1, sellerTarget))} hint={money.format(sellerTarget)} /></section>
-      <article className="panel table-panel">
-        <div className="table-title"><div><span>DESEMPENHO INDIVIDUAL</span><h3>Vendedores</h3></div><b>BASE DEMO • substituir pela Bússola</b></div>
-        <div className="table-wrap"><table><thead><tr><th>Setor</th><th>Vendedor</th><th>Meta Bússola</th><th>Sell Out</th><th>Atingimento</th><th>Positivação</th><th>Meta Pos.</th><th>Cobertura</th></tr></thead><tbody>
-          {state.sellers.map(seller => {
-            const achievement = seller.sellOut / Math.max(1, seller.target)
-            return <tr key={seller.code}><td><strong>{seller.code}</strong></td><td>{seller.name}</td><td>{money.format(seller.target)}</td><td><strong>{money.format(seller.sellOut)}</strong></td><td><span className={`pill ${achievement >= 1 ? 'ok' : achievement >= .8 ? 'mid' : ''}`}>{percent.format(achievement)}</span></td><td>{integer.format(seller.positives)}</td><td>{integer.format(seller.positiveTarget)}</td><td>{percent.format(seller.positives / Math.max(1, seller.positiveTarget))}</td></tr>
-          })}
-        </tbody></table></div>
-      </article>
-      <section className="industry-footer"><div><span>METAS COLGATE • BÚSSOLA</span><h3>Consolidação das metas dos vendedores</h3><p>A soma das metas individuais forma a meta da indústria. Ela não substitui a meta Sell Out T&C.</p></div><Metric label="META INDÚSTRIA" value={money.format(sellerTarget)} tone="red" /><Metric label="META POSITIVAÇÃO" value={integer.format(positiveTarget)} tone="navy" /></section>
+      <section className="page-head dark"><Title kicker="EQUIPE COMERCIAL" title="Realizado por vendedor" subtitle="Realizado do 8022 cruzado com as metas Colgate da Bússola pelo código/setor." /><div><span>Sell Out identificado por vendedor</span><strong>{state.uploads.sales ? money.format(sellerSellOut) : '—'}</strong></div></section>
+      <section className="table-panel panel">
+        <div className="table-title"><div><span>VENDEDORES</span><h3>Meta, realizado e positivação</h3></div><b>{state.sellers.length ? `${state.sellers.length} SETORES` : 'SEM BASE'}</b></div>
+        {state.sellers.length ? <div className="table-scroll"><table><thead><tr><th>Setor</th><th>Vendedor</th><th>Meta Bússola</th><th>Sell Out</th><th>Ating.</th><th>Positivação</th><th>Meta Pos.</th><th>Ating. Pos.</th></tr></thead><tbody>
+          {state.sellers.map(seller => <tr key={seller.code}><td><b>{seller.code}</b></td><td>{seller.name}</td><td>{seller.target ? money.format(seller.target) : '—'}</td><td>{money.format(seller.sellOut)}</td><td>{seller.target ? percent.format(seller.sellOut / seller.target) : '—'}</td><td>{integer.format(seller.positives)}</td><td>{seller.positiveTarget ? integer.format(seller.positiveTarget) : '—'}</td><td>{seller.positiveTarget ? percent.format(seller.positives / seller.positiveTarget) : '—'}</td></tr>)}
+        </tbody></table></div> : <Empty text="Carregue a Bússola e o 8022 para cruzar metas e realizado por vendedor." />}
+      </section>
+      <section className="industry-footer"><div><span>METAS COLGATE • BÚSSOLA</span><h3>Fechamento de referência da equipe</h3><p>Esses valores não são a meta T&C manual.</p></div><div><span>Meta dos vendedores</span><strong>{state.uploads.targets ? money.format(state.industryTarget || sellerTargetTotal) : '—'}</strong></div><div><span>Meta positivação</span><strong>{state.uploads.targets ? integer.format(state.industryPositiveTarget) : '—'}</strong></div></section>
       <TargetFooter state={state} setState={setState} />
     </>
   )
 }
 
 function Estoque({ state }: { state: AppState }) {
+  const financialReady = state.stockMatched > 0
   return (
     <>
-      <section className="page-head"><Title kicker="ESTOQUE" title="Posição financeira e abastecimento" subtitle="Custo, trânsito e preço de venda separados." /><div><span>Posição + trânsito</span><strong>{money.format(state.stockCost + state.stockTransit)}</strong></div></section>
-      <section className="metrics four"><Metric label="ESTOQUE ATUAL AO CUSTO" value={money.format(state.stockCost)} tone="navy" /><Metric label="ABASTECIMENTO EM TRÂNSITO" value={money.format(state.stockTransit)} tone="red" /><Metric label="POSIÇÃO AO CUSTO + TRÂNSITO" value={money.format(state.stockCost + state.stockTransit)} /><Metric label="ESTOQUE A PREÇO DE VENDA" value={money.format(state.stockSale)} /></section>
-      <article className="panel table-panel">
-        <div className="table-title"><div><span>POSIÇÃO FINANCEIRA POR LINHA</span><h3>Abertura do estoque</h3></div><b className="warning">CLASSIFICAÇÃO A VALIDAR</b></div>
-        <p className="stock-warning">Os nomes das linhas reproduzem a estrutura visual que já tínhamos, mas <strong>não são considerados regra oficial</strong>. Antes de usar essa abertura como dado definitivo, vamos ligar cada SKU ao campo correto do cadastro 286.</p>
-        <div className="table-wrap"><table><thead><tr><th>Linha</th><th>Estoque custo</th><th>Em trânsito</th><th>Custo + trânsito</th><th>Preço de venda</th><th>Regra / origem</th></tr></thead><tbody>
-          {state.stockLines.map(line => <tr key={line.name}><td><strong>{line.name}</strong></td><td>{money.format(line.cost)}</td><td>{money.format(line.transit)}</td><td>{money.format(line.cost + line.transit)}</td><td>{money.format(line.sale)}</td><td><span className="rule">{line.rule}</span></td></tr>)}
-        </tbody></table></div>
-      </article>
+      <section className="page-head"><Title kicker="ESTOQUE" title="Posição física e financeira" subtitle="O 8013 fornece o físico. O financeiro só é mostrado quando um código do estoque encontra custo/preço no cadastro." /><div><span>Itens com vínculo financeiro</span><strong>{state.stockItems.length ? `${integer.format(state.stockMatched)} / ${integer.format(state.stockItems.length)}` : '—'}</strong></div></section>
+      <section className="metrics four">
+        <Metric label="ESTOQUE EM UNIDADES" value={state.uploads.stock ? integer.format(state.stockUnits) : '—'} hint="8013" tone="navy" />
+        <Metric label="ESTOQUE EM CAIXAS" value={state.uploads.stock ? decimal.format(state.stockBoxes) : '—'} hint="8013" />
+        <Metric label="ESTOQUE AO CUSTO" value={financialReady ? money.format(state.stockCost) : '—'} hint={financialReady ? 'Itens casados com fonte financeira' : 'Fonte de custo não localizada no 286 enviado'} tone="red" />
+        <Metric label="ESTOQUE A PREÇO DE VENDA" value={financialReady && state.stockSale ? money.format(state.stockSale) : '—'} hint="Somente quando houver preço de venda reconhecido" />
+      </section>
+      <section className="table-panel panel">
+        <div className="table-title"><div><span>POSIÇÃO POR LINHA</span><h3>Classificação auditável</h3></div><b>REGRA PROVISÓRIA VISÍVEL</b></div>
+        {state.stockLines.length ? <div className="table-scroll"><table><thead><tr><th>Linha</th><th>Unidades</th><th>Caixas</th><th>Custo</th><th>Preço venda</th><th>Itens casados</th><th>Regra usada</th></tr></thead><tbody>
+          {state.stockLines.map(line => <tr key={line.name}><td><b>{line.name}</b></td><td>{integer.format(line.units)}</td><td>{decimal.format(line.boxes)}</td><td>{line.matched ? money.format(line.cost) : '—'}</td><td>{line.matched && line.sale ? money.format(line.sale) : '—'}</td><td>{line.matched} / {line.total}</td><td className="rule-cell">{line.rule}</td></tr>)}
+        </tbody></table></div> : <Empty text="Carregue o estoque 8013 para montar a posição física." />}
+      </section>
+      <p className="note stock-note">A classificação por linha não está sendo tratada como oficial: o painel mostra exatamente a regra aplicada em cada grupo para podermos substituí-la por um campo definitivo quando você confirmar a origem correta.</p>
     </>
   )
 }
 
 function Conferencia({ state }: { state: AppState }) {
-  const checks: [string, boolean][] = [
-    ['Sell Out fecha com faturado + a faturar', Math.abs(state.sellOut - state.billed - state.toInvoice) < 0.02],
-    ['Meta Sell Out T&C preenchida', state.sellOutTarget > 0],
-    ['Metas individuais disponíveis', state.sellers.length > 0 && state.sellers.every(seller => seller.target > 0)],
-    ['Classificação oficial de linhas de estoque', state.stockLines.every(line => !line.rule.toLowerCase().includes('validar'))],
-  ]
+  const loaded = Object.entries(state.uploads).filter(([, info]) => info)
   return (
     <>
-      <section className="page-head"><Title kicker="CONFERÊNCIA" title="Rastreabilidade antes da leitura" subtitle="Pendências de base ou regra ficam visíveis; não são mascaradas." /></section>
-      <section className="audit-grid">{checks.map(([label, ok]) => <article className={ok ? 'pass' : 'pending'} key={label}><b>{ok ? '✓' : '!'}</b><div><strong>{label}</strong><span>{ok ? 'Conferido nesta base' : 'Pendente de validação'}</span></div></article>)}</section>
-      <article className="panel"><Title kicker="FONTES" title="Arquivos vinculados neste navegador" /><div className="sources">{Object.entries(state.uploads).map(([key, info]) => <div key={key}><strong>{sourceLabel(key)}</strong>{info ? <><span>{info.name}</span><small>{new Date(info.updatedAt).toLocaleString('pt-BR')}</small></> : <span className="muted">Ainda não carregado</span>}</div>)}</div></article>
-    </>
-  )
-}
-
-function sourceLabel(key: string) {
-  const labels: Record<string, string> = { sales: 'Vendas • 8022', stock: 'Estoque físico • 8013', targets: 'Metas • Bússola', cost: 'Custo • Cadastro 286', transit: 'Em trânsito', history: 'Histórico anterior' }
-  return labels[key] ?? key
-}
-
-function Upload({ state, registerUpload, resetLocal }: { state: AppState; registerUpload: (key: string, event: ChangeEvent<HTMLInputElement>) => void; resetLocal: () => void }) {
-  const cards = [
-    ['sales', 'VENDAS • RELATÓRIO 8022', 'Base de faturamento e movimento comercial'],
-    ['stock', 'ESTOQUE FÍSICO • RELATÓRIO 8013', 'Saldo físico disponível'],
-    ['targets', 'METAS • BÚSSOLA COLGATE', 'Metas individuais e de positivação'],
-    ['cost', 'CUSTO • CADASTRO 286', 'Custo e classificação oficial dos produtos'],
-    ['transit', 'COLGATE — MILÊNIO • EM TRÂNSITO', 'Abastecimento comprado ainda não recebido'],
-    ['history', 'HISTÓRICO DO SISTEMA ANTERIOR', 'Referência histórica para comparativos'],
-  ]
-  return (
-    <>
-      <section className="upload-hero"><span>CENTRAL DE DADOS</span><h2>Venda, estoque e abastecimento.</h2><p>O front-end não envia estes arquivos para um servidor. Configurações e dados processados são preservados localmente para continuar após F5.</p></section>
-      <section className="upload-grid">
-        {cards.map(([key, title, description]) => {
-          const info = state.uploads[key]
-          return <label className="upload-card" key={key}><b>↥</b><div><span>{title}</span><h3>{info ? info.name : 'Selecionar arquivo'}</h3><p>{description}</p>{info && <small>Registrado em {new Date(info.updatedAt).toLocaleString('pt-BR')} • {integer.format(info.size / 1024)} KB</small>}</div><input type="file" accept=".xlsx,.xls,.csv,.txt" onChange={(event) => registerUpload(key, event)} /></label>
-        })}
+      <section className="page-head"><Title kicker="CONFERÊNCIA" title="Fontes e pendências" subtitle="Tudo o que foi processado e qualquer regra ainda não validada aparecem aqui." /><div><span>Fontes carregadas</span><strong>{loaded.length} / {Object.keys(state.uploads).length}</strong></div></section>
+      <section className="split">
+        <article className="panel"><Title kicker="BASE LOCAL" title="Arquivos processados" />
+          <div className="source-list">{Object.entries(state.uploads).map(([key, info]) => <div key={key}><span>{sourceLabel(key as UploadKey)}</span><strong>{info?.name ?? 'Não carregado'}</strong><small>{info?.detail ?? ''}</small></div>)}</div>
+        </article>
+        <article className="panel"><Title kicker="PENDÊNCIAS" title="Regras que ainda exigem validação" />
+          {state.warnings.length ? <ul className="warning-list">{state.warnings.map((warning, index) => <li key={`${warning}-${index}`}>{warning}</li>)}</ul> : <Empty text="Nenhuma pendência registrada." />}
+        </article>
       </section>
-      <section className="storage"><div><span>PERSISTÊNCIA LOCAL</span><h3>A última base válida permanece neste navegador</h3><p>Nesta reconstrução inicial os arquivos são registrados e o estado do painel já persiste. Os parsers reais serão conectados aos relatórios na etapa seguinte.</p></div><button onClick={resetLocal}>Limpar base local</button></section>
     </>
   )
+}
+
+function Upload({ state, processUpload, resetLocal }: { state: AppState; processUpload: (key: UploadKey, event: ChangeEvent<HTMLInputElement>) => Promise<void>; resetLocal: () => void }) {
+  const cards: { key: UploadKey; title: string; subtitle: string; accept: string }[] = [
+    { key: 'sales', title: 'VENDAS • RELATÓRIO 8022', subtitle: 'Faturado, a faturar, vendedor, cliente e movimento diário.', accept: '.xls,.xlsx' },
+    { key: 'stock', title: 'ESTOQUE FÍSICO • RELATÓRIO 8013', subtitle: 'Unidades, caixas, descrição e categoria.', accept: '.xls,.xlsx' },
+    { key: 'targets', title: 'METAS • BÚSSOLA COLGATE', subtitle: 'Aba Metas filtrada para a indústria Colgate.', accept: '.xlsx,.xls' },
+    { key: 'catalog', title: 'CADASTRO DE ITENS • 286', subtitle: 'Usado para procurar código, custo e preço quando existirem.', accept: '.xls,.xlsx' },
+    { key: 'premises', title: 'BASE DE PREMISSAS • Q3', subtitle: 'Vínculo de CNPJ para rede estratégica.', accept: '.xlsx,.xls' },
+    { key: 'history', title: 'HISTÓRICO • 379 2025', subtitle: 'Comparativo do mesmo mês do ano anterior.', accept: '.txt' },
+    { key: 'transit', title: 'COLGATE → MILÊNIO • EM TRÂNSITO', subtitle: 'Fonte opcional; layout ainda será validado.', accept: '.xls,.xlsx,.csv,.txt' },
+  ]
+  return (
+    <>
+      <section className="upload-hero"><span>ENTRADA DE DADOS</span><h2>Atualize a base sem perder o painel.</h2><p>Os arquivos são processados no próprio navegador. Eles não são enviados para o GitHub nem para um servidor do painel. O que fica salvo localmente são os resultados processados necessários para restaurar a tela após F5.</p></section>
+      <section className="upload-grid">
+        {cards.map(card => <label className="upload-card" key={card.key}><div><span>{card.title}</span><p>{card.subtitle}</p></div><input type="file" accept={card.accept} onChange={(event) => void processUpload(card.key, event)} /><strong>{state.uploads[card.key]?.name ?? 'Selecionar arquivo'}</strong><small>{state.uploads[card.key]?.detail ?? 'Nenhum arquivo processado'}</small></label>)}
+      </section>
+      <section className="storage"><div><span>PERSISTÊNCIA LOCAL</span><h3>Última base válida preservada no navegador</h3><p>Atualizar a página não apaga os resultados processados nem as metas manuais.</p></div><button onClick={resetLocal}>Limpar base local</button></section>
+    </>
+  )
+}
+
+function Empty({ text }: { text: string }) {
+  return <div className="empty-state">{text}</div>
+}
+
+function sourceLabel(key: UploadKey) {
+  return ({ sales: '8022 • Vendas', stock: '8013 • Estoque', targets: 'Bússola • Metas', catalog: '286 • Cadastro', premises: 'Premissas Q3 • Redes', history: '379 2025 • Histórico', transit: 'Em trânsito' })[key]
 }
 
 export default App
