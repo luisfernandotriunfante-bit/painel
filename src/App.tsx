@@ -2,16 +2,18 @@ import { ChangeEvent, useEffect, useMemo, useState } from 'react'
 import {
   buildNetworks,
   CatalogFinance,
-  cleanId,
   CustomerSales,
   HistoryResult,
   mergeSellers,
   parseBussola,
   parseCatalog,
   parseHistory379,
+  parsePosition105,
   parsePremises,
+  parseRcas,
   parseSales,
   parseStock,
+  RcaEntry,
   SellerSales,
   SellerTarget,
   StockItem,
@@ -50,15 +52,17 @@ type AppState = {
   salesSellerActuals: SellerSales[]
   sellerTargets: SellerTarget[]
   salesCustomers: CustomerSales[]
+  rcaByOldCode: Record<string, RcaEntry>
   networkByCnpj: Record<string, string>
   historyByMonth: HistoryResult['byMonth']
   stockItems: StockItem[]
-  financeByCode: Record<string, CatalogFinance>
+  catalogFinanceByCode: Record<string, CatalogFinance>
+  positionFinanceByCode: Record<string, CatalogFinance>
   uploads: Record<UploadKey, UploadInfo>
   warnings: string[]
 }
 
-const STORAGE_KEY = 'painel-sell-out-milenio:v2'
+const STORAGE_KEY = 'painel-sell-out-milenio:v3'
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2 })
 const integer = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 })
 const decimal = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })
@@ -69,6 +73,8 @@ const emptyUploads: Record<UploadKey, UploadInfo> = {
   sales: null,
   stock: null,
   targets: null,
+  rcas: null,
+  position: null,
   catalog: null,
   premises: null,
   history: null,
@@ -100,10 +106,12 @@ const initialState: AppState = {
   salesSellerActuals: [],
   sellerTargets: [],
   salesCustomers: [],
+  rcaByOldCode: {},
   networkByCnpj: {},
   historyByMonth: {},
   stockItems: [],
-  financeByCode: {},
+  catalogFinanceByCode: {},
+  positionFinanceByCode: {},
   uploads: emptyUploads,
   warnings: [],
 }
@@ -112,7 +120,8 @@ function loadState(): AppState {
   try {
     const saved = localStorage.getItem(STORAGE_KEY)
     if (!saved) return initialState
-    return { ...initialState, ...JSON.parse(saved), uploads: { ...emptyUploads, ...JSON.parse(saved).uploads } } as AppState
+    const parsed = JSON.parse(saved)
+    return { ...initialState, ...parsed, uploads: { ...emptyUploads, ...parsed.uploads } } as AppState
   } catch {
     return initialState
   }
@@ -156,8 +165,9 @@ function previousMonthKey(state: AppState) {
 
 function recalcState(current: AppState, patch: Partial<AppState>): AppState {
   const next = { ...current, ...patch }
-  next.sellers = mergeSellers(next.sellerTargets, next.salesSellerActuals)
-  const stock = stockFinancial(next.stockItems, next.financeByCode)
+  next.sellers = mergeSellers(next.sellerTargets, next.salesSellerActuals, next.rcaByOldCode)
+  const activeFinance = Object.keys(next.positionFinanceByCode).length ? next.positionFinanceByCode : next.catalogFinanceByCode
+  const stock = stockFinancial(next.stockItems, activeFinance)
   next.stockLines = stock.lines
   next.stockCost = stock.totalCost
   next.stockSale = stock.totalSale
@@ -233,8 +243,15 @@ function App() {
           sellerTargets: result.sellers,
           industryTarget: result.industryTarget,
           industryPositiveTarget: result.industryPositiveTarget,
-          uploads: { ...current.uploads, targets: fileInfo(file, result.rows, `${result.sellers.length} vendedores Colgate`) },
+          uploads: { ...current.uploads, targets: fileInfo(file, result.rows, `${result.sellers.length} linhas Colgate`) },
           warnings: addWarnings(current, 'Bússola', result.warnings),
+        }))
+      } else if (key === 'rcas') {
+        const result = await parseRcas(file)
+        setState(current => recalcState(current, {
+          rcaByOldCode: result.byOldCode,
+          uploads: { ...current.uploads, rcas: fileInfo(file, result.rows, `${result.rows} RCAs atuais mapeados`) },
+          warnings: addWarnings(current, 'RCAs', result.warnings),
         }))
       } else if (key === 'premises') {
         const result = await parsePremises(file)
@@ -252,11 +269,18 @@ function App() {
           uploads: { ...current.uploads, stock: fileInfo(file, result.rows, `${integer.format(result.totalUnits)} unidades`) },
           warnings: addWarnings(current, '8013', result.warnings),
         }))
+      } else if (key === 'position') {
+        const result = await parsePosition105(file)
+        setState(current => recalcState(current, {
+          positionFinanceByCode: result.financeByCode,
+          uploads: { ...current.uploads, position: fileInfo(file, result.rows, `${result.rows} itens com posição financeira`) },
+          warnings: addWarnings(current, '105', result.warnings),
+        }))
       } else if (key === 'catalog') {
         const result = await parseCatalog(file)
         setState(current => recalcState(current, {
-          financeByCode: result.financeByCode,
-          uploads: { ...current.uploads, catalog: fileInfo(file, result.rows, result.hasCost ? 'custo localizado' : 'sem coluna de custo') },
+          catalogFinanceByCode: result.financeByCode,
+          uploads: { ...current.uploads, catalog: fileInfo(file, result.rows, result.hasCost ? 'custo localizado' : 'cadastro auxiliar, sem custo reconhecido') },
           warnings: addWarnings(current, '286', result.warnings),
         }))
       } else if (key === 'history') {
@@ -359,10 +383,10 @@ function Resumo({ state, setState }: { state: AppState; setState: React.Dispatch
       </section>
 
       <section className="metrics five">
-        <Metric label="SELL OUT TOTAL" value={state.uploads.sales ? money.format(state.sellOut) : '—'} hint="Faturado + venda a faturar do 8022" tone="red" />
-        <Metric label="FATURADO" value={state.uploads.sales ? money.format(state.billed) : '—'} hint={state.sellOut ? `${percent.format(state.billed / state.sellOut)} do Sell Out` : 'Status FATURADO do 8022'} tone="navy" />
+        <Metric label="SELL OUT TOTAL" value={state.uploads.sales ? money.format(state.sellOut) : '—'} hint="VENDA + A FATURAR do 8022" tone="red" />
+        <Metric label="FATURADO" value={state.uploads.sales ? money.format(state.billed) : '—'} hint={state.sellOut ? `${percent.format(state.billed / state.sellOut)} do Sell Out` : 'Status VENDA do 8022'} tone="navy" />
         <Metric label="VENDA A FATURAR" value={state.uploads.sales ? money.format(state.toInvoice) : '—'} hint="Status A FATURAR do 8022" />
-        <Metric label="POSITIVAÇÃO POTENCIAL" value={state.uploads.sales ? integer.format(state.potentialPositives) : '—'} hint="CNPJs únicos com venda faturada ou a faturar" />
+        <Metric label="POSITIVAÇÃO POTENCIAL" value={state.uploads.sales ? integer.format(state.potentialPositives) : '—'} hint="CNPJs únicos com VENDA ou A FATURAR" />
         <Metric label="ESTOQUE FÍSICO" value={state.uploads.stock ? `${integer.format(state.stockUnits)} un.` : '—'} hint="Quantidade disponível do 8013" />
       </section>
 
@@ -382,7 +406,7 @@ function Resumo({ state, setState }: { state: AppState; setState: React.Dispatch
           <div><span>Média por dia com referência</span><strong>{state.uploads.sales ? money.format(state.sellOut / elapsed) : '—'}</strong></div>
           <div><span>Falta para a meta T&C</span><strong>{state.sellOutTarget > 0 ? money.format(Math.max(0, state.sellOutTarget - state.sellOut)) : '—'}</strong></div>
           <div><span>Progresso da meta T&C</span><strong>{state.sellOutTarget > 0 ? percent.format(state.sellOut / state.sellOutTarget) : '—'}</strong></div>
-          <p className="note">A meta T&C é manual. A meta da indústria abaixo vem da soma das metas Colgate dos vendedores na Bússola.</p>
+          <p className="note">A meta T&C é manual. A meta da indústria vem da soma das metas Colgate informadas na Bússola.</p>
         </article>
       </section>
       <TargetFooter state={state} setState={setState} />
@@ -393,7 +417,7 @@ function Resumo({ state, setState }: { state: AppState; setState: React.Dispatch
 function Gerencial({ state, setState, totalTarget, totalSellOut, changePool, changeTarget }: { state: AppState; setState: React.Dispatch<React.SetStateAction<AppState>>; totalTarget: number; totalSellOut: number; changePool: (value: number) => void; changeTarget: (index: number, value: number) => void }) {
   return (
     <>
-      <section className="page-head"><Title kicker="GERENCIAL" title="Redes estratégicas" subtitle="Vendas do 8022 ligadas ao CNPJ → rede da Base de Premissas Q3." /><div><span>Sell Out das redes mapeadas</span><strong>{state.networks.length ? money.format(totalSellOut) : '—'}</strong></div></section>
+      <section className="page-head"><Title kicker="GERENCIAL" title="Redes estratégicas" subtitle="ABV, MEGA, PIRES, NOVA ESTRELA e PORTAL/PRINCESA, cruzadas pelo CNPJ da Base de Premissas Q3." /><div><span>Sell Out das redes estratégicas</span><strong>{state.uploads.sales && state.uploads.premises ? money.format(totalSellOut) : '—'}</strong></div></section>
       <section className="split managerial-split">
         <article className="panel">
           <div className="panel-toolbar"><div><span>REDES ESTRATÉGICAS</span><h3>Participação, meta e realizado</h3></div><div className="pool"><label>Meta total das redes</label><CurrencyInput value={state.networkPoolTarget} onChange={changePool} /><small>Valor manual; a distribuição inicial segue a participação no Sell Out.</small></div></div>
@@ -402,7 +426,7 @@ function Gerencial({ state, setState, totalTarget, totalSellOut, changePool, cha
               const achievement = network.target > 0 ? network.sellOut / network.target : 0
               const variation = network.previous !== 0 ? network.sellOut / network.previous - 1 : 0
               return <div className="network" key={network.name}>
-                <div className="network-name"><strong>{network.name}</strong><span>{totalSellOut > 0 ? percent.format(network.sellOut / totalSellOut) : '—'} do Sell Out mapeado</span></div>
+                <div className="network-name"><strong>{network.name}</strong><span>{totalSellOut > 0 ? percent.format(network.sellOut / totalSellOut) : '—'} do Sell Out estratégico</span></div>
                 <div className="editable"><span>Meta</span><CurrencyInput value={network.target} onChange={(value) => changeTarget(index, value)} /></div>
                 <div><span>Sell Out</span><strong>{money.format(network.sellOut)}</strong></div>
                 <div><span>Atingimento</span><strong>{network.target > 0 ? percent.format(achievement) : '—'}</strong></div>
@@ -410,12 +434,12 @@ function Gerencial({ state, setState, totalTarget, totalSellOut, changePool, cha
                 {network.previous !== 0 && <small className={variation >= 0 ? 'positive network-variation' : 'negative network-variation'}>{variation >= 0 ? '+' : ''}{percent.format(variation)} vs. histórico</small>}
               </div>
             })}
-          </div> : <Empty text="Para montar redes reais, carregue o 8022 e a Nova Base de Premissas Q3." />}
+          </div> : <Empty text="Carregue o 8022 e a Base de Premissas Q3 para montar as redes estratégicas." />}
         </article>
         <article className="panel">
-          <Title kicker="COMPARATIVO HISTÓRICO" title="Mesmo mês de 2025" subtitle="O 379 25 é cruzado pelo CNPJ com a rede atual. A regra de operações ainda aparece como pendência de validação." />
+          <Title kicker="COMPARATIVO HISTÓRICO" title="Mesmo mês de 2025" subtitle="O 379 25 é cruzado pelo CNPJ com a rede atual. A regra de operações continua visível como pendência até a validação final." />
           {state.networks.some(item => item.previous !== 0) ? <div className="history">
-            {state.networks.slice(0, 8).map(network => <div key={network.name}><span>{network.name}</span><strong>{money.format(network.previous)}</strong><b>{network.previous ? percent.format(network.sellOut / network.previous - 1) : '—'}</b></div>)}
+            {state.networks.map(network => <div key={network.name}><span>{network.name}</span><strong>{money.format(network.previous)}</strong><b>{network.previous ? percent.format(network.sellOut / network.previous - 1) : '—'}</b></div>)}
           </div> : <Empty text="Carregue o 379 25 para habilitar o comparativo histórico." />}
         </article>
       </section>
@@ -429,14 +453,14 @@ function Equipe({ state, setState }: { state: AppState; setState: React.Dispatch
   const sellerSellOut = state.sellers.reduce((sum, seller) => sum + seller.sellOut, 0)
   return (
     <>
-      <section className="page-head dark"><Title kicker="EQUIPE COMERCIAL" title="Realizado por vendedor" subtitle="Realizado do 8022 cruzado com as metas Colgate da Bússola pelo código/setor." /><div><span>Sell Out identificado por vendedor</span><strong>{state.uploads.sales ? money.format(sellerSellOut) : '—'}</strong></div></section>
+      <section className="page-head dark"><Title kicker="EQUIPE COMERCIAL" title="Realizado por RCA atual" subtitle="O NOVOS RCAS faz o de/para do setor antigo da Bússola/8022 para o código atual do RCA." /><div><span>Sell Out identificado nos RCAs atuais</span><strong>{state.uploads.sales ? money.format(sellerSellOut) : '—'}</strong></div></section>
       <section className="table-panel panel">
-        <div className="table-title"><div><span>VENDEDORES</span><h3>Meta, realizado e positivação</h3></div><b>{state.sellers.length ? `${state.sellers.length} SETORES` : 'SEM BASE'}</b></div>
-        {state.sellers.length ? <div className="table-scroll"><table><thead><tr><th>Setor</th><th>Vendedor</th><th>Meta Bússola</th><th>Sell Out</th><th>Ating.</th><th>Positivação</th><th>Meta Pos.</th><th>Ating. Pos.</th></tr></thead><tbody>
+        <div className="table-title"><div><span>RCAS</span><h3>Meta, realizado e positivação</h3></div><b>{state.sellers.length ? `${state.sellers.length} RCAS` : 'SEM BASE'}</b></div>
+        {state.sellers.length ? <div className="table-scroll"><table><thead><tr><th>RCA atual</th><th>Vendedor</th><th>Meta Bússola</th><th>Sell Out</th><th>Ating.</th><th>Positivação</th><th>Meta Pos.</th><th>Ating. Pos.</th></tr></thead><tbody>
           {state.sellers.map(seller => <tr key={seller.code}><td><b>{seller.code}</b></td><td>{seller.name}</td><td>{seller.target ? money.format(seller.target) : '—'}</td><td>{money.format(seller.sellOut)}</td><td>{seller.target ? percent.format(seller.sellOut / seller.target) : '—'}</td><td>{integer.format(seller.positives)}</td><td>{seller.positiveTarget ? integer.format(seller.positiveTarget) : '—'}</td><td>{seller.positiveTarget ? percent.format(seller.positives / seller.positiveTarget) : '—'}</td></tr>)}
-        </tbody></table></div> : <Empty text="Carregue a Bússola e o 8022 para cruzar metas e realizado por vendedor." />}
+        </tbody></table></div> : <Empty text="Carregue Bússola, NOVOS RCAS e 8022 para cruzar metas e realizado pelo RCA atual." />}
       </section>
-      <section className="industry-footer"><div><span>METAS COLGATE • BÚSSOLA</span><h3>Fechamento de referência da equipe</h3><p>Esses valores não são a meta T&C manual.</p></div><div><span>Meta dos vendedores</span><strong>{state.uploads.targets ? money.format(state.industryTarget || sellerTargetTotal) : '—'}</strong></div><div><span>Meta positivação</span><strong>{state.uploads.targets ? integer.format(state.industryPositiveTarget) : '—'}</strong></div></section>
+      <section className="industry-footer"><div><span>METAS COLGATE • BÚSSOLA</span><h3>Fechamento de referência da equipe</h3><p>A meta da indústria continua sendo a soma informada na Bússola; NOVOS RCAS corrige a identificação do quadro atual.</p></div><div><span>Meta indústria</span><strong>{state.uploads.targets ? money.format(state.industryTarget || sellerTargetTotal) : '—'}</strong></div><div><span>Meta positivação</span><strong>{state.uploads.targets ? integer.format(state.industryPositiveTarget) : '—'}</strong></div></section>
       <TargetFooter state={state} setState={setState} />
     </>
   )
@@ -444,22 +468,23 @@ function Equipe({ state, setState }: { state: AppState; setState: React.Dispatch
 
 function Estoque({ state }: { state: AppState }) {
   const financialReady = state.stockMatched > 0
+  const positionActive = Boolean(state.uploads.position)
   return (
     <>
-      <section className="page-head"><Title kicker="ESTOQUE" title="Posição física e financeira" subtitle="O 8013 fornece o físico. O financeiro só é mostrado quando um código do estoque encontra custo/preço no cadastro." /><div><span>Itens com vínculo financeiro</span><strong>{state.stockItems.length ? `${integer.format(state.stockMatched)} / ${integer.format(state.stockItems.length)}` : '—'}</strong></div></section>
+      <section className="page-head"><Title kicker="ESTOQUE" title="Posição física e financeira" subtitle="O 8013 fornece o físico; o relatório 105 passa a ser a fonte preferencial de custo e preço de venda." /><div><span>Itens do 8013 casados com a fonte financeira</span><strong>{state.stockItems.length ? `${integer.format(state.stockMatched)} / ${integer.format(state.stockItems.length)}` : '—'}</strong></div></section>
       <section className="metrics four">
         <Metric label="ESTOQUE EM UNIDADES" value={state.uploads.stock ? integer.format(state.stockUnits) : '—'} hint="8013" tone="navy" />
         <Metric label="ESTOQUE EM CAIXAS" value={state.uploads.stock ? decimal.format(state.stockBoxes) : '—'} hint="8013" />
-        <Metric label="ESTOQUE AO CUSTO" value={financialReady ? money.format(state.stockCost) : '—'} hint={financialReady ? 'Itens casados com fonte financeira' : 'Fonte de custo não localizada no 286 enviado'} tone="red" />
-        <Metric label="ESTOQUE A PREÇO DE VENDA" value={financialReady && state.stockSale ? money.format(state.stockSale) : '—'} hint="Somente quando houver preço de venda reconhecido" />
+        <Metric label="ESTOQUE AO CUSTO" value={financialReady ? money.format(state.stockCost) : '—'} hint={financialReady ? (positionActive ? '105 • coluna Real provisoriamente' : 'Fonte financeira auxiliar') : 'Carregue o relatório 105'} tone="red" />
+        <Metric label="ESTOQUE A PREÇO DE VENDA" value={financialReady && state.stockSale ? money.format(state.stockSale) : '—'} hint={positionActive ? '105 • P. Venda' : 'Somente quando houver preço reconhecido'} />
       </section>
       <section className="table-panel panel">
-        <div className="table-title"><div><span>POSIÇÃO POR LINHA</span><h3>Classificação auditável</h3></div><b>REGRA PROVISÓRIA VISÍVEL</b></div>
+        <div className="table-title"><div><span>POSIÇÃO POR LINHA</span><h3>Classificação auditável</h3></div><b>REGRA DE LINHA A VALIDAR</b></div>
         {state.stockLines.length ? <div className="table-scroll"><table><thead><tr><th>Linha</th><th>Unidades</th><th>Caixas</th><th>Custo</th><th>Preço venda</th><th>Itens casados</th><th>Regra usada</th></tr></thead><tbody>
           {state.stockLines.map(line => <tr key={line.name}><td><b>{line.name}</b></td><td>{integer.format(line.units)}</td><td>{decimal.format(line.boxes)}</td><td>{line.matched ? money.format(line.cost) : '—'}</td><td>{line.matched && line.sale ? money.format(line.sale) : '—'}</td><td>{line.matched} / {line.total}</td><td className="rule-cell">{line.rule}</td></tr>)}
         </tbody></table></div> : <Empty text="Carregue o estoque 8013 para montar a posição física." />}
       </section>
-      <p className="note stock-note">A classificação por linha não está sendo tratada como oficial: o painel mostra exatamente a regra aplicada em cada grupo para podermos substituí-la por um campo definitivo quando você confirmar a origem correta.</p>
+      <p className="note stock-note">O 105 resolveu a fonte financeira, mas ainda precisamos confirmar qual coluna representa oficialmente “ao custo”: Real, Real+ICMS, Financ. ou Pr. Comp. A divisão por linha continua provisória até validarmos um campo oficial de categoria.</p>
     </>
   )
 }
@@ -483,12 +508,14 @@ function Conferencia({ state }: { state: AppState }) {
 
 function Upload({ state, processUpload, resetLocal }: { state: AppState; processUpload: (key: UploadKey, event: ChangeEvent<HTMLInputElement>) => Promise<void>; resetLocal: () => void }) {
   const cards: { key: UploadKey; title: string; subtitle: string; accept: string }[] = [
-    { key: 'sales', title: 'VENDAS • RELATÓRIO 8022', subtitle: 'Faturado, a faturar, vendedor, cliente e movimento diário.', accept: '.xls,.xlsx' },
-    { key: 'stock', title: 'ESTOQUE FÍSICO • RELATÓRIO 8013', subtitle: 'Unidades, caixas, descrição e categoria.', accept: '.xls,.xlsx' },
-    { key: 'targets', title: 'METAS • BÚSSOLA COLGATE', subtitle: 'Aba Metas filtrada para a indústria Colgate.', accept: '.xlsx,.xls' },
-    { key: 'catalog', title: 'CADASTRO DE ITENS • 286', subtitle: 'Usado para procurar código, custo e preço quando existirem.', accept: '.xls,.xlsx' },
-    { key: 'premises', title: 'BASE DE PREMISSAS • Q3', subtitle: 'Vínculo de CNPJ para rede estratégica.', accept: '.xlsx,.xls' },
-    { key: 'history', title: 'HISTÓRICO • 379 2025', subtitle: 'Comparativo do mesmo mês do ano anterior.', accept: '.txt' },
+    { key: 'sales', title: 'VENDAS • RELATÓRIO 8022', subtitle: 'VENDA, A FATURAR, RCA/setor, cliente e movimento diário.', accept: '.xls,.xlsx' },
+    { key: 'targets', title: 'METAS • BÚSSOLA COLGATE', subtitle: 'Metas de Sell Out e positivação informadas pela Colgate.', accept: '.xlsx,.xls' },
+    { key: 'rcas', title: 'EQUIPE ATUAL • NOVOS RCAS', subtitle: 'De/para do setor antigo para o código atual do RCA e coordenação.', accept: '.xlsx,.xls' },
+    { key: 'premises', title: 'BASE DE PREMISSAS • Q3', subtitle: 'Vínculo CNPJ → rede, usado nas redes estratégicas.', accept: '.xlsx,.xls' },
+    { key: 'stock', title: 'ESTOQUE FÍSICO • RELATÓRIO 8013', subtitle: 'Unidades, caixas, produto e categoria.', accept: '.xls,.xlsx' },
+    { key: 'position', title: 'POSIÇÃO FINANCEIRA • RELATÓRIO 105', subtitle: 'Custo e preço de venda da posição; fonte financeira preferencial do estoque.', accept: '.xls,.xlsx' },
+    { key: 'catalog', title: 'CADASTRO DE ITENS • 286', subtitle: 'Cadastro auxiliar de produtos; não substitui o 105 quando ele estiver carregado.', accept: '.xls,.xlsx' },
+    { key: 'history', title: 'HISTÓRICO • 379 2025', subtitle: 'Comparativo das redes no mesmo mês do ano anterior.', accept: '.txt' },
     { key: 'transit', title: 'COLGATE → MILÊNIO • EM TRÂNSITO', subtitle: 'Fonte opcional; layout ainda será validado.', accept: '.xls,.xlsx,.csv,.txt' },
   ]
   return (
@@ -507,7 +534,17 @@ function Empty({ text }: { text: string }) {
 }
 
 function sourceLabel(key: UploadKey) {
-  return ({ sales: '8022 • Vendas', stock: '8013 • Estoque', targets: 'Bússola • Metas', catalog: '286 • Cadastro', premises: 'Premissas Q3 • Redes', history: '379 2025 • Histórico', transit: 'Em trânsito' })[key]
+  return ({
+    sales: '8022 • Vendas',
+    targets: 'Bússola • Metas',
+    rcas: 'Novos RCAs • Equipe atual',
+    premises: 'Premissas Q3 • Redes',
+    stock: '8013 • Estoque físico',
+    position: '105 • Posição financeira',
+    catalog: '286 • Cadastro auxiliar',
+    history: '379 2025 • Histórico',
+    transit: 'Em trânsito',
+  })[key]
 }
 
 export default App
