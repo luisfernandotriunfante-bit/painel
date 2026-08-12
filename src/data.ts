@@ -1,6 +1,6 @@
 import * as XLSX from 'xlsx'
 
-export type UploadKey = 'sales' | 'stock' | 'targets' | 'catalog' | 'premises' | 'history' | 'transit'
+export type UploadKey = 'sales' | 'stock' | 'targets' | 'rcas' | 'position' | 'catalog' | 'premises' | 'history' | 'transit'
 
 export type UploadInfo = {
   name: string
@@ -27,6 +27,19 @@ export type SellerSales = {
 export type CustomerSales = {
   cnpj: string
   value: number
+}
+
+export type RcaEntry = {
+  currentCode: string
+  name: string
+  coordinatorCode: string
+  coordinatorName: string
+}
+
+export type RcaResult = {
+  byOldCode: Record<string, RcaEntry>
+  rows: number
+  warnings: string[]
 }
 
 export type SalesResult = {
@@ -102,43 +115,34 @@ export type HistoryResult = {
 type Matrix = unknown[][]
 
 const collator = new Intl.Collator('pt-BR', { sensitivity: 'base' })
-
 const STRATEGIC_NETWORKS = ['ABV', 'MEGA', 'PIRES', 'NOVA ESTRELA', 'PORTAL / PRINCESA'] as const
 
-const ACTIVE_RCA_OLD_TO_CURRENT: Record<string, string> = {
-  '130': '433',
-  '135': '451',
-  '211': '1059',
-  '301': '444',
-  '507': '416',
-  '132': '431',
-  '703': '1068',
-  '704': '429',
-  '705': '453',
-  '707': '437',
-  '708': '412',
-  '709': '425',
-  '710': '1063',
-  '711': '450',
-  '712': '1060',
-  '714': '1065',
-  '715': '442',
-  '716': '445',
-  '718': '441',
-  '721': '1067',
-  '757': '419',
-  '759': '413',
-  '800': '420',
-  '706': '706',
-  '752': '752',
-}
-
-const ACTIVE_CURRENT_CODES = new Set(Object.values(ACTIVE_RCA_OLD_TO_CURRENT))
-
-function currentRcaCode(value: unknown) {
-  const code = cleanId(value)
-  if (!code) return ''
-  return ACTIVE_RCA_OLD_TO_CURRENT[code] ?? (ACTIVE_CURRENT_CODES.has(code) ? code : '')
+const FALLBACK_RCA_MAP: Record<string, RcaEntry> = {
+  '130': { currentCode: '433', name: '', coordinatorCode: '62', coordinatorName: 'THIAGO' },
+  '135': { currentCode: '451', name: '', coordinatorCode: '62', coordinatorName: 'THIAGO' },
+  '211': { currentCode: '1059', name: '', coordinatorCode: '62', coordinatorName: 'THIAGO' },
+  '301': { currentCode: '444', name: '', coordinatorCode: '62', coordinatorName: 'THIAGO' },
+  '507': { currentCode: '416', name: '', coordinatorCode: '62', coordinatorName: 'THIAGO' },
+  '132': { currentCode: '431', name: '', coordinatorCode: '62', coordinatorName: 'THIAGO' },
+  '703': { currentCode: '1068', name: '', coordinatorCode: '56', coordinatorName: 'FLAVIO' },
+  '704': { currentCode: '429', name: '', coordinatorCode: '58', coordinatorName: 'JONATAS' },
+  '705': { currentCode: '453', name: '', coordinatorCode: '58', coordinatorName: 'JONATAS' },
+  '707': { currentCode: '437', name: '', coordinatorCode: '58', coordinatorName: 'JONATAS' },
+  '708': { currentCode: '412', name: '', coordinatorCode: '56', coordinatorName: 'FLAVIO' },
+  '709': { currentCode: '425', name: '', coordinatorCode: '56', coordinatorName: 'FLAVIO' },
+  '710': { currentCode: '1063', name: '', coordinatorCode: '58', coordinatorName: 'JONATAS' },
+  '711': { currentCode: '450', name: '', coordinatorCode: '56', coordinatorName: 'FLAVIO' },
+  '712': { currentCode: '1060', name: '', coordinatorCode: '58', coordinatorName: 'JONATAS' },
+  '714': { currentCode: '1065', name: '', coordinatorCode: '56', coordinatorName: 'FLAVIO' },
+  '715': { currentCode: '442', name: '', coordinatorCode: '58', coordinatorName: 'JONATAS' },
+  '716': { currentCode: '445', name: '', coordinatorCode: '58', coordinatorName: 'JONATAS' },
+  '718': { currentCode: '441', name: '', coordinatorCode: '58', coordinatorName: 'JONATAS' },
+  '721': { currentCode: '1067', name: '', coordinatorCode: '62', coordinatorName: 'THIAGO' },
+  '757': { currentCode: '419', name: '', coordinatorCode: '56', coordinatorName: 'FLAVIO' },
+  '759': { currentCode: '413', name: '', coordinatorCode: '56', coordinatorName: 'FLAVIO' },
+  '800': { currentCode: '420', name: '', coordinatorCode: '56', coordinatorName: 'FLAVIO' },
+  '706': { currentCode: '706', name: '', coordinatorCode: '56', coordinatorName: 'FLAVIO' },
+  '752': { currentCode: '752', name: '', coordinatorCode: '56', coordinatorName: 'FLAVIO' },
 }
 
 export function normalizeText(value: unknown) {
@@ -252,6 +256,15 @@ function inferStatusColumn(rows: Matrix, startRow: number) {
 
 function monthKey(year: number, month: number) {
   return `${year}-${String(month).padStart(2, '0')}`
+}
+
+function currentRcaEntry(value: unknown, uploadedMap?: Record<string, RcaEntry>) {
+  const code = cleanId(value)
+  if (!code) return null
+  const map = uploadedMap && Object.keys(uploadedMap).length ? uploadedMap : FALLBACK_RCA_MAP
+  if (map[code]) return map[code]
+  const identity = Object.values(map).find(item => item.currentCode === code)
+  return identity ?? null
 }
 
 export async function parseSales(file: File): Promise<SalesResult> {
@@ -408,6 +421,44 @@ export async function parseBussola(file: File): Promise<TargetResult> {
   return { sellers: list, industryTarget, industryPositiveTarget, rows: matchedRows, warnings }
 }
 
+export async function parseRcas(file: File): Promise<RcaResult> {
+  const workbook = await readWorkbook(file)
+  const rows = sheetMatrix(workbook)
+  const match = headerIndex(rows, [['COD'], ['NOME'], ['COORD'], ['NOME COORD'], ['ANTIGO']], 10)
+  if (match.index < 0 || match.score < 4) throw new Error('Não consegui reconhecer a planilha NOVOS RCAS.')
+
+  const headers = rows[match.index] ?? []
+  const currentCol = findExactColumn(headers, ['COD'])
+  const nameCol = findExactColumn(headers, ['NOME'])
+  const coordCol = findExactColumn(headers, ['COORD'])
+  const coordNameCol = findExactColumn(headers, ['NOME COORD'])
+  const oldCol = findExactColumn(headers, ['ANTIGO'])
+  if ([currentCol, oldCol].some(index => index < 0)) throw new Error('NOVOS RCAS precisa conter COD e ANTIGO.')
+
+  const byOldCode: Record<string, RcaEntry> = {}
+  let used = 0
+
+  for (let r = match.index + 1; r < rows.length; r += 1) {
+    const row = rows[r] ?? []
+    const currentCode = cleanId(valueAt(row, currentCol))
+    const oldCode = cleanId(valueAt(row, oldCol))
+    if (!currentCode || !oldCode) continue
+    byOldCode[oldCode] = {
+      currentCode,
+      name: String(valueAt(row, nameCol) ?? '').trim(),
+      coordinatorCode: cleanId(valueAt(row, coordCol)),
+      coordinatorName: String(valueAt(row, coordNameCol) ?? '').trim(),
+    }
+    used += 1
+  }
+
+  return {
+    byOldCode,
+    rows: used,
+    warnings: used ? [] : ['Nenhum de/para RCA foi encontrado.'],
+  }
+}
+
 export async function parsePremises(file: File): Promise<PremisesResult> {
   const workbook = await readWorkbook(file)
   const rows = sheetMatrix(workbook)
@@ -434,12 +485,7 @@ export async function parsePremises(file: File): Promise<PremisesResult> {
     used += 1
   }
 
-  return {
-    networkByCnpj,
-    rows: used,
-    networks: names.size,
-    warnings: [],
-  }
+  return { networkByCnpj, rows: used, networks: names.size, warnings: [] }
 }
 
 export function networkDisplay(raw: string) {
@@ -509,17 +555,19 @@ export async function parseStock(file: File): Promise<StockResult> {
   }
 }
 
-function parsePosition105(rows: Matrix): CatalogResult | null {
+export async function parsePosition105(file: File): Promise<CatalogResult> {
+  const workbook = await readWorkbook(file)
+  const rows = sheetMatrix(workbook)
   const match = headerIndex(rows, [
     ['QT EST'], ['CODIGO', 'COD'], ['DESCRI'], ['REAL ICMS'], ['P VENDA'], ['PR COMP'],
-  ], 80)
-  if (match.index < 0 || match.score < 4) return null
+  ], 100)
+  if (match.index < 0 || match.score < 4) throw new Error('Não consegui reconhecer o relatório 105 de posição de estoque.')
 
   const headers = rows[match.index] ?? []
   const codeCol = findColumn(headers, ['CÓDIGO', 'CODIGO', 'CÓD.', 'COD'])
   const costCol = findExactColumn(headers, ['REAL'])
   const saleCol = findExactColumn(headers, ['P VENDA', 'P. VENDA'])
-  if (codeCol < 0) return null
+  if (codeCol < 0) throw new Error('O relatório 105 não apresentou a coluna Código em formato reconhecido.')
 
   const financeByCode: Record<string, CatalogFinance> = {}
   let used = 0
@@ -528,11 +576,9 @@ function parsePosition105(rows: Matrix): CatalogResult | null {
     const row = rows[r] ?? []
     const code = cleanId(valueAt(row, codeCol))
     if (!code) continue
-
     const cost = costCol >= 0 ? numberValue(valueAt(row, costCol)) : undefined
     const sale = saleCol >= 0 ? numberValue(valueAt(row, saleCol)) : undefined
     if (cost == null && sale == null) continue
-
     financeByCode[code] = { cost, sale }
     used += 1
   }
@@ -544,8 +590,8 @@ function parsePosition105(rows: Matrix): CatalogResult | null {
     hasCost: costCol >= 0,
     hasSalePrice: saleCol >= 0,
     warnings: [
-      'Relatório 105 reconhecido como fonte financeira do estoque.',
-      'O painel está usando provisoriamente a coluna “Real” como custo unitário e “P. Venda” como preço de venda; confirme se “Estoque ao custo” deve usar Real, Real+ICMS, Financ. ou Pr. Comp.',
+      'O relatório 105 é a fonte financeira preferencial do estoque.',
+      'Até confirmar a regra contábil, “Estoque ao custo” usa provisoriamente a coluna Real e o preço de venda usa P. Venda. Ainda precisamos decidir entre Real, Real+ICMS, Financ. ou Pr. Comp. para o custo oficial.',
     ],
   }
 }
@@ -553,12 +599,8 @@ function parsePosition105(rows: Matrix): CatalogResult | null {
 export async function parseCatalog(file: File): Promise<CatalogResult> {
   const workbook = await readWorkbook(file)
   const rows = sheetMatrix(workbook)
-
-  const position105 = parsePosition105(rows)
-  if (position105) return position105
-
   const match = headerIndex(rows, [['CODIGO', 'COD'], ['DESCRI'], ['CLASSE'], ['EMB']], 80)
-  if (match.index < 0 || match.score < 2) throw new Error('Não consegui reconhecer este arquivo como cadastro 286 nem como posição de estoque 105.')
+  if (match.index < 0 || match.score < 2) throw new Error('Não consegui reconhecer o cadastro 286.')
 
   const headers = rows[match.index] ?? []
   const codeCol = findColumn(headers, ['CÓDIGO', 'CODIGO', 'CÓD.', 'COD'])
@@ -580,7 +622,7 @@ export async function parseCatalog(file: File): Promise<CatalogResult> {
   }
 
   const warnings: string[] = []
-  if (costCol < 0) warnings.push('O cadastro 286 não apresentou uma coluna de custo reconhecível. O relatório 105 é uma fonte melhor para a posição financeira do estoque.')
+  if (costCol < 0) warnings.push('O cadastro 286 não apresentou uma coluna de custo reconhecível; o relatório 105 passa a ser a fonte preferencial para a posição financeira.')
   if (saleCol < 0) warnings.push('O cadastro 286 não apresentou uma coluna de preço de venda reconhecível.')
 
   return {
@@ -633,19 +675,23 @@ export async function parseHistory379(file: File): Promise<HistoryResult> {
   }
 }
 
-export function mergeSellers(targets: SellerTarget[], sales: SellerSales[]) {
+export function mergeSellers(
+  targets: SellerTarget[],
+  sales: SellerSales[],
+  rcaByOldCode?: Record<string, RcaEntry>,
+) {
   const actualByCurrent = new Map<string, SellerSales>()
 
   for (const actual of sales) {
-    const currentCode = currentRcaCode(actual.code)
-    if (!currentCode) continue
+    const rca = currentRcaEntry(actual.code, rcaByOldCode)
+    if (!rca) continue
+    const currentCode = rca.currentCode
     const stored = actualByCurrent.get(currentCode)
     if (stored) {
       stored.sellOut += actual.sellOut
       stored.positives += actual.positives
-      if (!stored.name && actual.name) stored.name = actual.name
     } else {
-      actualByCurrent.set(currentCode, { ...actual, code: currentCode })
+      actualByCurrent.set(currentCode, { ...actual, code: currentCode, name: actual.name || rca.name })
     }
   }
 
@@ -653,8 +699,9 @@ export function mergeSellers(targets: SellerTarget[], sales: SellerSales[]) {
   const used = new Set<string>()
 
   for (const target of targets) {
-    const currentCode = currentRcaCode(target.code)
-    if (!currentCode) continue
+    const rca = currentRcaEntry(target.code, rcaByOldCode)
+    if (!rca) continue
+    const currentCode = rca.currentCode
     const actual = actualByCurrent.get(currentCode)
     const existing = merged.find(item => item.code === currentCode)
     if (existing) {
@@ -665,7 +712,7 @@ export function mergeSellers(targets: SellerTarget[], sales: SellerSales[]) {
 
     merged.push({
       code: currentCode,
-      name: target.name || actual?.name || `RCA ${currentCode}`,
+      name: target.name || rca.name || actual?.name || `RCA ${currentCode}`,
       target: target.target,
       sellOut: actual?.sellOut ?? 0,
       positives: actual?.positives ?? 0,
