@@ -103,6 +103,44 @@ type Matrix = unknown[][]
 
 const collator = new Intl.Collator('pt-BR', { sensitivity: 'base' })
 
+const STRATEGIC_NETWORKS = ['ABV', 'MEGA', 'PIRES', 'NOVA ESTRELA', 'PORTAL / PRINCESA'] as const
+
+const ACTIVE_RCA_OLD_TO_CURRENT: Record<string, string> = {
+  '130': '433',
+  '135': '451',
+  '211': '1059',
+  '301': '444',
+  '507': '416',
+  '132': '431',
+  '703': '1068',
+  '704': '429',
+  '705': '453',
+  '707': '437',
+  '708': '412',
+  '709': '425',
+  '710': '1063',
+  '711': '450',
+  '712': '1060',
+  '714': '1065',
+  '715': '442',
+  '716': '445',
+  '718': '441',
+  '721': '1067',
+  '757': '419',
+  '759': '413',
+  '800': '420',
+  '706': '706',
+  '752': '752',
+}
+
+const ACTIVE_CURRENT_CODES = new Set(Object.values(ACTIVE_RCA_OLD_TO_CURRENT))
+
+function currentRcaCode(value: unknown) {
+  const code = cleanId(value)
+  if (!code) return ''
+  return ACTIVE_RCA_OLD_TO_CURRENT[code] ?? (ACTIVE_CURRENT_CODES.has(code) ? code : '')
+}
+
 export function normalizeText(value: unknown) {
   return String(value ?? '')
     .normalize('NFD')
@@ -169,7 +207,7 @@ function headerIndex(rows: Matrix, markers: string[][], maxRows = 40) {
     const headers = (rows[r] ?? []).map(normalizeText)
     let score = 0
     for (const group of markers) {
-      if (headers.some(header => group.some(alias => header === alias || header.includes(alias)))) score += 1
+      if (headers.some(header => group.some(alias => header === normalizeText(alias) || header.includes(normalizeText(alias))))) score += 1
     }
     if (score > best.score) best = { index: r, score }
   }
@@ -181,8 +219,13 @@ function findColumn(headers: unknown[], aliases: string[]) {
   const wanted = aliases.map(normalizeText)
   let exact = normalized.findIndex(header => wanted.includes(header))
   if (exact >= 0) return exact
-  exact = normalized.findIndex(header => wanted.some(alias => header.includes(alias)))
-  return exact
+  return normalized.findIndex(header => wanted.some(alias => header.includes(alias)))
+}
+
+function findExactColumn(headers: unknown[], aliases: string[]) {
+  const normalized = headers.map(normalizeText)
+  const wanted = aliases.map(normalizeText)
+  return normalized.findIndex(header => wanted.includes(header))
 }
 
 function valueAt(row: unknown[], index: number) {
@@ -192,12 +235,12 @@ function valueAt(row: unknown[], index: number) {
 function inferStatusColumn(rows: Matrix, startRow: number) {
   let winner = -1
   let winnerScore = 0
-  const width = Math.max(...rows.slice(startRow, startRow + 80).map(row => row.length), 0)
+  const width = Math.max(...rows.slice(startRow, startRow + 120).map(row => row.length), 0)
   for (let col = 0; col < width; col += 1) {
     let score = 0
-    for (let r = startRow; r < Math.min(rows.length, startRow + 100); r += 1) {
+    for (let r = startRow; r < Math.min(rows.length, startRow + 160); r += 1) {
       const status = normalizeText(rows[r]?.[col])
-      if (status === 'FATURADO' || status === 'A FATURAR') score += 1
+      if (status === 'VENDA' || status === 'FATURADO' || status === 'A FATURAR') score += 1
     }
     if (score > winnerScore) {
       winner = col
@@ -220,7 +263,7 @@ export async function parseSales(file: File): Promise<SalesResult> {
     ['VENDEDOR'],
     ['VALOR R NF', 'VALOR NF', 'VALOR'],
     ['NOME CLIENTE'],
-  ])
+  ], 60)
   if (match.index < 0 || match.score < 3) throw new Error('Não consegui localizar o cabeçalho do relatório 8022.')
 
   const headers = rows[match.index] ?? []
@@ -261,13 +304,14 @@ export async function parseSales(file: File): Promise<SalesResult> {
     if (item.date.getFullYear() !== year || item.date.getMonth() + 1 !== month) continue
     const row = item.row
     const value = numberValue(valueAt(row, valueCol))
-    let status = statusCol >= 0 ? normalizeText(valueAt(row, statusCol)) : ''
+    const status = statusCol >= 0 ? normalizeText(valueAt(row, statusCol)) : ''
     let eligible = false
+
     if (status.includes('A FATURAR')) {
       toInvoice += value
       eligible = true
       recognizedStatusRows += 1
-    } else if (status.includes('FATURADO')) {
+    } else if (status === 'VENDA' || status.includes('FATURADO') || status.includes('VENDA FATURADA')) {
       billed += value
       eligible = true
       recognizedStatusRows += 1
@@ -279,10 +323,12 @@ export async function parseSales(file: File): Promise<SalesResult> {
 
     usedRows += 1
     daily[item.date.getDate() - 1] += value
-    const sellerCode = cleanId(valueAt(row, sellerCodeCol)) || normalizeText(valueAt(row, sellerNameCol)) || 'SEM SETOR'
-    const sellerName = String(valueAt(row, sellerNameCol) ?? '').trim() || `Setor ${sellerCode}`
+
+    const rawSellerCode = cleanId(valueAt(row, sellerCodeCol)) || normalizeText(valueAt(row, sellerNameCol)) || 'SEM SETOR'
+    const sellerName = String(valueAt(row, sellerNameCol) ?? '').trim() || `Setor ${rawSellerCode}`
     const cnpj = cleanId(valueAt(row, cnpjCol)) || cleanId(valueAt(row, clientCodeCol))
-    const seller = sellerMap.get(sellerCode) ?? { name: sellerName, sellOut: 0, customers: new Set<string>() }
+
+    const seller = sellerMap.get(rawSellerCode) ?? { name: sellerName, sellOut: 0, customers: new Set<string>() }
     seller.name = sellerName || seller.name
     seller.sellOut += value
     if (cnpj && value > 0) {
@@ -290,13 +336,13 @@ export async function parseSales(file: File): Promise<SalesResult> {
       globalCustomers.add(cnpj)
       customerMap.set(cnpj, (customerMap.get(cnpj) ?? 0) + value)
     }
-    sellerMap.set(sellerCode, seller)
+    sellerMap.set(rawSellerCode, seller)
   }
 
   if (statusCol >= 0 && recognizedStatusRows === 0) {
-    warnings.push('A coluna de status foi encontrada, mas não reconheci valores FATURADO/A FATURAR. Nenhuma venda foi somada.')
+    warnings.push('A coluna STATUS PEDIDO foi localizada, mas nenhum status VENDA/A FATURAR foi reconhecido.')
   }
-  if (cnpjCol < 0) warnings.push('Não encontrei CNPJ/CPF CLIENTE; a vinculação por rede usará COD. CLIENTE e pode não casar com a base de premissas.')
+  if (cnpjCol < 0) warnings.push('Não encontrei CNPJ/CPF CLIENTE; a vinculação por rede está usando COD. CLIENTE como contingência.')
 
   const sellers = [...sellerMap.entries()]
     .map(([code, item]) => ({ code, name: item.name, sellOut: item.sellOut, positives: item.customers.size }))
@@ -327,8 +373,9 @@ export async function parseBussola(file: File): Promise<TargetResult> {
   const rows = sheetMatrix(workbook, 'Metas')
   const match = headerIndex(rows, [
     ['INDUSTRIA'], ['META PNA'], ['META POS IND'], ['NOME'], ['ST', 'SETOR'],
-  ], 12)
+  ], 15)
   if (match.index < 0 || match.score < 4) throw new Error('Não consegui reconhecer o cabeçalho da aba Metas da Bússola.')
+
   const headers = rows[match.index] ?? []
   const codeCol = findColumn(headers, ['ST', 'SETOR'])
   const nameCol = findColumn(headers, ['NOME'])
@@ -364,8 +411,9 @@ export async function parseBussola(file: File): Promise<TargetResult> {
 export async function parsePremises(file: File): Promise<PremisesResult> {
   const workbook = await readWorkbook(file)
   const rows = sheetMatrix(workbook)
-  const match = headerIndex(rows, [['COD CLIENTE'], ['NOME CLIENTE'], ['REDE'], ['AMBIENTE']], 12)
+  const match = headerIndex(rows, [['COD CLIENTE'], ['NOME CLIENTE'], ['REDE'], ['AMBIENTE']], 15)
   if (match.index < 0 || match.score < 3) throw new Error('Não consegui reconhecer a Base de Premissas Q3.')
+
   const headers = rows[match.index] ?? []
   const cnpjCol = findColumn(headers, ['COD CLIENTE'])
   const networkCol = findColumn(headers, ['REDE'])
@@ -374,6 +422,7 @@ export async function parsePremises(file: File): Promise<PremisesResult> {
   const networkByCnpj: Record<string, string> = {}
   const names = new Set<string>()
   let used = 0
+
   for (let r = match.index + 1; r < rows.length; r += 1) {
     const row = rows[r] ?? []
     const cnpj = cleanId(valueAt(row, cnpjCol))
@@ -384,7 +433,13 @@ export async function parsePremises(file: File): Promise<PremisesResult> {
     names.add(network)
     used += 1
   }
-  return { networkByCnpj, rows: used, networks: names.size, warnings: [] }
+
+  return {
+    networkByCnpj,
+    rows: used,
+    networks: names.size,
+    warnings: [],
+  }
 }
 
 export function networkDisplay(raw: string) {
@@ -403,7 +458,7 @@ function classifyStock(description: string) {
   if (/^SAB\b/.test(d)) return { line: 'Sabonetes', rule: 'Descrição inicia com “SAB”' }
   if (/^(SH|COND|CR PENT|KIT SH)\b/.test(d)) return { line: 'Hair', rule: 'Prefixos SH / COND / CR PENT / KIT SH' }
   if (/^(ED|ENX|ENXAG|FITA DENT|FIO|GD)\b/.test(d)) return { line: 'Esc + Enx + Fio', rule: 'Prefixos ED / ENX / FITA DENT / FIO / GD' }
-  if (/^(PINHO SOL|LIMP|LAVA ROUPA|AJAX|DESINF)\b/.test(d)) return { line: 'Limpeza', rule: 'Prefixos PINHO SOL / LIMP / LAVA ROUPA / AJAX / DESINF' }
+  if (/^(PINHO SOL|LIMP|LAVA ROUPA|AJAX|DESINF|DESENG)\b/.test(d)) return { line: 'Limpeza', rule: 'Prefixos PINHO SOL / LIMP / LAVA ROUPA / AJAX / DESINF / DESENG' }
   return { line: 'Outros', rule: 'Sem correspondência nos prefixos provisórios' }
 }
 
@@ -412,19 +467,21 @@ export async function parseStock(file: File): Promise<StockResult> {
   const rows = sheetMatrix(workbook)
   const match = headerIndex(rows, [
     ['DESCRICAO DO PRODUTO', 'DESCRI'], ['ESTOQUE EM UND'], ['ESTOQUE EM CX'], ['CATEGORIA'],
-  ], 50)
+  ], 60)
   if (match.index < 0 || match.score < 2) throw new Error('Não consegui reconhecer o cabeçalho do relatório 8013.')
+
   const headers = rows[match.index] ?? []
   const descriptionCol = findColumn(headers, ['DESCRIÇÃO DO PRODUTO', 'DESCRICAO DO PRODUTO', 'DESCRIÇÃO', 'DESCRI'])
   const unitsCol = findColumn(headers, ['ESTOQUE EM UND.', 'ESTOQUE EM UND', 'ESTOQUE UND'])
   const boxesCol = findColumn(headers, ['ESTOQUE EM CX', 'ESTOQUE CX'])
   const categoryCol = findColumn(headers, ['CATEGORIA'])
-  const codeCol = findColumn(headers, ['COD PRODUTO', 'CÓDIGO PRODUTO', 'CODIGO PRODUTO', 'COD. PRODUTO', 'CÓDIGO', 'CODIGO'])
+  const codeCol = findColumn(headers, ['CODPROD. WINTHOR', 'COD PRODUTO', 'CÓDIGO PRODUTO', 'CODIGO PRODUTO', 'COD. PRODUTO', 'CÓDIGO', 'CODIGO'])
   if (descriptionCol < 0 || unitsCol < 0) throw new Error('O 8013 precisa conter descrição e ESTOQUE EM UND.')
 
   const items: StockItem[] = []
   let totalUnits = 0
   let totalBoxes = 0
+
   for (let r = match.index + 1; r < rows.length; r += 1) {
     const row = rows[r] ?? []
     const description = String(valueAt(row, descriptionCol) ?? '').trim()
@@ -432,28 +489,84 @@ export async function parseStock(file: File): Promise<StockResult> {
     const units = numberValue(valueAt(row, unitsCol))
     const boxes = numberValue(valueAt(row, boxesCol))
     if (units === 0 && boxes === 0) continue
+
     const code = cleanId(valueAt(row, codeCol))
     const category = String(valueAt(row, categoryCol) ?? '').trim()
     const classification = classifyStock(description)
+
     items.push({ code, description, category, units, boxes, ...classification })
     totalUnits += units
     totalBoxes += boxes
   }
-  const warnings = ['A classificação por linha é provisória e fica visível no painel; ela usa prefixos da descrição até validarmos um campo oficial de categoria.']
-  return { items, rows: items.length, totalUnits, totalBoxes, headers: headers.map(value => String(value ?? '')).filter(Boolean), warnings }
+
+  return {
+    items,
+    rows: items.length,
+    totalUnits,
+    totalBoxes,
+    headers: headers.map(value => String(value ?? '')).filter(Boolean),
+    warnings: ['A classificação por linha continua provisória; ela permanece explícita até definirmos um campo oficial de linha/categoria.'],
+  }
+}
+
+function parsePosition105(rows: Matrix): CatalogResult | null {
+  const match = headerIndex(rows, [
+    ['QT EST'], ['CODIGO', 'COD'], ['DESCRI'], ['REAL ICMS'], ['P VENDA'], ['PR COMP'],
+  ], 80)
+  if (match.index < 0 || match.score < 4) return null
+
+  const headers = rows[match.index] ?? []
+  const codeCol = findColumn(headers, ['CÓDIGO', 'CODIGO', 'CÓD.', 'COD'])
+  const costCol = findExactColumn(headers, ['REAL'])
+  const saleCol = findExactColumn(headers, ['P VENDA', 'P. VENDA'])
+  if (codeCol < 0) return null
+
+  const financeByCode: Record<string, CatalogFinance> = {}
+  let used = 0
+
+  for (let r = match.index + 1; r < rows.length; r += 1) {
+    const row = rows[r] ?? []
+    const code = cleanId(valueAt(row, codeCol))
+    if (!code) continue
+
+    const cost = costCol >= 0 ? numberValue(valueAt(row, costCol)) : undefined
+    const sale = saleCol >= 0 ? numberValue(valueAt(row, saleCol)) : undefined
+    if (cost == null && sale == null) continue
+
+    financeByCode[code] = { cost, sale }
+    used += 1
+  }
+
+  return {
+    financeByCode,
+    rows: used,
+    headers: headers.map(value => String(value ?? '')).filter(Boolean),
+    hasCost: costCol >= 0,
+    hasSalePrice: saleCol >= 0,
+    warnings: [
+      'Relatório 105 reconhecido como fonte financeira do estoque.',
+      'O painel está usando provisoriamente a coluna “Real” como custo unitário e “P. Venda” como preço de venda; confirme se “Estoque ao custo” deve usar Real, Real+ICMS, Financ. ou Pr. Comp.',
+    ],
+  }
 }
 
 export async function parseCatalog(file: File): Promise<CatalogResult> {
   const workbook = await readWorkbook(file)
   const rows = sheetMatrix(workbook)
-  const match = headerIndex(rows, [['CODIGO', 'COD'], ['DESCRI'], ['CLASSE'], ['EMB']], 60)
-  if (match.index < 0 || match.score < 2) throw new Error('Não consegui reconhecer o cadastro 286.')
+
+  const position105 = parsePosition105(rows)
+  if (position105) return position105
+
+  const match = headerIndex(rows, [['CODIGO', 'COD'], ['DESCRI'], ['CLASSE'], ['EMB']], 80)
+  if (match.index < 0 || match.score < 2) throw new Error('Não consegui reconhecer este arquivo como cadastro 286 nem como posição de estoque 105.')
+
   const headers = rows[match.index] ?? []
   const codeCol = findColumn(headers, ['CÓDIGO', 'CODIGO', 'CÓD.', 'COD'])
   const costCol = findColumn(headers, ['CUSTO', 'CUSTO REAL', 'CUSTO CONTABIL', 'CUSTO FINANCEIRO', 'CUSTO ULT ENTRADA'])
   const saleCol = findColumn(headers, ['PREÇO VENDA', 'PRECO VENDA', 'PVENDA', 'PREÇO', 'PRECO'])
   const financeByCode: Record<string, CatalogFinance> = {}
   let used = 0
+
   if (codeCol >= 0) {
     for (let r = match.index + 1; r < rows.length; r += 1) {
       const code = cleanId(valueAt(rows[r] ?? [], codeCol))
@@ -465,9 +578,11 @@ export async function parseCatalog(file: File): Promise<CatalogResult> {
       used += 1
     }
   }
+
   const warnings: string[] = []
-  if (costCol < 0) warnings.push('O cadastro 286 enviado não apresentou uma coluna de custo reconhecível; o estoque financeiro ficará indisponível até recebermos uma fonte de custo.')
-  if (saleCol < 0) warnings.push('O cadastro 286 enviado não apresentou uma coluna de preço de venda reconhecível.')
+  if (costCol < 0) warnings.push('O cadastro 286 não apresentou uma coluna de custo reconhecível. O relatório 105 é uma fonte melhor para a posição financeira do estoque.')
+  if (saleCol < 0) warnings.push('O cadastro 286 não apresentou uma coluna de preço de venda reconhecível.')
+
   return {
     financeByCode,
     rows: used,
@@ -483,6 +598,7 @@ export async function parseHistory379(file: File): Promise<HistoryResult> {
   const lines = text.split(/\r\n|\n|\r/)
   const header = lines.find(line => line.includes('Data') && line.includes('Valor') && line.includes('Cliente') && line.includes('RPC.'))
   if (!header) throw new Error('Não consegui localizar o cabeçalho fixo do relatório 379.')
+
   const valueStart = header.indexOf('Valor')
   const discountStart = header.indexOf('Desconto')
   const clientStart = header.indexOf('Cliente')
@@ -491,6 +607,7 @@ export async function parseHistory379(file: File): Promise<HistoryResult> {
 
   const byMonth: Record<string, Record<string, number>> = {}
   let used = 0
+
   for (const line of lines) {
     const match = line.match(/^\s*(\d{2})\/(\d{2})\/(\d{4})/)
     if (!match) continue
@@ -498,56 +615,111 @@ export async function parseHistory379(file: File): Promise<HistoryResult> {
     const month = Number(match[2])
     const year = Number(match[3])
     if (!day || !month || !year) continue
+
     const value = numberValue(line.slice(valueStart, discountStart))
     const cnpj = cleanId(line.slice(clientStart, rpcStart))
     if (!cnpj) continue
+
     const key = monthKey(year, month)
     byMonth[key] ??= {}
     byMonth[key][cnpj] = (byMonth[key][cnpj] ?? 0) + value
     used += 1
   }
+
   return {
     byMonth,
     rows: used,
-    warnings: ['Histórico 379 agregado pelo campo Valor. A regra de operações/devoluções ainda precisa ser validada antes de tratarmos esse comparativo como fechamento oficial.'],
+    warnings: ['Histórico 379 agregado pelo campo Valor. Operações/devoluções ainda precisam ser validadas antes de tratarmos esse comparativo como fechamento oficial.'],
   }
 }
 
 export function mergeSellers(targets: SellerTarget[], sales: SellerSales[]) {
-  const salesMap = new Map(sales.map(item => [cleanId(item.code), item]))
-  const targetCodes = new Set<string>()
-  const merged = targets.map(target => {
-    const code = cleanId(target.code)
-    targetCodes.add(code)
-    const actual = salesMap.get(code)
-    return {
-      code,
-      name: target.name || actual?.name || `Setor ${code}`,
+  const actualByCurrent = new Map<string, SellerSales>()
+
+  for (const actual of sales) {
+    const currentCode = currentRcaCode(actual.code)
+    if (!currentCode) continue
+    const stored = actualByCurrent.get(currentCode)
+    if (stored) {
+      stored.sellOut += actual.sellOut
+      stored.positives += actual.positives
+      if (!stored.name && actual.name) stored.name = actual.name
+    } else {
+      actualByCurrent.set(currentCode, { ...actual, code: currentCode })
+    }
+  }
+
+  const merged: { code: string; name: string; target: number; sellOut: number; positives: number; positiveTarget: number }[] = []
+  const used = new Set<string>()
+
+  for (const target of targets) {
+    const currentCode = currentRcaCode(target.code)
+    if (!currentCode) continue
+    const actual = actualByCurrent.get(currentCode)
+    const existing = merged.find(item => item.code === currentCode)
+    if (existing) {
+      existing.target += target.target
+      existing.positiveTarget += target.positiveTarget
+      continue
+    }
+
+    merged.push({
+      code: currentCode,
+      name: target.name || actual?.name || `RCA ${currentCode}`,
       target: target.target,
       sellOut: actual?.sellOut ?? 0,
       positives: actual?.positives ?? 0,
       positiveTarget: target.positiveTarget,
-    }
-  })
-  for (const actual of sales) {
-    const code = cleanId(actual.code)
-    if (targetCodes.has(code)) continue
-    merged.push({ code, name: actual.name, target: 0, sellOut: actual.sellOut, positives: actual.positives, positiveTarget: 0 })
+    })
+    used.add(currentCode)
   }
+
+  for (const [currentCode, actual] of actualByCurrent.entries()) {
+    if (used.has(currentCode)) continue
+    merged.push({
+      code: currentCode,
+      name: actual.name,
+      target: 0,
+      sellOut: actual.sellOut,
+      positives: actual.positives,
+      positiveTarget: 0,
+    })
+  }
+
   return merged.sort((a, b) => b.sellOut - a.sellOut || collator.compare(a.name, b.name))
 }
 
 export function stockFinancial(items: StockItem[], finance: Record<string, CatalogFinance>) {
-  const lines = new Map<string, { name: string; cost: number; sale: number; units: number; boxes: number; matched: number; total: number; rules: Set<string> }>()
-  let totalCost = 0
-  let totalSale = 0
+  const lines = new Map<string, {
+    name: string
+    cost: number
+    sale: number
+    units: number
+    boxes: number
+    matched: number
+    total: number
+    rules: Set<string>
+  }>()
+
   let matchedItems = 0
+
   for (const item of items) {
-    const row = lines.get(item.line) ?? { name: item.line, cost: 0, sale: 0, units: 0, boxes: 0, matched: 0, total: 0, rules: new Set<string>() }
+    const row = lines.get(item.line) ?? {
+      name: item.line,
+      cost: 0,
+      sale: 0,
+      units: 0,
+      boxes: 0,
+      matched: 0,
+      total: 0,
+      rules: new Set<string>(),
+    }
+
     row.units += item.units
     row.boxes += item.boxes
     row.total += 1
     row.rules.add(item.rule)
+
     const f = item.code ? finance[item.code] : undefined
     if (f && (f.cost != null || f.sale != null)) {
       row.matched += 1
@@ -555,8 +727,10 @@ export function stockFinancial(items: StockItem[], finance: Record<string, Catal
       if (f.cost != null) row.cost += item.units * f.cost
       if (f.sale != null) row.sale += item.units * f.sale
     }
+
     lines.set(item.line, row)
   }
+
   const list = [...lines.values()].map(row => ({
     name: row.name,
     cost: row.cost,
@@ -567,9 +741,13 @@ export function stockFinancial(items: StockItem[], finance: Record<string, Catal
     total: row.total,
     rule: [...row.rules].join(' • '),
   }))
-  totalCost = list.reduce((sum, row) => sum + row.cost, 0)
-  totalSale = list.reduce((sum, row) => sum + row.sale, 0)
-  return { lines: list, totalCost, totalSale, matchedItems }
+
+  return {
+    lines: list,
+    totalCost: list.reduce((sum, row) => sum + row.cost, 0),
+    totalSale: list.reduce((sum, row) => sum + row.sale, 0),
+    matchedItems,
+  }
 }
 
 export function buildNetworks(
@@ -578,27 +756,31 @@ export function buildNetworks(
   previousByCnpj: Record<string, number> | undefined,
   poolTarget: number,
 ) {
-  const map = new Map<string, { name: string; sellOut: number; previous: number }>()
+  const map = new Map<string, { name: string; sellOut: number; previous: number }>(
+    STRATEGIC_NETWORKS.map(name => [name, { name, sellOut: 0, previous: 0 }]),
+  )
+
   for (const customer of customers) {
     const network = networkByCnpj[cleanId(customer.cnpj)]
-    if (!network) continue
-    const row = map.get(network) ?? { name: network, sellOut: 0, previous: 0 }
+    if (!network || !STRATEGIC_NETWORKS.includes(network as typeof STRATEGIC_NETWORKS[number])) continue
+    const row = map.get(network)!
     row.sellOut += customer.value
-    map.set(network, row)
   }
+
   if (previousByCnpj) {
     for (const [cnpj, value] of Object.entries(previousByCnpj)) {
       const network = networkByCnpj[cleanId(cnpj)]
-      if (!network) continue
-      const row = map.get(network) ?? { name: network, sellOut: 0, previous: 0 }
+      if (!network || !STRATEGIC_NETWORKS.includes(network as typeof STRATEGIC_NETWORKS[number])) continue
+      const row = map.get(network)!
       row.previous += value
-      map.set(network, row)
     }
   }
-  const rows = [...map.values()].sort((a, b) => b.sellOut - a.sellOut)
+
+  const rows = STRATEGIC_NETWORKS.map(name => map.get(name)!)
   const total = rows.reduce((sum, row) => sum + row.sellOut, 0)
-  return rows.slice(0, 12).map(row => ({
+
+  return rows.map(row => ({
     ...row,
-    target: total > 0 ? poolTarget * row.sellOut / total : 0,
+    target: total > 0 ? poolTarget * row.sellOut / total : (poolTarget > 0 ? poolTarget / rows.length : 0),
   }))
 }
