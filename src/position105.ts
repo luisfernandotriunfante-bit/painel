@@ -13,6 +13,19 @@ export type Position105Result = {
 
 type Matrix = unknown[][]
 
+type HeaderMatch = {
+  sheetName: string
+  rows: Matrix
+  index: number
+  headers: unknown[]
+  qtyCol: number
+  codeCol: number
+  costCol: number
+  saleCol: number
+  descriptionCol: number
+  score: number
+}
+
 function numberValue(value: unknown) {
   if (typeof value === 'number') return Number.isFinite(value) ? value : 0
   if (value == null) return 0
@@ -28,53 +41,66 @@ function numberValue(value: unknown) {
   return Number.isFinite(parsed) ? parsed : 0
 }
 
-function findExact(headers: unknown[], aliases: string[]) {
-  const normalized = headers.map(normalizeText)
-  const wanted = aliases.map(normalizeText)
-  return normalized.findIndex(header => wanted.includes(header))
+function findColumn(headers: unknown[], matcher: (header: string) => boolean) {
+  return headers.map(normalizeText).findIndex(matcher)
 }
 
-function findHeader(rows: Matrix) {
-  let bestIndex = -1
-  let bestScore = -1
-  for (let r = 0; r < Math.min(rows.length, 120); r += 1) {
-    const headers = (rows[r] ?? []).map(normalizeText)
-    let score = 0
-    if (headers.some(h => ['QT EST', 'QT ESTOQUE', 'QTDE EST', 'QTDE ESTOQUE'].includes(h))) score += 1
-    if (headers.some(h => ['CODIGO', 'COD', 'COD PRODUTO', 'CODPROD'].includes(h))) score += 1
-    if (headers.includes('REAL')) score += 1
-    if (headers.some(h => ['P VENDA', 'PVENDA', 'PRECO VENDA'].includes(h))) score += 1
-    if (headers.some(h => h.includes('DESCRI'))) score += 1
-    if (score > bestScore) {
-      bestScore = score
-      bestIndex = r
+function locateHeader(workbook: XLSX.WorkBook): HeaderMatch | null {
+  let best: HeaderMatch | null = null
+
+  for (const sheetName of workbook.SheetNames) {
+    const sheet = workbook.Sheets[sheetName]
+    if (!sheet) continue
+    const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null, raw: true }) as Matrix
+
+    for (let r = 0; r < Math.min(rows.length, 220); r += 1) {
+      const headers = rows[r] ?? []
+      const normalized = headers.map(normalizeText)
+
+      const qtyCol = findColumn(headers, h =>
+        h === 'QT EST' || h === 'QT ESTOQUE' || h === 'QTDE EST' || h === 'QTDE ESTOQUE' ||
+        (h.includes('QT') && h.includes('EST') && !h.includes('VALOR')),
+      )
+      const codeCol = findColumn(headers, h =>
+        h === 'CODIGO' || h === 'COD' || h === 'COD PRODUTO' || h === 'CODIGO PRODUTO' || h === 'CODPROD' ||
+        (h.includes('COD') && h.includes('PROD')),
+      )
+      const costCol = findColumn(headers, h => h === 'REAL' || h === 'CUSTO REAL')
+      const saleCol = findColumn(headers, h =>
+        h === 'P VENDA' || h === 'PVENDA' || h === 'PRECO VENDA' || h === 'PRECO DE VENDA' ||
+        (h.includes('VENDA') && (h.startsWith('P ') || h.includes('PRECO'))),
+      )
+      const descriptionCol = findColumn(headers, h => h.includes('DESCRI'))
+
+      let score = 0
+      if (qtyCol >= 0) score += 3
+      if (costCol >= 0) score += 3
+      if (saleCol >= 0) score += 3
+      if (codeCol >= 0) score += 1
+      if (descriptionCol >= 0) score += 1
+      if (normalized.some(h => h.includes('REAL ICMS'))) score += 0.2
+
+      const candidate: HeaderMatch = { sheetName, rows, index: r, headers, qtyCol, codeCol, costCol, saleCol, descriptionCol, score }
+      if (!best || candidate.score > best.score) best = candidate
     }
   }
-  return { index: bestIndex, score: bestScore }
+
+  return best && best.qtyCol >= 0 && best.costCol >= 0 && best.saleCol >= 0 ? best : null
+}
+
+function isTotalRow(row: unknown[]) {
+  return row.some(value => {
+    const text = normalizeText(value)
+    return text.startsWith('TOTAL') || text.includes('TOTAL GERAL') || text.includes('TOTAL ESTOQUE')
+  })
 }
 
 export async function parsePosition105Totals(file: File): Promise<Position105Result> {
   const buffer = await file.arrayBuffer()
   const workbook = XLSX.read(buffer, { type: 'array', cellDates: true, dense: true })
-  const sheet = workbook.Sheets[workbook.SheetNames[0]]
-  if (!sheet) throw new Error('O relatório 105 não possui uma planilha legível.')
-
-  const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null, raw: true }) as Matrix
-  const match = findHeader(rows)
-  if (match.index < 0 || match.score < 3) throw new Error('Não consegui reconhecer as colunas da posição 105.')
-
-  const headers = rows[match.index] ?? []
-  const qtyCol = findExact(headers, ['QT EST', 'QT. EST.', 'QT.EST.', 'QT ESTOQUE', 'QTDE EST', 'QTDE ESTOQUE'])
-  let codeCol = findExact(headers, ['CÓDIGO', 'CODIGO', 'COD.', 'COD', 'COD PRODUTO', 'CODPROD'])
-  const costCol = findExact(headers, ['REAL'])
-  const saleCol = findExact(headers, ['P. VENDA', 'P VENDA', 'PVENDA', 'PREÇO VENDA', 'PRECO VENDA'])
-
-  if (codeCol < 0) {
-    const normalized = headers.map(normalizeText)
-    codeCol = normalized.findIndex(header => header === 'CODIGO PRODUTO' || header === 'COD PRODUTO')
-  }
-  if (qtyCol < 0 || costCol < 0 || saleCol < 0) {
-    throw new Error('O 105 precisa conter Qt.Est., Real e P. Venda para calcular a posição financeira.')
+  const match = locateHeader(workbook)
+  if (!match) {
+    throw new Error('Não consegui localizar no 105 as colunas Qt.Est., Real e P. Venda. Se o arquivo estiver correto, envie-o aqui para eu ajustar o layout exato.')
   }
 
   const financeByCode: Record<string, CatalogFinance> = {}
@@ -83,14 +109,23 @@ export async function parsePosition105Totals(file: File): Promise<Position105Res
   let totalUnits = 0
   let used = 0
 
-  for (let r = match.index + 1; r < rows.length; r += 1) {
-    const row = rows[r] ?? []
-    const units = numberValue(row[qtyCol])
-    const cost = numberValue(row[costCol])
-    const sale = numberValue(row[saleCol])
-    const code = codeCol >= 0 ? cleanId(row[codeCol]) : ''
+  for (let r = match.index + 1; r < match.rows.length; r += 1) {
+    const row = match.rows[r] ?? []
+    if (!row.length || isTotalRow(row)) continue
 
-    if (!units && !cost && !sale && !code) continue
+    const units = numberValue(row[match.qtyCol])
+    const cost = numberValue(row[match.costCol])
+    const sale = numberValue(row[match.saleCol])
+    const code = match.codeCol >= 0 ? cleanId(row[match.codeCol]) : ''
+    const description = match.descriptionCol >= 0 ? String(row[match.descriptionCol] ?? '').trim() : ''
+
+    // Linhas de cabeçalho repetidas ou espaços entre blocos não entram no cálculo.
+    if (!units && !cost && !sale && !code && !description) continue
+    if (normalizeText(row[match.qtyCol]) === 'QT EST' || normalizeText(row[match.costCol]) === 'REAL') continue
+
+    // Sem quantidade não existe posição financeira a valorizar.
+    if (units === 0) continue
+
     totalUnits += units
     totalCost += units * cost
     totalSale += units * sale
@@ -98,7 +133,9 @@ export async function parsePosition105Totals(file: File): Promise<Position105Res
     used += 1
   }
 
-  if (!used) throw new Error('O relatório 105 foi reconhecido, mas nenhuma linha de posição foi encontrada.')
+  if (!used) {
+    throw new Error(`O 105 foi reconhecido na aba “${match.sheetName}”, mas nenhuma linha com quantidade de estoque foi encontrada.`)
+  }
 
   return {
     financeByCode,
@@ -106,11 +143,12 @@ export async function parsePosition105Totals(file: File): Promise<Position105Res
     totalSale,
     totalUnits,
     rows: used,
-    headers: headers.map(value => String(value ?? '')).filter(Boolean),
+    headers: match.headers.map(value => String(value ?? '')).filter(Boolean),
     warnings: [
       'Regra financeira definida: Estoque ao custo = Qt.Est. × Real.',
       'Estoque a preço de venda = Qt.Est. × P. Venda.',
-      'Os totais financeiros são calculados diretamente no 105 e não dependem do casamento com o 8013.',
+      `Posição financeira calculada diretamente no relatório 105, aba ${match.sheetName}.`,
+      'O 8013 permanece como apoio físico e para o detalhamento por linha; ele não substitui o valor financeiro do 105.',
     ],
   }
 }
