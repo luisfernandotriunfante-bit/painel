@@ -21,6 +21,7 @@ import {
   UploadKey,
 } from './data'
 import { parsePosition105Totals } from './position105'
+import { parseTransitPortfolio } from './transit'
 
 type Page = 'resumo' | 'gerencial' | 'equipe' | 'estoque' | 'conferencia' | 'upload'
 type Network = { name: string; target: number; sellOut: number; previous: number }
@@ -170,7 +171,7 @@ function recalcState(current: AppState, patch: Partial<AppState>): AppState {
   const stock = stockFinancial(next.stockItems, activeFinance)
   next.stockLines = stock.lines
   next.stockMatched = stock.matchedItems
-  const hasPosition = Boolean(next.uploads.position)
+  const hasPosition = next.positionRows > 0
   next.stockCost = hasPosition ? next.positionCost : stock.totalCost
   next.stockSale = hasPosition ? next.positionSale : stock.totalSale
   next.networks = buildNetworks(next.salesCustomers, next.networkByCnpj, next.historyByMonth[previousMonthKey(next)], next.networkPoolTarget)
@@ -233,7 +234,8 @@ function App() {
         const result = await parseHistory379(file)
         setState(current => recalcState(current, { historyByMonth: result.byMonth, uploads: { ...current.uploads, history: fileInfo(file, result.rows, 'histórico 379 processado') }, warnings: addWarnings(current, '379', result.warnings) }))
       } else if (key === 'transit') {
-        setState(current => ({ ...current, uploads: { ...current.uploads, transit: fileInfo(file, undefined, 'aguardando definição do layout') }, warnings: addWarnings(current, 'Trânsito', ['Arquivo registrado. O parser será configurado quando validarmos as colunas desse relatório.']) }))
+        const result = await parseTransitPortfolio(file)
+        setState(current => recalcState(current, { stockTransit: result.totalValue, uploads: { ...current.uploads, transit: fileInfo(file, result.rows, `${money.format(result.totalValue)} em trânsito${result.orders ? ` • ${result.orders} pedidos` : ''}`) }, warnings: addWarnings(current, 'Carteira', result.warnings) }))
       }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Falha ao processar o arquivo.')
@@ -306,7 +308,7 @@ function Resumo({ state, setState }: { state: AppState; setState: React.Dispatch
       <Metric label="FATURADO" value={state.uploads.sales ? money.format(state.billed) : '—'} hint={state.sellOut ? `${percent.format(state.billed / state.sellOut)} do Sell Out` : 'Status VENDA do 8022'} tone="navy" />
       <Metric label="VENDA A FATURAR" value={state.uploads.sales ? money.format(state.toInvoice) : '—'} hint="Status A FATURAR do 8022" />
       <Metric label="POSITIVAÇÃO POTENCIAL" value={state.uploads.sales ? integer.format(state.potentialPositives) : '—'} hint="CNPJs únicos com VENDA ou A FATURAR" />
-      <Metric label="ESTOQUE AO CUSTO" value={state.uploads.position ? money.format(state.stockCost) : '—'} hint="105 • Qt.Est. × Real" />
+      <Metric label="ESTOQUE AO CUSTO" value={state.positionRows > 0 ? money.format(state.stockCost) : '—'} hint={state.positionRows > 0 ? (state.stockTransit > 0 ? `105 • + ${money.format(state.stockTransit)} em trânsito` : '105 • Qt.Est. × Real') : 'Recarregue o relatório 105'} />
     </section>
     <section className="split summary-split">
       <article className="panel chart-panel"><Title kicker="MOVIMENTO DIÁRIO" title="Sell Out por dia" subtitle="O eixo mostra o mês inteiro. Dias futuros aparecem, mas sem valor inventado." />{state.uploads.sales ? <div className="bars">{state.daily.map((value, index) => { const day = index + 1; const future = sameCurrentMonth && day > now.getDate(); return <div className={`bar-slot ${future ? 'future' : ''}`} key={day} title={`${day} • ${money.format(value)}`}><i style={{ height: `${value !== 0 ? Math.max(5, Math.abs(value) / maxDaily * 100) : 2}%` }} /><span>{day}</span></div> })}</div> : <Empty text="Carregue o relatório 8022 na última aba para montar o movimento diário." />}</article>
@@ -340,17 +342,18 @@ function Equipe({ state, setState }: { state: AppState; setState: React.Dispatch
 }
 
 function Estoque({ state }: { state: AppState }) {
-  const positionActive = Boolean(state.uploads.position)
+  const positionActive = state.positionRows > 0
+  const transitActive = state.stockTransit > 0
   return <>
-    <section className="page-head"><Title kicker="ESTOQUE" title="Posição financeira do estoque" subtitle="O valor financeiro é calculado diretamente no relatório 105. O 8013 fica como apoio físico e para o detalhamento por linha." /><div><span>Itens processados no relatório 105</span><strong>{positionActive ? integer.format(state.positionRows) : '—'}</strong></div></section>
+    <section className="page-head"><Title kicker="ESTOQUE" title="Posição financeira do estoque" subtitle="O 105 representa o estoque físico atual. A Carteira Colgate entra separadamente como abastecimento em trânsito." /><div><span>Itens processados no relatório 105</span><strong>{positionActive ? integer.format(state.positionRows) : '—'}</strong></div></section>
     <section className="metrics four">
-      <Metric label="ESTOQUE ATUAL AO CUSTO" value={positionActive ? money.format(state.stockCost) : '—'} hint={positionActive ? '105 • Qt.Est. × Real' : 'Carregue o relatório 105'} tone="red" />
-      <Metric label="ESTOQUE A PREÇO DE VENDA" value={positionActive ? money.format(state.stockSale) : '—'} hint={positionActive ? '105 • Qt.Est. × P. Venda' : 'Carregue o relatório 105'} tone="navy" />
-      <Metric label="ESTOQUE EM UNIDADES" value={state.uploads.stock ? integer.format(state.stockUnits) : (positionActive ? integer.format(state.positionUnits) : '—')} hint={state.uploads.stock ? '8013' : '105 • Qt.Est.'} />
-      <Metric label="ESTOQUE EM CAIXAS" value={state.uploads.stock ? decimal.format(state.stockBoxes) : '—'} hint="8013" />
+      <Metric label="ESTOQUE ATUAL AO CUSTO" value={positionActive ? money.format(state.stockCost) : '—'} hint={positionActive ? '105 • Qt.Est. × Real' : 'Recarregue o relatório 105'} tone="red" />
+      <Metric label="ABASTECIMENTO EM TRÂNSITO" value={transitActive ? money.format(state.stockTransit) : '—'} hint={transitActive ? 'Carteira Colgate' : 'Carregue a Carteira Colgate'} tone="navy" />
+      <Metric label="POSIÇÃO AO CUSTO + TRÂNSITO" value={positionActive ? money.format(state.stockCost + state.stockTransit) : '—'} hint={positionActive ? 'Estoque físico ao custo + carteira em trânsito' : 'Aguardando posição 105'} />
+      <Metric label="ESTOQUE A PREÇO DE VENDA" value={positionActive ? money.format(state.stockSale) : '—'} hint={positionActive ? 'Somente estoque físico • 105 • Qt.Est. × P. Venda' : 'Recarregue o relatório 105'} />
     </section>
     <section className="table-panel panel"><div className="table-title"><div><span>POSIÇÃO POR LINHA</span><h3>Detalhamento físico e financeiro</h3></div><b>{state.stockMatched ? `${state.stockMatched} ITENS CASADOS` : 'CRUZAMENTO POR LINHA A VALIDAR'}</b></div>{state.stockLines.length ? <div className="table-scroll"><table><thead><tr><th>Linha</th><th>Unidades</th><th>Caixas</th><th>Custo</th><th>Preço venda</th><th>Itens casados</th><th>Regra usada</th></tr></thead><tbody>{state.stockLines.map(line => <tr key={line.name}><td><b>{line.name}</b></td><td>{integer.format(line.units)}</td><td>{decimal.format(line.boxes)}</td><td>{line.matched ? money.format(line.cost) : '—'}</td><td>{line.matched && line.sale ? money.format(line.sale) : '—'}</td><td>{line.matched} / {line.total}</td><td className="rule-cell">{line.rule}</td></tr>)}</tbody></table></div> : <Empty text="Carregue o estoque 8013 para montar o detalhamento por linha." />}</section>
-    <p className="note stock-note">Regra financeira fechada: custo usa somente <b>Real</b> e preço de venda usa <b>P. Venda</b>. Os totais acima vêm diretamente do 105 e não dependem do vínculo com o 8013. O vínculo 8013 ↔ 105 é usado somente para distribuir o valor entre as linhas de produto.</p>
+    <p className="note stock-note">Regra financeira: <b>Estoque atual ao custo = Qt.Est. × Real</b>. <b>Abastecimento em trânsito = Carteira Colgate</b>. <b>Posição ao custo + trânsito = estoque atual + carteira</b>. O <b>preço de venda considera somente o estoque físico atual</b>; a carteira não entra nesse cálculo.</p>
   </>
 }
 
@@ -366,10 +369,10 @@ function Upload({ state, processUpload, resetLocal }: { state: AppState; process
     { key: 'rcas', title: 'EQUIPE ATUAL • NOVOS RCAS', subtitle: 'De/para do setor antigo para o código atual do RCA e coordenação.', accept: '.xlsx,.xls' },
     { key: 'premises', title: 'BASE DE PREMISSAS • Q3', subtitle: 'Vínculo CNPJ → rede, usado nas redes estratégicas.', accept: '.xlsx,.xls' },
     { key: 'stock', title: 'ESTOQUE FÍSICO • RELATÓRIO 8013', subtitle: 'Unidades, caixas, produto e categoria.', accept: '.xls,.xlsx' },
-    { key: 'position', title: 'POSIÇÃO FINANCEIRA • RELATÓRIO 105', subtitle: 'Calcula diretamente Qt.Est. × Real e Qt.Est. × P. Venda.', accept: '.xls,.xlsx' },
+    { key: 'position', title: 'POSIÇÃO FINANCEIRA • RELATÓRIO 105', subtitle: 'Calcula o estoque físico atual em Qt.Est. × Real e Qt.Est. × P. Venda.', accept: '.xls,.xlsx' },
     { key: 'catalog', title: 'CADASTRO DE ITENS • 286', subtitle: 'Cadastro auxiliar de produtos; não substitui o 105.', accept: '.xls,.xlsx' },
     { key: 'history', title: 'HISTÓRICO • 379 2025', subtitle: 'Comparativo das redes no mesmo mês do ano anterior.', accept: '.txt' },
-    { key: 'transit', title: 'COLGATE → MILÊNIO • EM TRÂNSITO', subtitle: 'Fonte opcional; layout ainda será validado.', accept: '.xls,.xlsx,.csv,.txt' },
+    { key: 'transit', title: 'CARTEIRA COLGATE • EM TRÂNSITO', subtitle: 'Pedidos feitos à Colgate que ainda estão a caminho da Milênio. Soma somente à posição ao custo; não entra no preço de venda.', accept: '.xls,.xlsx,.csv,.txt' },
   ]
   return <><section className="upload-hero"><span>ENTRADA DE DADOS</span><h2>Atualize a base sem perder o painel.</h2><p>Os arquivos são processados no próprio navegador. Eles não são enviados para o GitHub nem para um servidor do painel. O que fica salvo localmente são os resultados processados necessários para restaurar a tela após F5.</p></section><section className="upload-grid">{cards.map(card => <label className="upload-card" key={card.key}><div><span>{card.title}</span><p>{card.subtitle}</p></div><input type="file" accept={card.accept} onChange={(event) => void processUpload(card.key, event)} /><strong>{state.uploads[card.key]?.name ?? 'Selecionar arquivo'}</strong><small>{state.uploads[card.key]?.detail ?? 'Nenhum arquivo processado'}</small></label>)}</section><section className="storage"><div><span>PERSISTÊNCIA LOCAL</span><h3>Última base válida preservada no navegador</h3><p>Atualizar a página não apaga os resultados processados nem as metas manuais.</p></div><button onClick={resetLocal}>Limpar base local</button></section></>
 }
@@ -377,7 +380,7 @@ function Upload({ state, processUpload, resetLocal }: { state: AppState; process
 function Empty({ text }: { text: string }) { return <div className="empty-state">{text}</div> }
 
 function sourceLabel(key: UploadKey) {
-  return ({ sales: '8022 • Vendas', targets: 'Bússola • Metas', rcas: 'Novos RCAs • Equipe atual', premises: 'Premissas Q3 • Redes', stock: '8013 • Estoque físico', position: '105 • Posição financeira', catalog: '286 • Cadastro auxiliar', history: '379 2025 • Histórico', transit: 'Em trânsito' })[key]
+  return ({ sales: '8022 • Vendas', targets: 'Bússola • Metas', rcas: 'Novos RCAs • Equipe atual', premises: 'Premissas Q3 • Redes', stock: '8013 • Estoque físico', position: '105 • Posição financeira', catalog: '286 • Cadastro auxiliar', history: '379 2025 • Histórico', transit: 'Carteira Colgate • Em trânsito' })[key]
 }
 
 export default App
