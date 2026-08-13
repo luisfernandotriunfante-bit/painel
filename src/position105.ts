@@ -96,6 +96,21 @@ function isTotalRow(row: unknown[]) {
   })
 }
 
+function metadataValue(rows: Matrix, endRow: number, label: string) {
+  const wanted = normalizeText(label)
+  for (let r = 0; r < Math.min(endRow, rows.length); r += 1) {
+    const row = rows[r] ?? []
+    for (let c = 0; c < row.length; c += 1) {
+      if (normalizeText(row[c]) !== wanted) continue
+      for (let cc = c + 1; cc < row.length; cc += 1) {
+        const value = String(row[cc] ?? '').trim()
+        if (value) return value
+      }
+    }
+  }
+  return ''
+}
+
 export async function parsePosition105Totals(file: File): Promise<Position105Result> {
   const buffer = await file.arrayBuffer()
   const workbook = XLSX.read(buffer, { type: 'array', cellDates: true, dense: true })
@@ -103,6 +118,15 @@ export async function parsePosition105Totals(file: File): Promise<Position105Res
   if (!match) {
     throw new Error('Não consegui localizar no 105 as colunas Qt.Est., Real e P. Venda. Se o arquivo estiver correto, envie-o aqui para eu ajustar o layout exato.')
   }
+
+  const consideredRaw = metadataValue(match.rows, match.index, 'Considerado:')
+  const considered = normalizeText(consideredRaw)
+  if (considered && !considered.includes('FISICO')) {
+    throw new Error(`Este 105 foi gerado como “${consideredRaw}”. Para o estoque oficial, gere o relatório 105 com “Considerado: Físico”.`)
+  }
+
+  const branch = metadataValue(match.rows, match.index, 'Filial:')
+  const stockDate = metadataValue(match.rows, match.index, 'Estoque em:')
 
   const financeByCode: Record<string, CatalogFinance> = {}
   let totalCost = 0
@@ -124,15 +148,11 @@ export async function parsePosition105Totals(file: File): Promise<Position105Res
     if (!units && !cost && !sale && !code && !description) continue
     if (normalizeText(row[match.qtyCol]) === 'QT EST' || normalizeText(row[match.costCol]) === 'REAL') continue
 
-    // O 105 lista preços unitários também para produtos com disponível zero.
-    // Esses preços precisam ser preservados para valorizar o Físico do relatório 286.
     if (code && (cost !== 0 || sale !== 0)) {
       financeByCode[code] = { cost, sale }
       priceRows += 1
     }
 
-    // Os totais diretos abaixo continuam representando o Qt.Est. do próprio 105,
-    // que no arquivo atual está configurado como “Disponível”.
     if (units === 0) continue
     totalUnits += units
     totalCost += units * cost
@@ -140,9 +160,18 @@ export async function parsePosition105Totals(file: File): Promise<Position105Res
     used += 1
   }
 
-  if (!priceRows) {
-    throw new Error(`O 105 foi reconhecido na aba “${match.sheetName}”, mas nenhuma linha com preço unitário foi encontrada.`)
+  if (!used) {
+    throw new Error(`O 105 foi reconhecido na aba “${match.sheetName}”, mas nenhuma linha com estoque físico foi encontrada.`)
   }
+
+  const warnings = [
+    'Fonte oficial do estoque: relatório 105 gerado com “Considerado: Físico”.',
+    'Estoque ao custo = Qt.Est. físico × Real.',
+    'Estoque a preço de venda = Qt.Est. físico × P. Venda.',
+    'O 8013 fica como disponibilidade operacional/conferência e não valoriza o estoque físico.',
+  ]
+  if (branch && normalizeText(branch).replace(/\D/g, '') !== '11') warnings.push(`Atenção: o 105 informa Filial ${branch}; a referência esperada é Filial 11.`)
+  if (stockDate) warnings.push(`Data da posição do 105: ${stockDate}.`)
 
   return {
     financeByCode,
@@ -152,10 +181,6 @@ export async function parsePosition105Totals(file: File): Promise<Position105Res
     rows: used,
     priceRows,
     headers: match.headers.map(value => String(value ?? '')).filter(Boolean),
-    warnings: [
-      'O 105 fornece os preços unitários: Real para custo e P. Venda para preço de venda.',
-      'O Qt.Est. do 105 atual está configurado como Disponível e não é usado como estoque físico quando o 286 estiver carregado.',
-      `Preços unitários processados na aba ${match.sheetName}.`,
-    ],
+    warnings,
   }
 }
