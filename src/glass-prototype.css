@@ -1,5 +1,5 @@
 /* Isolated glass prototype: ONLY the Faturado KPI on Resumo.
-   Clean frosted glass: title + value only. */
+   Clean dark frosted glass: title + value only. */
 .summary-kpis {
   position: relative;
   isolation: isolate;
@@ -14,10 +14,10 @@
   pointer-events: none;
   inset: -54px -40px;
   background:
-    radial-gradient(ellipse 360px 220px at 39% 34%, rgba(22, 70, 116, .20) 0%, rgba(22, 70, 116, .09) 44%, transparent 74%),
-    radial-gradient(ellipse 300px 190px at 49% 78%, rgba(124, 17, 38, .135) 0%, rgba(124, 17, 38, .055) 46%, transparent 76%);
-  filter: blur(30px);
-  opacity: .64;
+    radial-gradient(ellipse 360px 220px at 39% 34%, rgba(20, 61, 101, .15) 0%, rgba(20, 61, 101, .06) 44%, transparent 74%),
+    radial-gradient(ellipse 300px 190px at 49% 78%, rgba(105, 13, 31, .10) 0%, rgba(105, 13, 31, .04) 46%, transparent 76%);
+  filter: blur(34px);
+  opacity: .52;
   transform: scale(1.05);
 }
 
@@ -26,20 +26,19 @@
   z-index: 1;
 }
 
-/* Milky frosted glass:
-   the surface itself carries a translucent blue-gray haze so it reads as frosted
-   even where the backdrop is visually flat. */
+/* Smoked frosted glass:
+   preserves the haze/blur but keeps the material visually tied to the black dashboard background. */
 .summary-kpis > .metric:nth-child(2) {
   overflow: hidden;
-  background: rgba(174, 198, 218, .175) !important;
-  border: 1px solid rgba(228, 239, 248, .32) !important;
+  background: rgba(71, 91, 112, .20) !important;
+  border: 1px solid rgba(210, 225, 237, .24) !important;
   box-shadow:
-    0 22px 54px rgba(0, 0, 0, .34),
-    0 5px 18px rgba(0, 0, 0, .22),
-    inset 0 1px 0 rgba(255, 255, 255, .28),
-    inset 0 0 70px rgba(215, 233, 247, .075) !important;
-  backdrop-filter: blur(58px) saturate(86%) contrast(68%) brightness(122%) !important;
-  -webkit-backdrop-filter: blur(58px) saturate(86%) contrast(68%) brightness(122%) !important;
+    0 22px 54px rgba(0, 0, 0, .36),
+    0 5px 18px rgba(0, 0, 0, .24),
+    inset 0 1px 0 rgba(255, 255, 255, .19),
+    inset 0 0 64px rgba(178, 203, 224, .035) !important;
+  backdrop-filter: blur(58px) saturate(84%) contrast(72%) brightness(103%) !important;
+  -webkit-backdrop-filter: blur(58px) saturate(84%) contrast(72%) brightness(103%) !important;
 }
 
 /* Keep the KPI card completely clean: no decorative pseudo-elements. */
