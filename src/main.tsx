@@ -1,6 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './AppShellAnimatedExact'
+import ExportExcelButton from './ExportExcelButton'
 import './styles.css'
 import './real-data.css'
 import './enhanced.css'
@@ -20,5 +21,28 @@ import './panel-interaction-fixes.css'
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <App />
+    <div className="excel-export-fixed">
+      <ExportExcelButton />
+    </div>
+    <style>{`
+      .excel-export-fixed {
+        position: fixed;
+        left: 0;
+        bottom: 72px;
+        width: 246px;
+        z-index: 1300;
+      }
+      .excel-export-fixed .excel-export-wrap {
+        margin-top: 0;
+      }
+      @media (max-width: 760px) {
+        .excel-export-fixed {
+          left: auto;
+          right: 14px;
+          bottom: 166px;
+          width: 210px;
+        }
+      }
+    `}</style>
   </React.StrictMode>,
 )
