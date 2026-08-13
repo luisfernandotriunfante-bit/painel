@@ -10,6 +10,7 @@ import './premium-v2.css'
 import './premium-v3.css'
 import './executive-command.css'
 import './executive-unified.css'
+import './executive-blackout.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
