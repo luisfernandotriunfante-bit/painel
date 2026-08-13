@@ -1,9 +1,10 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import App from './AppV2'
+import App from './AppV3'
 import './styles.css'
 import './real-data.css'
 import './enhanced.css'
+import './enhanced-v3.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
