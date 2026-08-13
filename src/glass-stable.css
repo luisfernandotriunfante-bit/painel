@@ -2,13 +2,16 @@
 
 :root {
   --glass-fixed-backdrop:
+    repeating-linear-gradient(0deg,
+      rgba(115, 150, 187, .032) 0 1px,
+      transparent 1px 112px),
+    repeating-linear-gradient(90deg,
+      rgba(115, 150, 187, .028) 0 1px,
+      transparent 1px 126px),
     linear-gradient(126deg,
       transparent 0 43.5%,
       rgba(136, 18, 38, .055) 43.7% 43.95%,
       transparent 44.15% 100%),
-    repeating-linear-gradient(90deg,
-      rgba(76, 126, 176, .018) 0 1px,
-      transparent 1px 92px),
     radial-gradient(circle at 18% 21%,
       rgba(25, 76, 128, .20) 0,
       rgba(25, 76, 128, .065) 19%,
@@ -66,8 +69,8 @@
   background-image: var(--glass-fixed-backdrop) !important;
   background-attachment: fixed !important;
   background-position: center top !important;
-  filter: blur(48px) saturate(106%) !important;
-  -webkit-filter: blur(48px) saturate(106%) !important;
+  filter: blur(48px) saturate(100%) brightness(1.04) !important;
+  -webkit-filter: blur(48px) saturate(100%) brightness(1.04) !important;
   transform: scale(1.02) !important;
   transform-origin: center !important;
   opacity: 1 !important;
@@ -95,8 +98,8 @@
   max-height: none !important;
   border-radius: inherit !important;
   background: linear-gradient(145deg,
-    rgba(154, 177, 202, .075),
-    rgba(42, 59, 78, .035)) !important;
+    rgba(154, 177, 202, .068),
+    rgba(42, 59, 78, .028)) !important;
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,.11),
     inset 0 -1px 0 rgba(255,255,255,.018) !important;
