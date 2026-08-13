@@ -1,17 +1,23 @@
 /* Controlled glass prototype: only Faturado KPI. Loaded last. */
 
 :root {
+  /* TEMPORARY REAL-BACKGROUND TEST TARGET.
+     These shapes live on the application backdrop itself, never inside the KPI. */
   --glass-fixed-backdrop:
+    linear-gradient(116deg,
+      transparent 0 35.6%,
+      rgba(163, 18, 42, .82) 35.75% 36.05%,
+      transparent 36.2% 100%),
+    radial-gradient(circle at 39% 18%,
+      rgba(34, 94, 158, .78) 0 30px,
+      rgba(34, 94, 158, .28) 31px 34px,
+      transparent 35px),
     repeating-linear-gradient(0deg,
-      rgba(118, 153, 190, .042) 0 1px,
-      transparent 1px 72px),
+      rgba(105, 145, 190, .16) 0 1px,
+      transparent 1px 54px),
     repeating-linear-gradient(90deg,
-      rgba(118, 153, 190, .035) 0 1px,
-      transparent 1px 84px),
-    linear-gradient(126deg,
-      transparent 0 43.5%,
-      rgba(136, 18, 38, .050) 43.7% 43.9%,
-      transparent 44.1% 100%),
+      rgba(105, 145, 190, .14) 0 1px,
+      transparent 1px 64px),
     radial-gradient(circle at 18% 21%,
       rgba(25, 76, 128, .18) 0,
       rgba(25, 76, 128, .055) 19%,
