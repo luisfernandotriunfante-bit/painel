@@ -1,9 +1,7 @@
 /* Controlled glass prototype: only Faturado KPI. Loaded last. */
 
-/* The shell is the actual fixed backdrop. It stays dark and moves independently
-   from the page content, so cards can blur it while scrolling. */
-.premium-shell {
-  background:
+:root {
+  --glass-fixed-backdrop:
     linear-gradient(126deg,
       transparent 0 43.5%,
       rgba(136, 18, 38, .055) 43.7% 43.95%,
@@ -18,12 +16,18 @@
     radial-gradient(circle at 82% 27%,
       rgba(128, 12, 31, .16) 0,
       rgba(128, 12, 31, .045) 17%,
-      transparent 36%),
-    #02050a !important;
-  background-attachment: fixed !important;
+      transparent 36%);
 }
 
-/* Remove opaque sheets between the shell backdrop and the KPI. */
+/* One real fixed background for the whole module. */
+.premium-shell {
+  background-color: #02050a !important;
+  background-image: var(--glass-fixed-backdrop) !important;
+  background-attachment: fixed !important;
+  background-position: center top !important;
+}
+
+/* Remove opaque sheets between the shell and the KPI. */
 .premium-shell .shell-content,
 .premium-shell .app,
 .premium-shell .enhanced-app,
@@ -33,9 +37,7 @@
   background: transparent !important;
 }
 
-/* Faturado prototype: the ARTICLE itself is only the frame. The actual glass
-   material lives in ::before so it can sample the backdrop independently from
-   the card content. This also overrides the old metric isolation/ornaments. */
+/* Faturado: clean frame only. */
 .premium-shell .summary-kpis .metric:nth-child(2) {
   position: relative !important;
   isolation: auto !important;
@@ -50,32 +52,45 @@
     inset 0 -1px 0 rgba(255, 255, 255, .025) !important;
 }
 
-/* Real frosted-glass layer. */
+/* Deterministic frosted backdrop.
+   This is the SAME viewport-fixed background as the shell, but blurred and
+   clipped by the card. Because background-attachment is fixed, it remains
+   aligned while the card scrolls. */
 .premium-shell .summary-kpis .metric:nth-child(2)::before {
   content: '' !important;
   position: absolute !important;
-  inset: 0 !important;
-  left: 0 !important;
-  top: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
+  inset: -34px !important;
   width: auto !important;
   height: auto !important;
-  border-radius: inherit !important;
-  background: rgba(112, 137, 163, .105) !important;
-  -webkit-backdrop-filter: blur(32px) saturate(112%) !important;
-  backdrop-filter: blur(32px) saturate(112%) !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, .10),
-    inset 0 -1px 0 rgba(255, 255, 255, .018) !important;
+  border-radius: 34px !important;
+  background-color: #02050a !important;
+  background-image: var(--glass-fixed-backdrop) !important;
+  background-attachment: fixed !important;
+  background-position: center top !important;
+  filter: blur(22px) saturate(112%) !important;
+  -webkit-filter: blur(22px) saturate(112%) !important;
+  transform: scale(1.04) !important;
+  transform-origin: center !important;
+  opacity: 1 !important;
   pointer-events: none !important;
   z-index: 0 !important;
 }
 
-/* Remove the old decorative circle entirely: clean card, title + value only. */
+/* Thin frosted film over the blurred background; no decorative shapes. */
 .premium-shell .summary-kpis .metric:nth-child(2)::after {
-  content: none !important;
-  display: none !important;
+  content: '' !important;
+  display: block !important;
+  position: absolute !important;
+  inset: 0 !important;
+  border-radius: inherit !important;
+  background: linear-gradient(145deg,
+    rgba(154, 177, 202, .075),
+    rgba(42, 59, 78, .035)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.11),
+    inset 0 -1px 0 rgba(255,255,255,.018) !important;
+  pointer-events: none !important;
+  z-index: 1 !important;
 }
 
 .premium-shell .summary-kpis .metric:nth-child(2) > span,
