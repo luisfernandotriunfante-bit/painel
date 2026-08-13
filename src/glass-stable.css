@@ -53,23 +53,22 @@
 }
 
 /* Deterministic frosted backdrop.
-   This is the SAME viewport-fixed background as the shell, but blurred and
-   clipped by the card. Because background-attachment is fixed, it remains
-   aligned while the card scrolls. */
+   Same viewport-fixed background as the shell, blurred inside the card.
+   The oversized inset prevents blur edges from becoming visible. */
 .premium-shell .summary-kpis .metric:nth-child(2)::before {
   content: '' !important;
   position: absolute !important;
-  inset: -34px !important;
+  inset: -72px !important;
   width: auto !important;
   height: auto !important;
-  border-radius: 34px !important;
+  border-radius: 72px !important;
   background-color: #02050a !important;
   background-image: var(--glass-fixed-backdrop) !important;
   background-attachment: fixed !important;
   background-position: center top !important;
-  filter: blur(22px) saturate(112%) !important;
-  -webkit-filter: blur(22px) saturate(112%) !important;
-  transform: scale(1.04) !important;
+  filter: blur(48px) saturate(106%) !important;
+  -webkit-filter: blur(48px) saturate(106%) !important;
+  transform: scale(1.02) !important;
   transform-origin: center !important;
   opacity: 1 !important;
   pointer-events: none !important;
