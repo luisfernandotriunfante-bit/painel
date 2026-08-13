@@ -3,7 +3,7 @@ import fallbackSpriteBase64 from './triunfante-user/sprite6-full.txt?raw'
 
 const FALLBACK_SPRITE = `data:image/webp;base64,${fallbackSpriteBase64.trim()}`
 const HQ_BLOB_API = 'https://api.github.com/repos/luisfernandotriunfante-bit/painel/git/blobs/d2a5d73f77952092f4a5d6d01b6aa57b7b35cfb1'
-const HQ_CACHE_KEY = 'triunfante-hq12-v1'
+const HQ_CACHE_KEY = 'triunfante-hq12-v2-canvas'
 const EASING = 0.24
 
 type SpriteConfig = {
@@ -45,8 +45,6 @@ export default function ScrollTriunfanteBackdropExact() {
       const rect = canvas.getBoundingClientRect()
       if (!rect.width || !rect.height) return false
 
-      // Render explicitly at device-pixel density. This avoids the browser
-      // rasterising the animation at CSS-pixel resolution on HiDPI screens.
       const dpr = Math.min(window.devicePixelRatio || 1, 3)
       const width = Math.max(1, Math.round(rect.width * dpr))
       const height = Math.max(1, Math.round(rect.height * dpr))
@@ -103,9 +101,6 @@ export default function ScrollTriunfanteBackdropExact() {
       current += distance * EASING
       if (Math.abs(distance) < 0.002) current = target
 
-      // Important: render ONE complete source frame at a time.
-      // The previous two-layer crossfade blended two different rotations and
-      // produced the soft/ghosted appearance that looked like low resolution.
       const normalized = ((current % sprite.frameCount) + sprite.frameCount) % sprite.frameCount
       const frame = Math.round(normalized) % sprite.frameCount
 
@@ -146,7 +141,6 @@ export default function ScrollTriunfanteBackdropExact() {
       }
     }
 
-    // Start immediately with the bundled fallback so there is never a blank layer.
     activateSprite(FALLBACK_SPRITE, 6, 3, 2, 42)
 
     const applyHQ = (base64: string) => {
