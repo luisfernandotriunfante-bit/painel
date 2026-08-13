@@ -5,8 +5,12 @@
 
 .shell-content {
   min-height: 100vh;
-  margin-left: 68px;
-  transition: margin-left 180ms ease;
+  margin-left: 0;
+}
+
+/* O cabeçalho grande deixa de fazer parte da navegação do módulo. */
+.shell-content .header {
+  display: none;
 }
 
 .module-sidebar {
@@ -15,23 +19,34 @@
   top: 0;
   left: 0;
   bottom: 0;
-  width: 68px;
-  overflow: hidden;
+  width: 246px;
+  overflow: visible;
   display: flex;
   flex-direction: column;
   background:
     radial-gradient(circle at 22% 4%, rgba(239, 51, 70, .15), transparent 24%),
     linear-gradient(180deg, #0d1729 0%, #101a2d 48%, #12192a 100%);
   border-right: 1px solid rgba(255, 255, 255, .08);
-  box-shadow: 14px 0 36px rgba(8, 18, 35, .12);
+  box-shadow: 20px 0 46px rgba(8, 18, 35, .2);
   color: #fff;
-  transition: width 190ms cubic-bezier(.2,.8,.2,1), box-shadow 190ms ease;
+  transform: translateX(-100%);
+  transition: transform 210ms cubic-bezier(.2,.8,.2,1), box-shadow 190ms ease;
+}
+
+/* Faixa invisível de ativação: o menu some visualmente por completo. */
+.module-sidebar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: -10px;
+  bottom: 0;
+  width: 10px;
+  background: transparent;
 }
 
 .module-sidebar:hover,
 .module-sidebar:focus-within {
-  width: 246px;
-  box-shadow: 20px 0 46px rgba(8, 18, 35, .2);
+  transform: translateX(0);
 }
 
 .sidebar-brand {
@@ -61,13 +76,6 @@
 
 .brand-copy {
   min-width: 150px;
-  opacity: 0;
-  transform: translateX(-6px);
-  transition: opacity 140ms ease, transform 160ms ease;
-}
-
-.module-sidebar:hover .brand-copy,
-.module-sidebar:focus-within .brand-copy {
   opacity: 1;
   transform: translateX(0);
 }
@@ -154,13 +162,6 @@
 .module-label {
   grid-column: 2;
   min-width: 158px;
-  opacity: 0;
-  transform: translateX(-6px);
-  transition: opacity 130ms ease, transform 160ms ease;
-}
-
-.module-sidebar:hover .module-label,
-.module-sidebar:focus-within .module-label {
   opacity: 1;
   transform: translateX(0);
 }
@@ -203,12 +204,6 @@
 
 .sidebar-footer > div {
   min-width: 150px;
-  opacity: 0;
-  transition: opacity 130ms ease;
-}
-
-.module-sidebar:hover .sidebar-footer > div,
-.module-sidebar:focus-within .sidebar-footer > div {
   opacity: 1;
 }
 
@@ -229,31 +224,72 @@
   color: #748197;
 }
 
-/* Mantém o menu horizontal do SELL OUT como navegação interna do módulo. */
+/* Navegação interna do SELL OUT: topo limpo e centralizado. */
 .shell-content .tabs {
-  position: relative;
-  z-index: 20;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 62px;
+  padding: 0 24px;
+  background: rgba(255, 255, 255, .94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 0;
+  border-bottom: 1px solid #e4e8ef;
+  box-shadow: 0 8px 24px rgba(17, 28, 48, .035);
+}
+
+.shell-content .tabs button,
+.shell-content .tabs button:last-child {
+  margin-left: 0;
+}
+
+.shell-content .tabs button {
+  min-width: auto;
+  padding-left: 18px;
+  padding-right: 18px;
 }
 
 @media (max-width: 760px) {
   .shell-content { margin-left: 0; }
   .module-sidebar {
     top: auto;
-    right: 16px;
+    right: 14px;
     left: auto;
-    bottom: 16px;
-    width: 52px;
-    height: 52px;
+    bottom: 14px;
+    width: 210px;
+    height: 146px;
     border: 0;
     border-radius: 16px;
+    transform: translateX(calc(100% + 16px));
+  }
+  .module-sidebar::after {
+    top: 0;
+    right: auto;
+    left: -16px;
+    bottom: 0;
+    width: 16px;
   }
   .module-sidebar:hover,
   .module-sidebar:focus-within {
-    width: 210px;
-    height: 146px;
+    transform: translateX(0);
   }
   .sidebar-brand,
   .sidebar-footer { display: none; }
   .module-nav { padding: 5px; }
   .module-item { min-height: 42px; }
+  .shell-content .tabs {
+    justify-content: flex-start;
+    overflow-x: auto;
+    padding: 0 14px;
+  }
+  .shell-content .tabs button {
+    flex: 0 0 auto;
+    padding-left: 13px;
+    padding-right: 13px;
+  }
 }
