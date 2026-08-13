@@ -1,0 +1,207 @@
+/* Single glass recipe for the entire site.
+   The lateral sidebar is the visual reference. */
+
+:root {
+  --site-glass-bg: rgba(5, 11, 19, .30);
+  --site-glass-blur: 18px;
+  --site-glass-saturation: 116%;
+  --site-glass-border: rgba(255, 255, 255, .10);
+  --site-glass-border-soft: rgba(255, 255, 255, .07);
+}
+
+/* Nothing opaque between the fixed backdrop and the glass surfaces. */
+.premium-shell .shell-content,
+.premium-shell .app,
+.premium-shell .enhanced-app,
+.premium-shell .v3-app,
+.premium-shell .compact-main,
+.premium-shell .v3-main,
+.premium-shell .metrics,
+.premium-shell .enhanced-metrics,
+.premium-shell .summary-kpis,
+.premium-shell .manager-kpis {
+  background: transparent !important;
+  isolation: auto !important;
+  filter: none !important;
+  contain: none !important;
+}
+
+/* EXACT SAME MATERIAL AS THE SIDEBAR. */
+.premium-shell :is(
+  .module-sidebar,
+  .tabs,
+  .metric,
+  .panel,
+  .section-block,
+  .info-card,
+  .target-control,
+  .upload-card,
+  .storage,
+  .stock-result,
+  .manager-info-grid,
+  .movement-wrap,
+  .movement-table,
+  .table-scroll,
+  .stock-table-viewport,
+  .inline-alert,
+  .empty-state,
+  .conference-grid .panel
+) {
+  background: var(--site-glass-bg) !important;
+  border-color: var(--site-glass-border) !important;
+  -webkit-backdrop-filter: blur(var(--site-glass-blur)) saturate(var(--site-glass-saturation)) !important;
+  backdrop-filter: blur(var(--site-glass-blur)) saturate(var(--site-glass-saturation)) !important;
+}
+
+/* KPIs use direct glass, with no fake light layer. */
+.premium-shell .summary-kpis .metric:nth-child(n),
+.premium-shell .manager-kpis .metric:nth-child(n),
+.premium-shell .metrics .metric:nth-child(n),
+.premium-shell .enhanced-metrics .metric:nth-child(n),
+.premium-shell .metric.red,
+.premium-shell .metric.navy,
+.premium-shell .metric.green,
+.premium-shell .metric {
+  background: var(--site-glass-bg) !important;
+  border: 1px solid var(--site-glass-border) !important;
+  -webkit-backdrop-filter: blur(var(--site-glass-blur)) saturate(var(--site-glass-saturation)) !important;
+  backdrop-filter: blur(var(--site-glass-blur)) saturate(var(--site-glass-saturation)) !important;
+  box-shadow: none !important;
+}
+
+.premium-shell .summary-kpis .metric:nth-child(n)::before,
+.premium-shell .manager-kpis .metric:nth-child(n)::before,
+.premium-shell .metrics .metric:nth-child(n)::before,
+.premium-shell .enhanced-metrics .metric:nth-child(n)::before,
+.premium-shell .metric::before,
+.premium-shell .summary-kpis .metric:nth-child(n)::after,
+.premium-shell .manager-kpis .metric:nth-child(n)::after,
+.premium-shell .metrics .metric:nth-child(n)::after,
+.premium-shell .enhanced-metrics .metric:nth-child(n)::after,
+.premium-shell .metric::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* Horizontal menu: same material. Only the selected button retains the red accent. */
+.premium-shell .tabs {
+  background: var(--site-glass-bg) !important;
+  border: 1px solid var(--site-glass-border) !important;
+  -webkit-backdrop-filter: blur(var(--site-glass-blur)) saturate(var(--site-glass-saturation)) !important;
+  backdrop-filter: blur(var(--site-glass-blur)) saturate(var(--site-glass-saturation)) !important;
+  box-shadow: none !important;
+}
+
+.premium-shell .tabs button:not(.active) {
+  background: transparent !important;
+}
+
+.premium-shell .tabs button:not(.active):hover {
+  background: rgba(255, 255, 255, .05) !important;
+}
+
+/* Panels and table containers: same material. */
+.premium-shell :is(
+  .panel,
+  .section-block,
+  .table-scroll,
+  .stock-table-viewport,
+  .movement-wrap,
+  .movement-table,
+  .manager-info-grid,
+  .info-card,
+  .target-control,
+  .upload-card,
+  .storage,
+  .stock-result
+) {
+  background: var(--site-glass-bg) !important;
+  border-color: var(--site-glass-border) !important;
+  -webkit-backdrop-filter: blur(var(--site-glass-blur)) saturate(var(--site-glass-saturation)) !important;
+  backdrop-filter: blur(var(--site-glass-blur)) saturate(var(--site-glass-saturation)) !important;
+  box-shadow: none !important;
+}
+
+/* Table content stays transparent inside the glass sheet. */
+.premium-shell table {
+  background: transparent !important;
+}
+
+.premium-shell table td {
+  background: transparent !important;
+  border-color: var(--site-glass-border-soft) !important;
+}
+
+.premium-shell table th,
+.premium-shell .stock-table .stock-header-row th,
+.premium-shell .stock-table .stock-filter-row th,
+.premium-shell .movement-dashboard .movement-table th {
+  background: rgba(255, 255, 255, .035) !important;
+  border-color: var(--site-glass-border-soft) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+.premium-shell table tbody tr:nth-child(even) td {
+  background: rgba(255, 255, 255, .010) !important;
+}
+
+.premium-shell table tbody tr:hover td {
+  background: rgba(255, 255, 255, .045) !important;
+}
+
+/* Section bars do not create a second material layer. */
+.premium-shell :is(
+  .section-bar,
+  .table-title,
+  .panel-toolbar,
+  .stock-titlebar,
+  .info-card > header
+) {
+  background: rgba(255, 255, 255, .025) !important;
+  border-color: var(--site-glass-border-soft) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* Inputs remain translucent. */
+.premium-shell :is(
+  .currency-input,
+  .number-input,
+  .network-select,
+  .stock-filter-row input,
+  .stock-filters input,
+  .stock-filters select,
+  .target-input-cell input,
+  input,
+  select,
+  textarea
+) {
+  background: rgba(255, 255, 255, .045) !important;
+  border-color: var(--site-glass-border) !important;
+  box-shadow: none !important;
+}
+
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .premium-shell :is(
+    .module-sidebar,
+    .tabs,
+    .metric,
+    .panel,
+    .section-block,
+    .info-card,
+    .target-control,
+    .upload-card,
+    .storage,
+    .stock-result,
+    .manager-info-grid,
+    .movement-wrap,
+    .movement-table,
+    .table-scroll,
+    .stock-table-viewport,
+    .inline-alert,
+    .empty-state
+  ) {
+    background: rgba(5, 11, 19, .78) !important;
+  }
+}
