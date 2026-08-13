@@ -3,22 +3,22 @@
 :root {
   --glass-fixed-backdrop:
     repeating-linear-gradient(0deg,
-      rgba(115, 150, 187, .032) 0 1px,
-      transparent 1px 112px),
+      rgba(118, 153, 190, .048) 0 1px,
+      transparent 1px 72px),
     repeating-linear-gradient(90deg,
-      rgba(115, 150, 187, .028) 0 1px,
-      transparent 1px 126px),
+      rgba(118, 153, 190, .040) 0 1px,
+      transparent 1px 84px),
     linear-gradient(126deg,
       transparent 0 43.5%,
-      rgba(136, 18, 38, .055) 43.7% 43.95%,
-      transparent 44.15% 100%),
+      rgba(136, 18, 38, .050) 43.7% 43.9%,
+      transparent 44.1% 100%),
     radial-gradient(circle at 18% 21%,
-      rgba(25, 76, 128, .20) 0,
-      rgba(25, 76, 128, .065) 19%,
+      rgba(25, 76, 128, .18) 0,
+      rgba(25, 76, 128, .055) 19%,
       transparent 39%),
     radial-gradient(circle at 82% 27%,
-      rgba(128, 12, 31, .16) 0,
-      rgba(128, 12, 31, .045) 17%,
+      rgba(128, 12, 31, .14) 0,
+      rgba(128, 12, 31, .038) 17%,
       transparent 36%);
 }
 
@@ -55,32 +55,28 @@
     inset 0 -1px 0 rgba(255, 255, 255, .025) !important;
 }
 
-/* Deterministic frosted backdrop.
-   Same viewport-fixed background as the shell, blurred inside the card.
-   The oversized inset prevents blur edges from becoming visible. */
+/* Deterministic frosted backdrop: same fixed background, but visibly diffused. */
 .premium-shell .summary-kpis .metric:nth-child(2)::before {
   content: '' !important;
   position: absolute !important;
-  inset: -72px !important;
+  inset: -34px !important;
   width: auto !important;
   height: auto !important;
-  border-radius: 72px !important;
+  border-radius: 42px !important;
   background-color: #02050a !important;
   background-image: var(--glass-fixed-backdrop) !important;
   background-attachment: fixed !important;
   background-position: center top !important;
-  filter: blur(48px) saturate(100%) brightness(1.04) !important;
-  -webkit-filter: blur(48px) saturate(100%) brightness(1.04) !important;
-  transform: scale(1.02) !important;
+  filter: blur(18px) saturate(104%) brightness(1.02) !important;
+  -webkit-filter: blur(18px) saturate(104%) brightness(1.02) !important;
+  transform: scale(1.025) !important;
   transform-origin: center !important;
   opacity: 1 !important;
   pointer-events: none !important;
   z-index: 0 !important;
 }
 
-/* Thin frosted film over the blurred background; no decorative shapes.
-   Explicitly reset every size/offset because older metric styles assign a
-   fixed 150x150 pseudo-element. */
+/* Thin frosted film over the blurred backdrop. */
 .premium-shell .summary-kpis .metric:nth-child(2)::after {
   content: '' !important;
   display: block !important;
@@ -98,8 +94,8 @@
   max-height: none !important;
   border-radius: inherit !important;
   background: linear-gradient(145deg,
-    rgba(154, 177, 202, .068),
-    rgba(42, 59, 78, .028)) !important;
+    rgba(154, 177, 202, .060),
+    rgba(42, 59, 78, .024)) !important;
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,.11),
     inset 0 -1px 0 rgba(255,255,255,.018) !important;
