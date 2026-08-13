@@ -1,12 +1,12 @@
 import { useEffect, useRef } from 'react'
-import spriteBase64 from './triunfante-user/part00.txt?raw'
+import spriteBase64 from './triunfante-user/sprite6-full.txt?raw'
 
 const SPRITE = `data:image/webp;base64,${spriteBase64.trim()}`
-const FRAME_COUNT = 72
-const COLUMNS = 12
-const ROWS = 6
-const SCROLL_PX_PER_FRAME = 9
-const EASING = 0.22
+const FRAME_COUNT = 6
+const COLUMNS = 3
+const ROWS = 2
+const SCROLL_PX_PER_FRAME = 42
+const EASING = 0.2
 
 function framePosition(frame: number) {
   const column = frame % COLUMNS
@@ -28,7 +28,7 @@ export default function ScrollTriunfanteBackdropExact() {
     const paint = () => {
       const distance = target - current
       current += distance * EASING
-      if (Math.abs(distance) < 0.001) current = target
+      if (Math.abs(distance) < 0.002) current = target
 
       const normalized = ((current % FRAME_COUNT) + FRAME_COUNT) % FRAME_COUNT
       const frameA = Math.floor(normalized)
@@ -39,13 +39,17 @@ export default function ScrollTriunfanteBackdropExact() {
         layerA.current.style.backgroundPosition = framePosition(frameA)
         layerA.current.style.opacity = String(1 - mix)
       }
+
       if (layerB.current) {
         layerB.current.style.backgroundPosition = framePosition(frameB)
         layerB.current.style.opacity = String(mix)
       }
 
-      if (Math.abs(target - current) > 0.001) raf = window.requestAnimationFrame(paint)
-      else raf = 0
+      if (Math.abs(target - current) > 0.002) {
+        raf = window.requestAnimationFrame(paint)
+      } else {
+        raf = 0
+      }
     }
 
     const queuePaint = () => {
@@ -55,6 +59,7 @@ export default function ScrollTriunfanteBackdropExact() {
 
     paint()
     window.addEventListener('scroll', queuePaint, { passive: true })
+
     return () => {
       window.removeEventListener('scroll', queuePaint)
       if (raf) window.cancelAnimationFrame(raf)
@@ -66,8 +71,10 @@ export default function ScrollTriunfanteBackdropExact() {
     backgroundSize: `${COLUMNS * 100}% ${ROWS * 100}%`,
   }
 
-  return <div className="triunfante-scroll-backdrop" aria-hidden="true">
-    <div ref={layerA} className="triunfante-frame-layer" style={layerStyle} />
-    <div ref={layerB} className="triunfante-frame-layer" style={layerStyle} />
-  </div>
+  return (
+    <div className="triunfante-scroll-backdrop" aria-hidden="true">
+      <div ref={layerA} className="triunfante-frame-layer" style={layerStyle} />
+      <div ref={layerB} className="triunfante-frame-layer" style={layerStyle} />
+    </div>
+  )
 }
