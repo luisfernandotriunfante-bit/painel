@@ -1,42 +1,52 @@
-/* Controlled glass prototype: only Faturado KPI. Loaded last. */
+/* Final executive glass system — loaded last and intentionally authoritative. */
 
 :root {
-  /* TEMPORARY REAL-BACKGROUND TEST TARGET.
-     These shapes live on the application backdrop itself, never inside the KPI. */
+  --final-bg-top: #0b1522;
+  --final-bg-mid: #050a11;
+  --final-bg-bottom: #000205;
+  --final-navy: #173a63;
+  --final-navy-soft: #244f82;
+  --final-blood: #8f1029;
+  --final-blood-soft: #b21c39;
+  --final-text: #f5f8fc;
+  --final-muted: #98a9bf;
+  --final-line: rgba(180, 204, 230, .18);
+  --final-line-strong: rgba(198, 218, 240, .28);
+  --final-glass: rgba(16, 27, 41, .27);
+  --final-glass-soft: rgba(19, 33, 50, .20);
+  --final-glass-strong: rgba(13, 24, 38, .38);
+  --final-blur: 18px;
+  --final-shadow: 0 22px 54px rgba(0, 0, 0, .34);
+
+  /* Real application backdrop: no test lines, no grid, only executive light. */
   --glass-fixed-backdrop:
-    linear-gradient(116deg,
-      transparent 0 35.6%,
-      rgba(163, 18, 42, .82) 35.75% 36.05%,
-      transparent 36.2% 100%),
-    radial-gradient(circle at 39% 18%,
-      rgba(34, 94, 158, .78) 0 30px,
-      rgba(34, 94, 158, .28) 31px 34px,
-      transparent 35px),
-    repeating-linear-gradient(0deg,
-      rgba(105, 145, 190, .16) 0 1px,
-      transparent 1px 54px),
-    repeating-linear-gradient(90deg,
-      rgba(105, 145, 190, .14) 0 1px,
-      transparent 1px 64px),
-    radial-gradient(circle at 18% 21%,
-      rgba(25, 76, 128, .18) 0,
-      rgba(25, 76, 128, .055) 19%,
-      transparent 39%),
-    radial-gradient(circle at 82% 27%,
-      rgba(128, 12, 31, .14) 0,
-      rgba(128, 12, 31, .038) 17%,
-      transparent 36%);
+    radial-gradient(ellipse at 18% -8%, rgba(23, 58, 99, .34) 0%, rgba(23, 58, 99, .11) 26%, transparent 48%),
+    radial-gradient(ellipse at 86% -10%, rgba(143, 16, 41, .26) 0%, rgba(143, 16, 41, .07) 24%, transparent 44%),
+    linear-gradient(180deg, var(--final-bg-top) 0%, #08101a 22%, var(--final-bg-mid) 50%, #020509 76%, var(--final-bg-bottom) 100%);
 }
 
-/* One real fixed background for the whole module. */
+html,
+body,
+#root {
+  min-height: 100%;
+  background: var(--final-bg-bottom) !important;
+}
+
+body {
+  color: var(--final-text) !important;
+}
+
+/* Real black-to-dark backdrop, fixed independently from scrolling content. */
 .premium-shell {
-  background-color: #02050a !important;
+  min-height: 100vh !important;
+  background-color: var(--final-bg-bottom) !important;
   background-image: var(--glass-fixed-backdrop) !important;
   background-attachment: fixed !important;
   background-position: center top !important;
+  background-size: cover !important;
 }
 
-/* No opaque sheet is allowed between the shell and the KPI. */
+/* No opaque sheet may sit between the backdrop and a glass surface. */
 .premium-shell .shell-content,
 .premium-shell .app,
 .premium-shell .enhanced-app,
@@ -46,61 +56,174 @@
   background: transparent !important;
 }
 
-/* Prevent old composition rules from isolating the tested backdrop. */
-.premium-shell .summary-kpis {
+/* The old large masthead remains removed; horizontal navigation is the visual anchor. */
+.premium-shell .header {
+  display: none !important;
+}
+
+/* Horizontal menu — centered, clean and glassy. */
+.premium-shell .tabs {
+  width: max-content !important;
+  max-width: calc(100vw - 44px) !important;
+  margin: 22px auto 28px !important;
+  padding: 6px !important;
+  min-height: 0 !important;
+  justify-content: center !important;
+  gap: 4px !important;
+  border: 1px solid rgba(179, 204, 231, .18) !important;
+  border-radius: 18px !important;
+  background: rgba(8, 17, 28, .42) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(118%) !important;
+  backdrop-filter: blur(18px) saturate(118%) !important;
+  box-shadow: 0 18px 44px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.08) !important;
+}
+
+.premium-shell .tabs button,
+.premium-shell .tabs button:last-child {
+  margin: 0 !important;
+  padding: 12px 17px !important;
+  border: 0 !important;
+  border-radius: 12px !important;
+  color: #9cafc6 !important;
+  background: transparent !important;
+  font-size: 11px !important;
+  font-weight: 650 !important;
+  letter-spacing: .025em !important;
+}
+
+.premium-shell .tabs button:hover {
+  color: #eef4fb !important;
+  background: rgba(23, 58, 99, .20) !important;
+}
+
+.premium-shell .tabs button.active {
+  color: #fff !important;
+  background: linear-gradient(135deg, var(--final-blood-soft), var(--final-blood)) !important;
+  box-shadow: 0 7px 18px rgba(143,16,41,.30), inset 0 1px 0 rgba(255,255,255,.17) !important;
+}
+
+.premium-shell .tabs button.active::after {
+  display: none !important;
+}
+
+/* Keep the sidebar behavior already approved; when visible, use the same material. */
+.premium-shell .module-sidebar {
+  border-color: rgba(180,204,230,.12) !important;
+  background: rgba(5, 11, 19, .40) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(116%) !important;
+  backdrop-filter: blur(18px) saturate(116%) !important;
+}
+
+/* Shared real glass material for all executive containers. */
+.premium-shell .panel,
+.premium-shell .section-block,
+.premium-shell .info-card,
+.premium-shell .target-control,
+.premium-shell .upload-card,
+.premium-shell .storage,
+.premium-shell .stock-result,
+.premium-shell .manager-info-grid,
+.premium-shell .movement-dashboard .movement-wrap,
+.premium-shell .movement-dashboard .movement-table,
+.premium-shell .table-scroll,
+.premium-shell .stock-table-viewport,
+.premium-shell .conference-grid .panel,
+.premium-shell .inline-alert,
+.premium-shell .empty-state {
+  color: var(--final-text) !important;
+  border-color: var(--final-line) !important;
+  background: var(--final-glass) !important;
+  -webkit-backdrop-filter: blur(var(--final-blur)) saturate(118%) !important;
+  backdrop-filter: blur(var(--final-blur)) saturate(118%) !important;
+  box-shadow: var(--final-shadow), inset 0 1px 0 rgba(255,255,255,.09) !important;
+}
+
+.premium-shell .panel,
+.premium-shell .section-block,
+.premium-shell .manager-info-grid,
+.premium-shell .stock-table-viewport {
+  border-radius: 22px !important;
+}
+
+.premium-shell .info-card,
+.premium-shell .target-control,
+.premium-shell .upload-card,
+.premium-shell .storage,
+.premium-shell .stock-result {
+  border-radius: 18px !important;
+}
+
+/* KPI glass — exact material validated on Faturado, now applied consistently. */
+.premium-shell .metrics,
+.premium-shell .enhanced-metrics,
+.premium-shell .summary-kpis,
+.premium-shell .manager-kpis {
   isolation: auto !important;
   transform: none !important;
   filter: none !important;
   contain: none !important;
 }
 
-/* Faturado: clean transparent frame. */
-.premium-shell .summary-kpis .metric:nth-child(2) {
+.premium-shell .metric {
+  --metric-accent: var(--final-navy-soft);
   position: relative !important;
   isolation: auto !important;
-  overflow: hidden !important;
   contain: none !important;
   transform: none !important;
   filter: none !important;
+  overflow: hidden !important;
+  min-height: 138px !important;
+  padding: 24px 26px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  border: 1px solid var(--final-line) !important;
+  border-radius: 22px !important;
   background: transparent !important;
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
-  border: 1px solid rgba(185, 207, 232, .26) !important;
-  box-shadow:
-    0 18px 42px rgba(0, 0, 0, .32),
-    inset 0 1px 0 rgba(255, 255, 255, .13),
-    inset 0 -1px 0 rgba(255, 255, 255, .025) !important;
+  box-shadow: var(--final-shadow), inset 0 1px 0 rgba(255,255,255,.12), inset 0 -1px 0 rgba(255,255,255,.02) !important;
 }
 
-/* Actual frosted glass: this layer samples what is physically behind the card. */
-.premium-shell .summary-kpis .metric:nth-child(2)::before {
+.premium-shell .metric.red,
+.premium-shell .summary-kpis .metric:first-child,
+.premium-shell .manager-kpis .metric:first-child {
+  --metric-accent: var(--final-blood-soft);
+}
+
+.premium-shell .metric.navy,
+.premium-shell .summary-kpis .metric:nth-child(2),
+.premium-shell .summary-kpis .metric:nth-child(3),
+.premium-shell .summary-kpis .metric:nth-child(4) {
+  --metric-accent: var(--final-navy-soft);
+}
+
+/* The backdrop-filter lives on a dedicated layer to preserve the validated blur. */
+.premium-shell .metric::before {
   content: '' !important;
   position: absolute !important;
   inset: 0 !important;
   width: auto !important;
   height: auto !important;
   border-radius: inherit !important;
-  background: rgba(20, 31, 45, .28) !important;
-  -webkit-backdrop-filter: blur(18px) saturate(118%) !important;
-  backdrop-filter: blur(18px) saturate(118%) !important;
+  background: rgba(15, 27, 42, .28) !important;
+  -webkit-backdrop-filter: blur(var(--final-blur)) saturate(118%) !important;
+  backdrop-filter: blur(var(--final-blur)) saturate(118%) !important;
   filter: none !important;
-  -webkit-filter: none !important;
   transform: none !important;
   opacity: 1 !important;
   pointer-events: none !important;
   z-index: 0 !important;
 }
 
-/* Very light frosted film and edge reflection; no decorative shapes. */
-.premium-shell .summary-kpis .metric:nth-child(2)::after {
+/* Subtle material tint only; no circles, lines or decorative shapes. */
+.premium-shell .metric::after {
   content: '' !important;
   display: block !important;
   position: absolute !important;
   inset: 0 !important;
-  top: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  left: 0 !important;
   width: auto !important;
   height: auto !important;
   min-width: 0 !important;
@@ -108,24 +231,307 @@
   max-width: none !important;
   max-height: none !important;
   border-radius: inherit !important;
-  background: linear-gradient(145deg,
-    rgba(174, 196, 220, .075),
-    rgba(54, 70, 88, .020)) !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.14),
-    inset 0 -1px 0 rgba(255,255,255,.018) !important;
+  background:
+    linear-gradient(145deg,
+      color-mix(in srgb, var(--metric-accent) 7%, transparent),
+      rgba(54, 70, 88, .018) 58%,
+      rgba(4, 8, 14, .018)) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.13), inset 0 -1px 0 rgba(255,255,255,.018) !important;
   pointer-events: none !important;
   z-index: 1 !important;
 }
 
-.premium-shell .summary-kpis .metric:nth-child(2) > span,
-.premium-shell .summary-kpis .metric:nth-child(2) > strong {
+.premium-shell .metric > span,
+.premium-shell .metric > strong,
+.premium-shell .metric > small {
   position: relative !important;
   z-index: 2 !important;
+  width: 100% !important;
+  text-align: center !important;
 }
 
-.premium-shell .summary-kpis .metric:nth-child(2):hover {
-  transform: none !important;
+.premium-shell .metric > span {
+  margin: 0 !important;
+  color: #a8b8cc !important;
+  font-size: 9px !important;
+  font-weight: 760 !important;
+  letter-spacing: .14em !important;
+}
+
+.premium-shell .metric.red > span,
+.premium-shell .summary-kpis .metric:first-child > span,
+.premium-shell .manager-kpis .metric:first-child > span {
+  color: #d96a7d !important;
+}
+
+.premium-shell .metric.navy > span {
+  color: #89a9cd !important;
+}
+
+.premium-shell .metric > strong {
+  margin-top: 12px !important;
+  color: #fff !important;
+  font-size: clamp(25px, 2vw, 36px) !important;
+  font-weight: 720 !important;
+  letter-spacing: -.045em !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+}
+
+.premium-shell .metric > small {
+  margin-top: 8px !important;
+  color: var(--final-muted) !important;
+}
+
+.premium-shell .metric:hover {
+  transform: translateY(-2px) !important;
+  border-color: var(--final-line-strong) !important;
+  box-shadow: 0 26px 58px rgba(0,0,0,.38), inset 0 1px 0 rgba(255,255,255,.15) !important;
+}
+
+/* Simple titles only: keep concise eyebrow labels and remove long duplicate headings. */
+.premium-shell .section-bar h2,
+.premium-shell .table-title h3,
+.premium-shell .panel-toolbar h3,
+.premium-shell .stock-titlebar h2,
+.premium-shell .page-head .title h2,
+.premium-shell .hero h2,
+.premium-shell .upload-hero h2 {
+  display: none !important;
+}
+
+.premium-shell .section-bar,
+.premium-shell .table-title,
+.premium-shell .panel-toolbar,
+.premium-shell .stock-titlebar,
+.premium-shell .info-card > header {
+  color: var(--final-text) !important;
+  border-color: rgba(180,204,230,.13) !important;
+  background: rgba(10, 21, 34, .24) !important;
+}
+
+.premium-shell .section-bar,
+.premium-shell .stock-titlebar {
+  min-height: 58px !important;
+  padding: 16px 24px !important;
+}
+
+.premium-shell .section-bar > div:first-child > span,
+.premium-shell .table-title > div > span,
+.premium-shell .panel-toolbar > div:first-child > span,
+.premium-shell .stock-titlebar > div:first-child > span,
+.premium-shell .title > span,
+.premium-shell .storage > div > span {
+  color: #d66075 !important;
+  font-size: 10px !important;
+  font-weight: 780 !important;
+  letter-spacing: .14em !important;
+}
+
+/* Tables inherit the glass shell; rows stay clean and readable. */
+.premium-shell table {
+  color: #dce6f2 !important;
   background: transparent !important;
-  border-color: rgba(197, 217, 239, .32) !important;
+}
+
+.premium-shell table th,
+.premium-shell .stock-table .stock-header-row th,
+.premium-shell .stock-table .stock-filter-row th,
+.premium-shell .movement-dashboard .movement-table th {
+  color: #91a3ba !important;
+  background: rgba(13, 30, 49, .50) !important;
+  border-color: rgba(180,204,230,.11) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+.premium-shell table td {
+  color: #d4dfeb !important;
+  background: rgba(6, 13, 22, .10) !important;
+  border-color: rgba(180,204,230,.08) !important;
+}
+
+.premium-shell table tbody tr:nth-child(even) td {
+  background: rgba(23, 58, 99, .035) !important;
+}
+
+.premium-shell table tbody tr:hover td {
+  background: rgba(23, 58, 99, .13) !important;
+}
+
+.premium-shell table td strong,
+.premium-shell table td b,
+.premium-shell .product-cell {
+  color: #f6f9fd !important;
+}
+
+/* Inputs and editable controls — no white blocks. */
+.premium-shell .currency-input,
+.premium-shell .number-input,
+.premium-shell .network-select,
+.premium-shell .stock-filter-row input,
+.premium-shell .stock-filters input,
+.premium-shell .stock-filters select {
+  color: #f4f8fd !important;
+  border-color: rgba(180,204,230,.16) !important;
+  background: rgba(8, 18, 30, .46) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.035) !important;
+}
+
+.premium-shell .currency-input::placeholder,
+.premium-shell .number-input::placeholder,
+.premium-shell .stock-filter-row input::placeholder,
+.premium-shell .stock-filters input::placeholder {
+  color: #6f829a !important;
+}
+
+.premium-shell .currency-input:hover,
+.premium-shell .number-input:hover,
+.premium-shell .network-select:hover,
+.premium-shell .stock-filter-row input:hover,
+.premium-shell .stock-filters input:hover,
+.premium-shell .stock-filters select:hover {
+  border-color: rgba(137,169,205,.30) !important;
+  background: rgba(13, 30, 49, .56) !important;
+}
+
+.premium-shell .currency-input:focus,
+.premium-shell .number-input:focus,
+.premium-shell .network-select:focus,
+.premium-shell .stock-filter-row input:focus,
+.premium-shell .stock-filters input:focus,
+.premium-shell .stock-filters select:focus {
+  border-color: rgba(63,111,165,.70) !important;
+  background: rgba(13, 30, 49, .70) !important;
+  box-shadow: 0 0 0 3px rgba(23,58,99,.18) !important;
+}
+
+.premium-shell .network-select option,
+.premium-shell .stock-filters select option {
+  color: #eef4fb !important;
+  background: #07101b !important;
+}
+
+/* Buttons, status chips and locks: effects restricted to navy and blood red. */
+.premium-shell .status-pill,
+.premium-shell .mini-lock,
+.premium-shell .lock-button,
+.premium-shell .stock-result button,
+.premium-shell .segmented {
+  color: #c6d3e2 !important;
+  border-color: rgba(180,204,230,.14) !important;
+  background: rgba(15, 34, 55, .46) !important;
+}
+
+.premium-shell .segmented button {
+  color: #9dafc5 !important;
+  background: transparent !important;
+}
+
+.premium-shell .segmented button.active,
+.premium-shell .lock-button.locked {
+  color: #fff !important;
+  border-color: rgba(178,28,57,.45) !important;
+  background: linear-gradient(135deg, var(--final-blood-soft), var(--final-blood)) !important;
+  box-shadow: 0 8px 20px rgba(143,16,41,.22) !important;
+}
+
+/* Chart system: navy + blood red only. */
+.premium-shell .movement-dashboard {
+  background: transparent !important;
+}
+
+.premium-shell .movement-dashboard .movement-wrap {
+  border-radius: 17px 17px 0 0 !important;
+}
+
+.premium-shell .movement-dashboard .movement-table {
+  border-radius: 0 0 17px 17px !important;
+}
+
+.premium-shell .movement-dashboard .chart-legend span {
+  color: #aab9cb !important;
+  border-color: rgba(180,204,230,.11) !important;
+  background: rgba(10, 23, 38, .36) !important;
+}
+
+.premium-shell .movement-dashboard .legend-billed,
+.premium-shell .movement-dashboard .dual-bars .billed,
+.premium-shell .movement-dashboard .legend-positive,
+.premium-shell .movement-dashboard .positive-bubble {
+  background: var(--final-navy-soft) !important;
+}
+
+.premium-shell .movement-dashboard .legend-pending,
+.premium-shell .movement-dashboard .dual-bars .pending {
+  background: var(--final-blood-soft) !important;
+}
+
+.premium-shell .movement-dashboard .multi-bars {
+  background: transparent !important;
+  border-bottom-color: rgba(180,204,230,.12) !important;
+}
+
+/* Target/manager surfaces should not reintroduce opaque gradients from old themes. */
+.premium-shell .target-control.primary,
+.premium-shell .target-control.readonly,
+.premium-shell .summary-kpis .metric:first-child,
+.premium-shell .manager-kpis .metric:first-child,
+.premium-shell .conference-grid .panel:first-child,
+.premium-shell .conference-grid .panel:last-child {
+  background: transparent !important;
+}
+
+/* Remove green/orange decorative states; keep semantic text readable. */
+.premium-shell .status-pill.ok,
+.premium-shell .status-pill.warn {
+  color: #cbd7e5 !important;
+  border-color: rgba(180,204,230,.14) !important;
+  background: rgba(23,58,99,.18) !important;
+}
+
+/* Scrollbars stay inside the dark system. */
+.premium-shell *::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.premium-shell *::-webkit-scrollbar-track {
+  background: rgba(3, 8, 14, .45);
+}
+
+.premium-shell *::-webkit-scrollbar-thumb {
+  background: rgba(36, 79, 130, .52);
+  border: 2px solid rgba(3, 8, 14, .55);
+  border-radius: 999px;
+}
+
+.premium-shell *::-webkit-scrollbar-thumb:hover {
+  background: rgba(143, 16, 41, .62);
+}
+
+/* Final spacing cleanup. */
+.premium-shell .v3-main {
+  padding-top: 0 !important;
+}
+
+.premium-shell .summary-kpis,
+.premium-shell .manager-kpis,
+.premium-shell .enhanced-metrics.four,
+.premium-shell .target-control-grid-v3,
+.premium-shell .manager-info-grid {
+  gap: 16px !important;
+}
+
+@media (max-width: 900px) {
+  .premium-shell .tabs {
+    width: calc(100vw - 24px) !important;
+    max-width: none !important;
+    overflow-x: auto !important;
+    justify-content: flex-start !important;
+  }
+
+  .premium-shell .metric {
+    min-height: 122px !important;
+  }
 }
