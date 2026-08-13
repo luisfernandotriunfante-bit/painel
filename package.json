@@ -14,7 +14,8 @@
     "typescript": "latest",
     "react": "latest",
     "react-dom": "latest",
-    "xlsx": "0.18.5"
+    "xlsx": "0.18.5",
+    "jszip": "^3.10.1"
   },
   "devDependencies": {
     "@types/react": "latest",
