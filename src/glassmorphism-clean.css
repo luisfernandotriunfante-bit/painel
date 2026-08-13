@@ -1,9 +1,11 @@
-/* Executive glassmorphism — strong, visible and consistent */
+/* Executive glassmorphism — real backdrop, neutral glass, blue + blood red accents */
 :root {
   --glass-text: #f7f9fc;
-  --glass-muted: #91a0b3;
-  --glass-line: rgba(238, 245, 255, .22);
-  --glass-line-soft: rgba(238, 245, 255, .09);
+  --glass-muted: #94a2b5;
+  --glass-border: rgba(255, 255, 255, .18);
+  --glass-border-soft: rgba(255, 255, 255, .085);
+  --glass-fill: rgba(255, 255, 255, .055);
+  --glass-fill-strong: rgba(255, 255, 255, .075);
   --accent-blue: #123b66;
   --accent-blue-bright: #2d6599;
   --accent-red: #7f1021;
@@ -12,58 +14,73 @@
 
 html,
 body,
-#root,
-.app,
-.enhanced-app,
-.v3-app,
-.shell-content {
+#root {
   min-height: 100%;
   color: var(--glass-text) !important;
-  background: #02050a !important;
 }
 
+/* IMPORTANT: the backdrop lives ONLY on body. All app wrappers remain transparent,
+   so backdrop-filter can actually see and blur the page behind each card. */
 body {
-  background:
-    radial-gradient(58vw 42vw at 8% 10%, rgba(31, 79, 129, .34) 0%, rgba(31,79,129,.14) 30%, transparent 68%),
-    radial-gradient(48vw 38vw at 94% 18%, rgba(127, 16, 33, .28) 0%, rgba(127,16,33,.10) 32%, transparent 68%),
-    radial-gradient(42vw 32vw at 54% 74%, rgba(20, 61, 101, .22) 0%, transparent 66%),
+  margin: 0;
+  color-scheme: dark;
+  background-color: #02050a !important;
+  background-image:
+    linear-gradient(112deg, transparent 0 16%, rgba(18,59,102,.11) 16.1% 16.7%, transparent 16.8% 49%, rgba(127,16,33,.09) 49.1% 49.7%, transparent 49.8% 100%),
+    repeating-linear-gradient(90deg, rgba(76,116,158,.055) 0 1px, transparent 1px 72px),
+    repeating-linear-gradient(0deg, rgba(76,116,158,.035) 0 1px, transparent 1px 72px),
+    radial-gradient(circle at 9% 14%, rgba(18,59,102,.28) 0 6%, rgba(18,59,102,.11) 18%, transparent 38%),
+    radial-gradient(circle at 92% 18%, rgba(127,16,33,.22) 0 5%, rgba(127,16,33,.08) 17%, transparent 36%),
     linear-gradient(180deg, #03070d 0%, #02050a 56%, #000 100%) !important;
   background-attachment: fixed !important;
 }
 
+#root,
+.app,
+.enhanced-app,
+.v3-app,
+.shell-content,
 .v3-main,
 .compact-main {
-  position: relative;
-  z-index: 0;
   background: transparent !important;
 }
 
-/* Ambient auroras behind the glass */
-.v3-main::before,
-.v3-main::after {
+.v3-app {
+  position: relative;
+  isolation: isolate;
+}
+
+/* Additional crisp shapes BEHIND the interface. These are intentionally not blurred;
+   the glass cards blur them, making the glass effect visible. */
+.v3-app::before,
+.v3-app::after {
   content: '';
   position: fixed;
   z-index: -1;
   pointer-events: none;
+}
+.v3-app::before {
+  width: 46vw;
+  height: 8px;
+  left: -8vw;
+  top: 31vh;
+  transform: rotate(-12deg);
   border-radius: 999px;
-  filter: blur(95px);
+  background: linear-gradient(90deg, transparent, rgba(45,101,153,.42), rgba(18,59,102,.18), transparent);
+  box-shadow: 0 0 44px rgba(45,101,153,.18);
 }
-.v3-main::before {
-  width: 520px;
-  height: 520px;
-  left: 2vw;
-  top: 15vh;
-  background: rgba(34, 91, 148, .30);
-}
-.v3-main::after {
-  width: 460px;
-  height: 460px;
-  right: 1vw;
-  top: 12vh;
-  background: rgba(127, 16, 33, .24);
+.v3-app::after {
+  width: 34vw;
+  height: 7px;
+  right: -7vw;
+  top: 19vh;
+  transform: rotate(15deg);
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, rgba(127,16,33,.14), rgba(183,25,49,.34), transparent);
+  box-shadow: 0 0 42px rgba(127,16,33,.14);
 }
 
-/* TRUE GLASS MATERIAL — intentionally translucent */
+/* ONE material. Neutral film + actual backdrop blur. No colored card fill. */
 .v3-app .metric,
 .v3-app .panel,
 .v3-app .section-block,
@@ -76,31 +93,21 @@ body {
 .shell-content .tabs {
   position: relative;
   overflow: hidden;
-  isolation: isolate;
   color: var(--glass-text) !important;
-  border: 1px solid transparent !important;
-  background:
-    linear-gradient(145deg,
-      rgba(255,255,255,.105) 0%,
-      rgba(255,255,255,.040) 24%,
-      rgba(14,27,44,.22) 58%,
-      rgba(5,12,21,.18) 100%) padding-box,
-    linear-gradient(135deg,
-      rgba(255,255,255,.34),
-      rgba(255,255,255,.10) 32%,
-      rgba(45,101,153,.26) 68%,
-      rgba(183,25,49,.20)) border-box !important;
+  background-color: rgba(255,255,255,.055) !important;
+  background-image: linear-gradient(135deg, rgba(255,255,255,.075), rgba(255,255,255,.022) 38%, rgba(255,255,255,.008) 72%) !important;
+  border: 1px solid var(--glass-border) !important;
   box-shadow:
-    0 8px 20px rgba(0,0,0,.28),
-    0 30px 72px rgba(0,0,0,.38),
+    0 10px 26px rgba(0,0,0,.28),
+    0 30px 72px rgba(0,0,0,.34),
     inset 0 1px 0 rgba(255,255,255,.24),
-    inset 1px 0 0 rgba(255,255,255,.055),
-    inset 0 -1px 0 rgba(255,255,255,.025) !important;
-  backdrop-filter: blur(34px) saturate(155%) brightness(1.03) !important;
-  -webkit-backdrop-filter: blur(34px) saturate(155%) brightness(1.03) !important;
+    inset 1px 0 0 rgba(255,255,255,.05),
+    inset 0 -1px 0 rgba(0,0,0,.10) !important;
+  backdrop-filter: blur(26px) saturate(150%) !important;
+  -webkit-backdrop-filter: blur(26px) saturate(150%) !important;
 }
 
-/* Strong glass highlight / specular reflection */
+/* Reflected light on the glass itself */
 .v3-app .metric::before,
 .v3-app .panel::before,
 .v3-app .section-block::before,
@@ -114,16 +121,14 @@ body {
   content: '';
   position: absolute;
   inset: 0;
-  z-index: -1;
   pointer-events: none;
   border-radius: inherit;
   background:
-    radial-gradient(90% 58% at 12% -10%, rgba(255,255,255,.19), transparent 54%),
-    linear-gradient(112deg, rgba(255,255,255,.085) 0%, transparent 31%, transparent 72%, rgba(255,255,255,.025) 100%);
-  opacity: 1;
+    linear-gradient(122deg, rgba(255,255,255,.12) 0%, rgba(255,255,255,.045) 16%, transparent 34% 78%, rgba(255,255,255,.018) 100%);
+  opacity: .82;
 }
 
-/* A subtle inner rim makes the glass edge readable */
+/* Tiny edge reflection, not a glow */
 .v3-app .metric::after,
 .v3-app .panel::after,
 .v3-app .section-block::after,
@@ -136,77 +141,77 @@ body {
   content: '';
   position: absolute;
   inset: 1px;
-  z-index: -1;
   pointer-events: none;
   border-radius: inherit;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.035);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.025);
 }
 
-/* KPI cards: preserve hierarchy but keep translucency */
+/* Primary KPI keeps identity through a small blood-red edge, not an opaque red/navy fill */
 .v3-app .summary-kpis .metric,
 .v3-app .enhanced-metrics .metric,
-.v3-app .target-control-grid-v3 .target-control {
-  background:
-    linear-gradient(145deg, rgba(255,255,255,.10), rgba(255,255,255,.028) 34%, rgba(10,24,40,.22) 72%, rgba(4,10,18,.17)) padding-box,
-    linear-gradient(135deg, rgba(255,255,255,.33), rgba(255,255,255,.09) 38%, rgba(45,101,153,.24)) border-box !important;
-}
-
+.v3-app .target-control-grid-v3 .target-control,
 .v3-app .summary-kpis .metric:first-child,
 .v3-app .manager-kpis .metric:first-child,
 .v3-app .target-control-grid-v3 .target-control.primary,
 .v3-main:has(.stock-detail) > .enhanced-metrics.four .metric:first-child {
-  background:
-    radial-gradient(circle at 93% 7%, rgba(183,25,49,.19), transparent 37%),
-    linear-gradient(145deg, rgba(255,255,255,.11), rgba(255,255,255,.030) 36%, rgba(12,26,44,.22) 72%, rgba(5,11,20,.18)) padding-box,
-    linear-gradient(135deg, rgba(255,255,255,.36), rgba(183,25,49,.28) 50%, rgba(45,101,153,.25)) border-box !important;
+  background-color: var(--glass-fill) !important;
+  background-image: linear-gradient(135deg, rgba(255,255,255,.075), rgba(255,255,255,.022) 38%, rgba(255,255,255,.008) 72%) !important;
+}
+.v3-app .summary-kpis .metric:first-child,
+.v3-app .manager-kpis .metric:first-child,
+.v3-app .target-control-grid-v3 .target-control.primary,
+.v3-main:has(.stock-detail) > .enhanced-metrics.four .metric:first-child {
+  border-color: rgba(183,25,49,.28) !important;
+  box-shadow:
+    inset 3px 0 0 rgba(183,25,49,.75),
+    inset 0 1px 0 rgba(255,255,255,.24),
+    0 12px 28px rgba(0,0,0,.30),
+    0 32px 74px rgba(0,0,0,.34) !important;
 }
 
-/* Gerencial cockpit also becomes real glass instead of solid navy */
+/* Gerencial cockpit: outer glass + lighter nested panes */
 .v3-app .manager-info-grid {
   position: relative;
   overflow: hidden;
-  border: 1px solid rgba(238,245,255,.16) !important;
-  background:
-    radial-gradient(circle at 92% 4%, rgba(127,16,33,.14), transparent 32%),
-    radial-gradient(circle at 4% 104%, rgba(31,79,129,.17), transparent 34%),
-    rgba(7,17,29,.30) !important;
-  box-shadow: 0 26px 70px rgba(0,0,0,.38), inset 0 1px 0 rgba(255,255,255,.12) !important;
-  backdrop-filter: blur(32px) saturate(150%) !important;
-  -webkit-backdrop-filter: blur(32px) saturate(150%) !important;
+  background: rgba(255,255,255,.035) !important;
+  border: 1px solid rgba(255,255,255,.14) !important;
+  box-shadow: 0 28px 72px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.15) !important;
+  backdrop-filter: blur(28px) saturate(150%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(150%) !important;
 }
 .v3-app .manager-info-grid .info-card {
-  background: rgba(255,255,255,.035) !important;
-  border-color: rgba(238,245,255,.12) !important;
+  background-color: rgba(255,255,255,.045) !important;
+  border-color: rgba(255,255,255,.12) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.10) !important;
 }
 
-/* Movement / analytical sections — same visible glass as the table header reference */
+/* Analytical containers: glass instead of navy blocks */
 .v3-app .movement-panel,
 .v3-app .movement-dashboard,
 .v3-app .movement-wrap,
 .v3-app .table-scroll,
 .v3-app .stock-table-viewport {
   color: var(--glass-text) !important;
-  border: 1px solid rgba(238,245,255,.11) !important;
-  background:
-    linear-gradient(145deg, rgba(255,255,255,.055), rgba(255,255,255,.014) 36%, rgba(8,20,34,.20) 100%) !important;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.075), 0 18px 48px rgba(0,0,0,.24) !important;
-  backdrop-filter: blur(28px) saturate(145%) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(145%) !important;
+  background-color: rgba(255,255,255,.035) !important;
+  background-image: linear-gradient(135deg, rgba(255,255,255,.035), rgba(255,255,255,.008)) !important;
+  border: 1px solid rgba(255,255,255,.10) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.085), 0 18px 48px rgba(0,0,0,.22) !important;
+  backdrop-filter: blur(22px) saturate(145%) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(145%) !important;
 }
 
 .v3-app .section-bar,
 .v3-app .table-title,
 .v3-app .stock-titlebar {
   color: var(--glass-text) !important;
-  background:
-    linear-gradient(90deg, rgba(255,255,255,.065), rgba(255,255,255,.018) 38%, transparent 78%) !important;
-  border-bottom: 1px solid rgba(238,245,255,.095) !important;
+  background: rgba(255,255,255,.035) !important;
+  border-bottom: 1px solid rgba(255,255,255,.085) !important;
   box-shadow: inset 0 1px 0 rgba(255,255,255,.07) !important;
-  backdrop-filter: blur(22px) saturate(140%) !important;
-  -webkit-backdrop-filter: blur(22px) saturate(140%) !important;
+  backdrop-filter: blur(18px) saturate(135%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(135%) !important;
 }
 
-/* Tables: transparent layers, stronger frosted header */
+/* Tables stay transparent. Header is a more obvious pane of glass. */
 .v3-app table,
 .v3-app tbody,
 .v3-app tbody tr,
@@ -217,20 +222,20 @@ body {
 .v3-app thead tr,
 .v3-app thead th {
   color: #aab7c8 !important;
-  background: rgba(36, 58, 83, .30) !important;
-  border-color: rgba(238,245,255,.09) !important;
-  backdrop-filter: blur(24px) saturate(145%) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(145%) !important;
+  background: rgba(255,255,255,.065) !important;
+  border-color: rgba(255,255,255,.085) !important;
+  backdrop-filter: blur(20px) saturate(145%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(145%) !important;
 }
 .v3-app tbody td {
   color: #dde6f1 !important;
-  border-color: rgba(238,245,255,.055) !important;
+  border-color: rgba(255,255,255,.05) !important;
 }
 .v3-app tbody tr:hover td {
-  background: rgba(45,101,153,.11) !important;
+  background: rgba(45,101,153,.085) !important;
 }
 
-/* Typography stays minimal */
+/* Minimal typography */
 .v3-app .metric > span,
 .v3-app .target-control > span,
 .v3-app .info-card > header,
@@ -238,7 +243,7 @@ body {
 .v3-app th {
   color: var(--glass-muted) !important;
   font-weight: 450 !important;
-  letter-spacing: .025em !important;
+  letter-spacing: .02em !important;
 }
 .v3-app .metric > strong,
 .v3-app .target-control > strong,
@@ -253,7 +258,7 @@ body {
   letter-spacing: -.028em !important;
 }
 
-/* Inputs: inset glass */
+/* Inputs are inset glass panes */
 .v3-app input,
 .v3-app select,
 .v3-app textarea,
@@ -264,40 +269,40 @@ body {
 .v3-app .stock-filter-input,
 .v3-app .stock-filter-select {
   color: #f6f8fb !important;
-  background: rgba(4, 11, 20, .34) !important;
-  border: 1px solid rgba(238,245,255,.16) !important;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.075), 0 8px 20px rgba(0,0,0,.14) !important;
-  backdrop-filter: blur(20px) saturate(135%) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(135%) !important;
+  background: rgba(255,255,255,.045) !important;
+  border: 1px solid rgba(255,255,255,.14) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.075), inset 0 -1px 0 rgba(0,0,0,.12) !important;
+  backdrop-filter: blur(16px) saturate(135%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(135%) !important;
 }
 .v3-app input::placeholder,
-.v3-app textarea::placeholder { color: #6f7e91 !important; }
+.v3-app textarea::placeholder { color: #728095 !important; }
 .v3-app option { color: #f5f8fc !important; background: #091420 !important; }
 .v3-app input:focus,
 .v3-app select:focus,
 .v3-app textarea:focus {
   outline: none !important;
-  border-color: rgba(45,101,153,.72) !important;
-  box-shadow: 0 0 0 3px rgba(45,101,153,.14), inset 0 1px 0 rgba(255,255,255,.09) !important;
+  border-color: rgba(45,101,153,.68) !important;
+  box-shadow: 0 0 0 3px rgba(45,101,153,.11), inset 0 1px 0 rgba(255,255,255,.10) !important;
 }
 
-/* Horizontal menu — same glass material */
+/* Horizontal menu uses the same neutral glass */
 .shell-content .tabs {
-  background:
-    linear-gradient(145deg, rgba(255,255,255,.095), rgba(255,255,255,.025) 32%, rgba(8,20,34,.30) 100%) padding-box,
-    linear-gradient(135deg, rgba(255,255,255,.31), rgba(255,255,255,.08) 58%, rgba(45,101,153,.24)) border-box !important;
-  backdrop-filter: blur(34px) saturate(155%) !important;
-  -webkit-backdrop-filter: blur(34px) saturate(155%) !important;
+  background-color: rgba(255,255,255,.055) !important;
+  background-image: linear-gradient(135deg, rgba(255,255,255,.07), rgba(255,255,255,.018)) !important;
+  border-color: rgba(255,255,255,.16) !important;
+  backdrop-filter: blur(24px) saturate(150%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(150%) !important;
 }
 .shell-content .tabs button { color: #a2afc0 !important; }
 .shell-content .tabs button:hover { color: #fff !important; background: rgba(255,255,255,.055) !important; }
 .shell-content .tabs button.active {
   color: #fff !important;
   background: linear-gradient(145deg, var(--accent-red-bright), var(--accent-red)) !important;
-  box-shadow: 0 8px 24px rgba(127,16,33,.34), inset 0 1px 0 rgba(255,255,255,.16) !important;
+  box-shadow: 0 8px 24px rgba(127,16,33,.30), inset 0 1px 0 rgba(255,255,255,.16) !important;
 }
 
-/* Standardize accents to dark blue + blood red */
+/* Only two accent families: dark blue + blood red */
 .v3-app .legend-billed,
 .v3-app .billed,
 .v3-app .positive-bubble,
@@ -311,22 +316,22 @@ body {
 .v3-app .lock-button.locked {
   color: #fff !important;
   background: linear-gradient(145deg, var(--accent-red-bright), var(--accent-red)) !important;
-  border-color: rgba(223,94,109,.40) !important;
+  border-color: rgba(223,94,109,.36) !important;
 }
 .v3-app .status-pill.ok,
 .v3-app .status-pill.warn {
   color: #d4dfec !important;
-  border-color: rgba(45,101,153,.34) !important;
-  background: rgba(18,59,102,.18) !important;
+  border-color: rgba(45,101,153,.30) !important;
+  background: rgba(18,59,102,.14) !important;
 }
 
-/* Hover: increase refraction and edge light */
+/* Hover changes the glass film slightly; no extra glow */
 .v3-app .metric,
 .v3-app .target-control,
 .v3-app .upload-card,
 .v3-app .source-list > div,
 .v3-app .info-card {
-  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease !important;
+  transition: transform .18s ease, background-color .18s ease, border-color .18s ease, box-shadow .18s ease !important;
 }
 .v3-app .metric:hover,
 .v3-app .target-control:hover,
@@ -334,9 +339,10 @@ body {
 .v3-app .source-list > div:hover,
 .v3-app .info-card:hover {
   transform: translateY(-2px);
+  background-color: rgba(255,255,255,.075) !important;
+  border-color: rgba(255,255,255,.24) !important;
   box-shadow:
-    0 12px 28px rgba(0,0,0,.34),
-    0 36px 82px rgba(0,0,0,.40),
-    inset 0 1px 0 rgba(255,255,255,.30),
-    inset 1px 0 0 rgba(255,255,255,.075) !important;
+    0 14px 30px rgba(0,0,0,.32),
+    0 36px 78px rgba(0,0,0,.36),
+    inset 0 1px 0 rgba(255,255,255,.28) !important;
 }
