@@ -7,6 +7,7 @@ import './enhanced.css'
 import './enhanced-v3.css'
 import './premium-shell.css'
 import './premium-v2.css'
+import './premium-v3.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
