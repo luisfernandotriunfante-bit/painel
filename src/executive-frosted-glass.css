@@ -1,0 +1,223 @@
+/* Executive Frosted Glass — actual translucent material with grain */
+:root {
+  --fg-bg: rgba(10, 22, 38, .28);
+  --fg-bg-deep: rgba(7, 16, 29, .38);
+  --fg-border: rgba(232, 241, 252, .16);
+  --fg-line: rgba(232, 241, 252, .065);
+  --fg-text: #f3f7fb;
+  --fg-muted: #8f9cad;
+}
+
+/* Background with enough visual information for true translucency */
+html,
+body,
+#root,
+.app,
+.v3-app,
+.shell-content {
+  background-color: #02060b !important;
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: -10vh -8vw;
+  z-index: -3;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 12% 14%, rgba(54, 111, 170, .24) 0%, rgba(54,111,170,.075) 24%, transparent 48%),
+    radial-gradient(ellipse at 88% 22%, rgba(154, 40, 74, .19) 0%, rgba(154,40,74,.055) 24%, transparent 47%),
+    radial-gradient(ellipse at 55% 72%, rgba(33, 77, 122, .15) 0%, transparent 42%),
+    linear-gradient(135deg, #02060b 0%, #050a11 48%, #03070c 100%) !important;
+}
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  opacity: .22;
+  background-image:
+    linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+  background-size: 54px 54px;
+  mask-image: linear-gradient(to bottom, rgba(0,0,0,.8), transparent 82%);
+}
+
+/* SVG fractal grain used as frosted texture */
+.v3-app .metric,
+.v3-app .panel,
+.v3-app .section-block,
+.v3-app .info-card,
+.v3-app .upload-card,
+.v3-app .storage,
+.v3-app .source-list > div,
+.v3-app .target-control-grid-v3 .target-control,
+.v3-app .conference-grid > article,
+.v3-app .movement-wrap,
+.shell-content .tabs {
+  position: relative;
+  isolation: isolate;
+  color: var(--fg-text) !important;
+  background-color: var(--fg-bg) !important;
+  background-image:
+    linear-gradient(145deg, rgba(255,255,255,.115) 0%, rgba(255,255,255,.035) 23%, rgba(255,255,255,.006) 50%, rgba(92,137,190,.032) 100%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.34'/%3E%3C/svg%3E") !important;
+  background-blend-mode: screen, soft-light !important;
+  border: 1px solid var(--fg-border) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.22),
+    inset 0 0 0 1px rgba(255,255,255,.018),
+    0 18px 44px rgba(0,0,0,.32) !important;
+  backdrop-filter: blur(20px) saturate(1.55) brightness(1.06) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.55) brightness(1.06) !important;
+}
+
+/* Broad specular reflection: unmistakably glass, not glow */
+.v3-app .metric::after,
+.v3-app .panel::after,
+.v3-app .section-block::after,
+.v3-app .info-card::after,
+.v3-app .upload-card::after,
+.v3-app .target-control-grid-v3 .target-control::after,
+.v3-app .conference-grid > article::after,
+.shell-content .tabs::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    linear-gradient(112deg, rgba(255,255,255,.14) 0%, rgba(255,255,255,.055) 14%, transparent 31% 67%, rgba(255,255,255,.025) 83%, transparent 100%);
+  opacity: .72;
+}
+
+/* Make legacy solid surfaces truly translucent */
+.v3-app .summary-kpis .metric,
+.v3-app .summary-kpis .metric:first-child,
+.v3-app .manager-kpis .metric,
+.v3-app .manager-kpis .metric:first-child,
+.v3-app .target-control-grid-v3 .target-control,
+.v3-app .target-control-grid-v3 .target-control.primary,
+.v3-main:has(.stock-detail) > .enhanced-metrics.four .metric,
+.v3-main:has(.stock-detail) > .enhanced-metrics.four .metric:first-child {
+  background-color: rgba(9, 21, 36, .30) !important;
+  background-image:
+    linear-gradient(145deg, rgba(255,255,255,.105), rgba(255,255,255,.018) 42%, rgba(255,255,255,.004) 66%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.32'/%3E%3C/svg%3E") !important;
+  background-blend-mode: screen, soft-light !important;
+}
+
+/* Semantic tint is now transparent tint, not a solid colored card */
+.v3-app .summary-kpis .metric:first-child,
+.v3-app .target-control-grid-v3 .target-control.primary,
+.v3-app .manager-kpis .metric:first-child,
+.v3-main:has(.stock-detail) > .enhanced-metrics.four .metric:first-child {
+  background-color: rgba(12, 23, 39, .32) !important;
+  background-image:
+    radial-gradient(circle at 92% 8%, rgba(239,51,70,.16), transparent 38%),
+    linear-gradient(145deg, rgba(255,255,255,.11), rgba(255,255,255,.015) 45%, rgba(63,108,160,.035)),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.32'/%3E%3C/svg%3E") !important;
+  background-blend-mode: screen, screen, soft-light !important;
+}
+
+/* Large section headers must not become opaque navy blocks */
+.v3-app .movement-panel .section-bar,
+.v3-app .section-bar,
+.v3-app .table-title,
+.v3-app .stock-titlebar,
+.v3-app .manager-kpis + .section-block .section-bar,
+.v3-app .v3-main:has(.manager-info-grid) .section-block > .section-bar {
+  color: var(--fg-text) !important;
+  background: rgba(255,255,255,.025) !important;
+  border-bottom: 1px solid var(--fg-line) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.045) !important;
+  backdrop-filter: blur(16px) saturate(1.25) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(1.25) !important;
+}
+.v3-app .movement-panel .section-bar h2,
+.v3-app .section-bar h2,
+.v3-app .section-bar h3 { color: #f3f7fb !important; }
+
+/* Inner analytical areas remain clear enough to see parent glass */
+.v3-app .movement-dashboard,
+.v3-app .movement-wrap,
+.v3-app .stock-table-viewport,
+.v3-app .table-scroll {
+  background: rgba(4, 12, 22, .16) !important;
+  border-color: rgba(232,241,252,.08) !important;
+  backdrop-filter: blur(10px) saturate(1.18) !important;
+  -webkit-backdrop-filter: blur(10px) saturate(1.18) !important;
+}
+
+/* Tables: no opaque bands */
+.v3-app table,
+.v3-app tbody,
+.v3-app tbody tr { background: transparent !important; }
+.v3-app thead,
+.v3-app .movement-table thead,
+.v3-app .stock-detail thead,
+.v3-app .manager-table thead,
+.v3-app .targets-table-v3 thead {
+  background: rgba(82, 112, 148, .12) !important;
+  backdrop-filter: blur(14px) saturate(1.28) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(1.28) !important;
+}
+.v3-app th,
+.v3-app td { border-color: rgba(232,241,252,.055) !important; }
+
+/* Inputs: frosted inset glass */
+.v3-app input,
+.v3-app select,
+.v3-app .currency-input,
+.v3-app .number-input,
+.v3-app .network-select,
+.v3-app .target-input {
+  color: #f1f6fb !important;
+  background-color: rgba(5, 15, 27, .26) !important;
+  background-image: linear-gradient(145deg, rgba(255,255,255,.075), rgba(255,255,255,.012)) !important;
+  border: 1px solid rgba(232,241,252,.13) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.065), inset 0 -1px 0 rgba(0,0,0,.16) !important;
+  backdrop-filter: blur(16px) saturate(1.35) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(1.35) !important;
+}
+.v3-app option { background: #0a1727 !important; color: #eef4fa !important; }
+
+/* Navigation uses same material */
+.shell-content .tabs {
+  background-color: rgba(7, 17, 30, .34) !important;
+  background-image:
+    linear-gradient(145deg, rgba(255,255,255,.10), rgba(255,255,255,.018)),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.26'/%3E%3C/svg%3E") !important;
+  background-blend-mode: screen, soft-light !important;
+  backdrop-filter: blur(24px) saturate(1.55) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(1.55) !important;
+}
+
+/* Minimal typography stays */
+.v3-app .metric > span,
+.v3-app .target-control > span,
+.v3-app .section-bar > div > span,
+.v3-app th {
+  font-weight: 480 !important;
+  letter-spacing: .035em !important;
+}
+.v3-app .metric > strong,
+.v3-app .target-control > strong,
+.v3-app .info-row strong {
+  font-weight: 500 !important;
+  letter-spacing: -.028em !important;
+}
+
+/* Hover increases refraction, not glow */
+.v3-app .metric:hover,
+.v3-app .target-control:hover,
+.v3-app .upload-card:hover,
+.v3-app .source-list > div:hover {
+  transform: translateY(-2px);
+  background-color: rgba(14, 29, 48, .34) !important;
+  border-color: rgba(239,246,255,.23) !important;
+  backdrop-filter: blur(24px) saturate(1.62) brightness(1.08) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(1.62) brightness(1.08) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 22px 48px rgba(0,0,0,.36) !important;
+}
