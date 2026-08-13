@@ -1,0 +1,4 @@
+.premium-shell .module-sidebar { transform: translateX(-100%) !important; transition: transform 210ms cubic-bezier(.2,.8,.2,1) !important; }
+.premium-shell .module-sidebar:hover { transform: translateX(0) !important; }
+.premium-shell .module-sidebar:focus-within:not(:hover) { transform: translateX(-100%) !important; }
+.triunfante-scroll-backdrop { opacity: .56 !important; z-index: 1 !important; }
