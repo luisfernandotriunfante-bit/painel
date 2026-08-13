@@ -1,0 +1,237 @@
+/* Executive Glass V3 — real translucency with visible ambient layers */
+:root {
+  --g3-panel: rgba(13, 29, 48, .42);
+  --g3-panel-strong: rgba(15, 31, 52, .52);
+  --g3-panel-soft: rgba(31, 53, 78, .24);
+  --g3-border: rgba(215, 232, 249, .14);
+  --g3-border-hi: rgba(241, 248, 255, .22);
+  --g3-line: rgba(217, 232, 248, .065);
+}
+
+html,
+body,
+#root,
+.app,
+.v3-app,
+.shell-content {
+  background: #02060b !important;
+}
+
+/* Give the glass something visible to refract / reveal */
+.v3-main {
+  position: relative !important;
+  isolation: isolate;
+  background:
+    radial-gradient(680px 420px at 8% 8%, rgba(42, 102, 164, .18), transparent 66%),
+    radial-gradient(600px 440px at 94% 14%, rgba(195, 44, 75, .13), transparent 64%),
+    radial-gradient(760px 520px at 55% 62%, rgba(35, 92, 146, .10), transparent 70%),
+    linear-gradient(rgba(255,255,255,.012) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.012) 1px, transparent 1px) !important;
+  background-size: auto, auto, auto, 38px 38px, 38px 38px !important;
+  border-radius: 28px;
+}
+
+.v3-main::before,
+.v3-main::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+  filter: blur(8px);
+  border-radius: 50%;
+}
+.v3-main::before {
+  width: 340px;
+  height: 340px;
+  top: 90px;
+  left: 7%;
+  background: radial-gradient(circle, rgba(65, 132, 207, .20), rgba(65,132,207,.025) 48%, transparent 72%);
+}
+.v3-main::after {
+  width: 420px;
+  height: 420px;
+  top: 360px;
+  right: 4%;
+  background: radial-gradient(circle, rgba(205, 48, 83, .14), rgba(205,48,83,.02) 50%, transparent 72%);
+}
+
+/* REAL glass surface: much lower opacity than prior layers */
+.v3-app .metric,
+.v3-app .panel,
+.v3-app .section-block,
+.v3-app .info-card,
+.v3-app .upload-card,
+.v3-app .storage,
+.v3-app .source-list > div,
+.v3-app .target-control-grid-v3 .target-control,
+.v3-app .conference-grid > article {
+  position: relative !important;
+  overflow: hidden;
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.078), rgba(255,255,255,.018) 34%, rgba(255,255,255,.006) 66%, rgba(93,149,207,.035)),
+    var(--g3-panel) !important;
+  border: 1px solid var(--g3-border) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.18),
+    inset 1px 0 0 rgba(255,255,255,.035),
+    inset 0 -1px 0 rgba(0,0,0,.20),
+    0 24px 70px rgba(0,0,0,.28) !important;
+  backdrop-filter: blur(24px) saturate(1.45) brightness(1.04) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(1.45) brightness(1.04) !important;
+}
+
+/* Broad specular reflection: visible texture, not just a 1px highlight */
+.v3-app .metric::after,
+.v3-app .panel::after,
+.v3-app .section-block::after,
+.v3-app .info-card::after,
+.v3-app .upload-card::after,
+.v3-app .target-control-grid-v3 .target-control::after,
+.v3-app .conference-grid > article::after {
+  content: '' !important;
+  position: absolute !important;
+  inset: -35% 22% 38% -18% !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+  border-radius: 42% !important;
+  transform: rotate(-9deg) !important;
+  background: linear-gradient(110deg,
+    rgba(255,255,255,.00) 0%,
+    rgba(255,255,255,.065) 42%,
+    rgba(255,255,255,.13) 50%,
+    rgba(255,255,255,.035) 57%,
+    rgba(255,255,255,0) 72%) !important;
+  opacity: .52 !important;
+  mix-blend-mode: screen;
+}
+
+/* Keep content above reflection */
+.v3-app .metric > *,
+.v3-app .panel > *,
+.v3-app .section-block > *,
+.v3-app .info-card > *,
+.v3-app .upload-card > *,
+.v3-app .target-control-grid-v3 .target-control > *,
+.v3-app .conference-grid > article > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Soft ambient tint per semantic card, still translucent */
+.v3-app .summary-kpis .metric:first-child,
+.v3-app .target-control-grid-v3 .target-control.primary,
+.v3-app .manager-kpis .metric:first-child,
+.v3-main:has(.stock-detail) > .enhanced-metrics.four .metric:first-child {
+  background:
+    radial-gradient(circle at 96% 4%, rgba(239,51,70,.20), transparent 38%),
+    radial-gradient(circle at 6% 110%, rgba(51,112,180,.18), transparent 42%),
+    linear-gradient(145deg, rgba(255,255,255,.085), rgba(255,255,255,.012) 58%),
+    rgba(14,29,49,.43) !important;
+}
+
+/* Every legacy light card is forcibly made translucent */
+.v3-app .target-control-grid-v3 .target-control,
+.v3-app .target-control-grid-v3 .target-control:nth-child(1),
+.v3-app .target-control-grid-v3 .target-control:nth-child(2),
+.v3-app .target-control-grid-v3 .target-control:nth-child(3),
+.v3-app .target-control-grid-v3 .target-control:nth-child(4),
+.v3-app .target-control-grid-v3 .target-control:nth-child(5),
+.v3-app .summary-kpis .metric:nth-child(2),
+.v3-app .summary-kpis .metric:nth-child(3),
+.v3-app .summary-kpis .metric:nth-child(4),
+.v3-app .manager-kpis .metric,
+.v3-app .movement-dashboard,
+.v3-app .movement-dashboard .movement-wrap,
+.v3-app .movement-dashboard .movement-table,
+.v3-app .stock-table-viewport,
+.v3-app .table-scroll {
+  background: rgba(15,31,52,.30) !important;
+  border-color: var(--g3-border) !important;
+  backdrop-filter: blur(20px) saturate(1.32) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.32) !important;
+}
+
+/* Panel headers should float on the same glass rather than become solid bars */
+.v3-app .section-bar,
+.v3-app .table-title,
+.v3-app .stock-titlebar,
+.v3-app .info-card > header {
+  background: linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.012)) !important;
+  border-bottom: 1px solid var(--g3-line) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.065) !important;
+  backdrop-filter: blur(16px) saturate(1.25) !important;
+}
+
+/* Tables: transparent enough to show panel beneath */
+.v3-app table,
+.v3-app tbody,
+.v3-app tbody tr,
+.v3-app td {
+  background: transparent !important;
+}
+.v3-app thead,
+.v3-app .movement-table thead,
+.v3-app .stock-detail thead,
+.v3-app .manager-table thead,
+.v3-app .targets-table-v3 thead {
+  background: rgba(75, 108, 145, .12) !important;
+  backdrop-filter: blur(24px) saturate(1.35) !important;
+}
+.v3-app th,
+.v3-app td {
+  border-bottom: 1px solid var(--g3-line) !important;
+}
+.v3-app tbody tr:hover {
+  background: rgba(112,166,224,.055) !important;
+}
+
+/* Inputs also need to read as inset glass */
+.v3-app input,
+.v3-app select,
+.v3-app .currency-input,
+.v3-app .number-input,
+.v3-app .network-select,
+.v3-app .stock-filter-input,
+.v3-app .stock-filter-select {
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.055), rgba(255,255,255,.012)),
+    rgba(5,15,27,.44) !important;
+  border: 1px solid rgba(224,238,252,.14) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.075), inset 0 0 20px rgba(72,119,168,.025) !important;
+  backdrop-filter: blur(18px) saturate(1.35) !important;
+}
+
+/* Approved navigation, now genuinely translucent */
+.shell-content .tabs {
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.065), rgba(255,255,255,.012)),
+    rgba(7,17,30,.48) !important;
+  border-color: rgba(226,239,252,.14) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.14), 0 22px 58px rgba(0,0,0,.32) !important;
+  backdrop-filter: blur(28px) saturate(1.5) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(1.5) !important;
+}
+
+/* Glass becomes more obvious on hover without moving too much */
+.v3-app .metric:hover,
+.v3-app .target-control:hover,
+.v3-app .upload-card:hover,
+.v3-app .source-list > div:hover {
+  transform: translateY(-2px) !important;
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.105), rgba(255,255,255,.025) 38%, rgba(82,139,200,.045)),
+    rgba(16,33,55,.47) !important;
+  border-color: var(--g3-border-hi) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.22),
+    inset 1px 0 0 rgba(255,255,255,.045),
+    0 30px 80px rgba(0,0,0,.34) !important;
+}
+
+@media (max-width: 800px) {
+  .v3-main {
+    background:
+      radial-gradient(520px 320px at 15% 5%, rgba(42,102,164,.16), transparent 68%),
+      radial-gradient(480px 300px at 90% 20%, rgba(195,44,75,.10), transparent 68%) !important;
+  }
+}
