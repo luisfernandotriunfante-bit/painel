@@ -12,9 +12,29 @@ function cfb() {
   return value
 }
 
+function normalizePath(value: string) {
+  return value
+    .replace(/\\/g, '/')
+    .replace(/^Root Entry\//i, '')
+    .replace(/^\/+/, '')
+    .replace(/\/+/g, '/')
+    .toLowerCase()
+}
+
+function locate(container: any, path: string) {
+  const CFB = cfb()
+  const direct = CFB.find(container, path) ?? CFB.find(container, `Root Entry/${path}`)
+  if (direct) return direct
+
+  const target = normalizePath(path)
+  const fullPaths: string[] = container.FullPaths ?? []
+  const index = fullPaths.findIndex(fullPath => normalizePath(fullPath) === target)
+  return index >= 0 ? container.FileIndex?.[index] ?? null : null
+}
+
 function entry(container: any, path: string) {
-  const item = cfb().find(container, path)
-  if (!item) throw new Error('O modelo Excel selecionado está incompleto.')
+  const item = locate(container, path)
+  if (!item) throw new Error(`O modelo Excel selecionado não contém o componente obrigatório: ${path}`)
   return item
 }
 
@@ -38,7 +58,7 @@ function forceRecalc(document: XMLDocument) {
 
 export function buildExcel(data: ArrayBuffer, state: any) {
   const CFB = cfb()
-  const container = CFB.read(new Uint8Array(data), { type: 'array' })
+  const container = CFB.read(new Uint8Array(data))
   const sheet1Path = 'xl/worksheets/sheet1.xml'
   const sheet2Path = 'xl/worksheets/sheet2.xml'
   const workbookPath = 'xl/workbook.xml'
@@ -51,7 +71,17 @@ export function buildExcel(data: ArrayBuffer, state: any) {
   put(container, sheet1Path, serializeXml(sheet1))
   put(container, sheet2Path, serializeXml(sheet2))
   put(container, workbookPath, serializeXml(workbook))
-  try { CFB.utils.cfb_del(container, 'xl/calcChain.xml') } catch {}
+
+  const calcChain = locate(container, 'xl/calcChain.xml')
+  if (calcChain) {
+    try {
+      const fullPaths: string[] = container.FullPaths ?? []
+      const index = container.FileIndex?.indexOf(calcChain) ?? -1
+      const actualPath = index >= 0 ? fullPaths[index] : 'xl/calcChain.xml'
+      CFB.utils.cfb_del(container, actualPath)
+    } catch {}
+  }
+
   const output: any = CFB.write(container, { fileType: 'zip', compression: true })
   return output instanceof Uint8Array ? output : new Uint8Array(output)
 }
