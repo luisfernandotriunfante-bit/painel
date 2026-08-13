@@ -15,6 +15,7 @@ import './sidebar-material.css'
 import './glass-stable.css'
 import './frosted-everywhere.css'
 import './final-polish.css'
+import './panel-interaction-fixes.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
