@@ -1,24 +1,27 @@
 /* Isolated glass prototype: ONLY the Faturado KPI on Resumo.
-   Keep the page dark and prove a refined, executive backdrop blur first. */
+   Clean card: title + value only. No decorative shapes inside the card. */
 .summary-kpis {
   position: relative;
   isolation: isolate;
 }
 
-/* Discreet background detail behind the glass.
-   Low-contrast by design: it should be noticed mainly THROUGH the blur. */
+/* Very subtle detail BEHIND the glass.
+   Fine lines give backdrop-filter something to blur without becoming decoration. */
 .summary-kpis::before {
   content: '';
   position: absolute;
   z-index: 0;
   pointer-events: none;
-  inset: -26px 0 -26px 0;
+  inset: -34px -20px;
   background:
-    radial-gradient(ellipse 180px 120px at 43% 30%, rgba(24, 66, 108, .34) 0%, rgba(24, 66, 108, .16) 38%, transparent 72%),
-    radial-gradient(ellipse 150px 100px at 48% 78%, rgba(113, 14, 33, .22) 0%, rgba(113, 14, 33, .09) 42%, transparent 74%),
-    linear-gradient(108deg, transparent 39.2%, rgba(26, 67, 108, .20) 39.35% 39.62%, transparent 39.78%),
-    linear-gradient(74deg, transparent 47.0%, rgba(123, 15, 35, .16) 47.15% 47.38%, transparent 47.55%);
-  opacity: .62;
+    linear-gradient(rgba(57, 94, 133, .055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(57, 94, 133, .045) 1px, transparent 1px),
+    linear-gradient(111deg, transparent 39.0%, rgba(31, 73, 116, .28) 39.12% 39.28%, transparent 39.40%),
+    linear-gradient(73deg, transparent 47.2%, rgba(126, 16, 36, .22) 47.32% 47.48%, transparent 47.60%),
+    radial-gradient(ellipse 260px 150px at 43% 42%, rgba(24, 62, 102, .16), transparent 72%),
+    radial-gradient(ellipse 220px 130px at 47% 72%, rgba(112, 14, 34, .11), transparent 74%);
+  background-size: 34px 34px, 34px 34px, auto, auto, auto, auto;
+  opacity: .72;
 }
 
 .summary-kpis > .metric {
@@ -26,37 +29,22 @@
   z-index: 1;
 }
 
-/* True glass: dark neutral film + stronger backdrop blur. */
+/* Frosted glass material: neutral translucent film, no painted navy fill. */
 .summary-kpis > .metric:nth-child(2) {
   overflow: hidden;
-  background: rgba(7, 14, 24, .27) !important;
+  background: rgba(255, 255, 255, .055) !important;
   border: 1px solid rgba(255, 255, 255, .20) !important;
   box-shadow:
-    0 18px 48px rgba(0, 0, 0, .34),
-    0 4px 14px rgba(0, 0, 0, .22),
-    inset 0 1px 0 rgba(255, 255, 255, .20),
-    inset 0 -1px 0 rgba(255, 255, 255, .035) !important;
-  backdrop-filter: blur(36px) saturate(128%) !important;
-  -webkit-backdrop-filter: blur(36px) saturate(128%) !important;
+    0 20px 50px rgba(0, 0, 0, .32),
+    0 5px 16px rgba(0, 0, 0, .20),
+    inset 0 1px 0 rgba(255, 255, 255, .16) !important;
+  backdrop-filter: blur(30px) saturate(118%) brightness(.94) !important;
+  -webkit-backdrop-filter: blur(30px) saturate(118%) brightness(.94) !important;
 }
 
-/* Thin specular reflection — no glow, no grain. */
-.summary-kpis > .metric:nth-child(2)::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  border-radius: inherit;
-  background:
-    linear-gradient(135deg, rgba(255,255,255,.105), transparent 25%, transparent 74%, rgba(255,255,255,.018)),
-    linear-gradient(180deg, rgba(255,255,255,.045), transparent 18%);
-}
-
+/* Explicitly remove all card-internal decorative layers from prior themes. */
+.summary-kpis > .metric:nth-child(2)::before,
 .summary-kpis > .metric:nth-child(2)::after {
-  content: '';
-  position: absolute;
-  inset: 1px;
-  pointer-events: none;
-  border-radius: inherit;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.025);
+  content: none !important;
+  display: none !important;
 }
