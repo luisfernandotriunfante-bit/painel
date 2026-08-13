@@ -81,8 +81,8 @@
   height: auto !important;
   border-radius: inherit !important;
   background: rgba(20, 31, 45, .28) !important;
-  -webkit-backdrop-filter: blur(26px) saturate(118%) !important;
-  backdrop-filter: blur(26px) saturate(118%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(118%) !important;
+  backdrop-filter: blur(18px) saturate(118%) !important;
   filter: none !important;
   -webkit-filter: none !important;
   transform: none !important;
