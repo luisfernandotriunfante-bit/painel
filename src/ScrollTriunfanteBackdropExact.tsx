@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import fallbackSpriteBase64 from './triunfante-user/sprite6-full.txt?raw'
 
 const FALLBACK_SPRITE = `data:image/webp;base64,${fallbackSpriteBase64.trim()}`
@@ -7,151 +7,208 @@ const HQ_CACHE_KEY = 'triunfante-hq12-v1'
 const EASING = 0.24
 
 type SpriteConfig = {
-  url: string
+  image: HTMLImageElement
   frameCount: number
   columns: number
   rows: number
   scrollPxPerFrame: number
 }
 
-const FALLBACK_CONFIG: SpriteConfig = {
-  url: FALLBACK_SPRITE,
-  frameCount: 6,
-  columns: 3,
-  rows: 2,
-  scrollPxPerFrame: 42,
-}
-
-function framePosition(frame: number, columns: number, rows: number) {
-  const column = frame % columns
-  const row = Math.floor(frame / columns)
-  const x = columns > 1 ? (column / (columns - 1)) * 100 : 0
-  const y = rows > 1 ? (row / (rows - 1)) * 100 : 0
-  return `${x}% ${y}%`
+function makeImage(url: string) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image()
+    image.decoding = 'async'
+    image.onload = () => resolve(image)
+    image.onerror = reject
+    image.src = url
+  })
 }
 
 export default function ScrollTriunfanteBackdropExact() {
-  const layerA = useRef<HTMLDivElement>(null)
-  const layerB = useRef<HTMLDivElement>(null)
-  const [sprite, setSprite] = useState<SpriteConfig>(FALLBACK_CONFIG)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
     let cancelled = false
+    let raf = 0
+    let resizeObserver: ResizeObserver | null = null
+    let sprite: SpriteConfig | null = null
+    let target = Math.max(0, window.scrollY) / 21
+    let current = target
+    let lastFrame = -1
+    let lastWidth = 0
+    let lastHeight = 0
 
-    const applyHighQualitySprite = (base64: string) => {
-      if (cancelled || !base64) return
-      const clean = base64.replace(/\s/g, '')
-      const url = `data:image/webp;base64,${clean}`
-      const preload = new Image()
-      preload.decoding = 'async'
-      preload.onload = () => {
-        if (cancelled) return
-        setSprite({
-          url,
-          frameCount: 12,
-          columns: 4,
-          rows: 3,
-          // 12 quadros ocupam praticamente a mesma distância de scroll de uma volta da versão anterior.
-          scrollPxPerFrame: 21,
-        })
+    const resizeCanvas = () => {
+      const canvas = canvasRef.current
+      if (!canvas) return false
+
+      const rect = canvas.getBoundingClientRect()
+      if (!rect.width || !rect.height) return false
+
+      // Render explicitly at device-pixel density. This avoids the browser
+      // rasterising the animation at CSS-pixel resolution on HiDPI screens.
+      const dpr = Math.min(window.devicePixelRatio || 1, 3)
+      const width = Math.max(1, Math.round(rect.width * dpr))
+      const height = Math.max(1, Math.round(rect.height * dpr))
+
+      if (width !== canvas.width || height !== canvas.height) {
+        canvas.width = width
+        canvas.height = height
+        lastFrame = -1
       }
-      preload.src = url
+
+      const changed = width !== lastWidth || height !== lastHeight
+      lastWidth = width
+      lastHeight = height
+      return changed
+    }
+
+    const drawFrame = (frame: number) => {
+      const canvas = canvasRef.current
+      if (!canvas || !sprite) return
+
+      resizeCanvas()
+      if (!canvas.width || !canvas.height) return
+
+      const ctx = canvas.getContext('2d', { alpha: true })
+      if (!ctx) return
+
+      ctx.imageSmoothingEnabled = true
+      ctx.imageSmoothingQuality = 'high'
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+      const sourceWidth = sprite.image.naturalWidth / sprite.columns
+      const sourceHeight = sprite.image.naturalHeight / sprite.rows
+      const column = frame % sprite.columns
+      const row = Math.floor(frame / sprite.columns)
+
+      ctx.drawImage(
+        sprite.image,
+        column * sourceWidth,
+        row * sourceHeight,
+        sourceWidth,
+        sourceHeight,
+        0,
+        0,
+        canvas.width,
+        canvas.height,
+      )
+    }
+
+    const paint = () => {
+      raf = 0
+      if (!sprite || cancelled) return
+
+      const distance = target - current
+      current += distance * EASING
+      if (Math.abs(distance) < 0.002) current = target
+
+      // Important: render ONE complete source frame at a time.
+      // The previous two-layer crossfade blended two different rotations and
+      // produced the soft/ghosted appearance that looked like low resolution.
+      const normalized = ((current % sprite.frameCount) + sprite.frameCount) % sprite.frameCount
+      const frame = Math.round(normalized) % sprite.frameCount
+
+      const resized = resizeCanvas()
+      if (frame !== lastFrame || resized) {
+        drawFrame(frame)
+        lastFrame = frame
+      }
+
+      if (Math.abs(target - current) > 0.002) {
+        raf = window.requestAnimationFrame(paint)
+      }
+    }
+
+    const queuePaint = () => {
+      if (!sprite) return
+      target = Math.max(0, window.scrollY) / sprite.scrollPxPerFrame
+      if (!raf) raf = window.requestAnimationFrame(paint)
+    }
+
+    const activateSprite = async (
+      url: string,
+      frameCount: number,
+      columns: number,
+      rows: number,
+      scrollPxPerFrame: number,
+    ) => {
+      try {
+        const image = await makeImage(url)
+        if (cancelled) return
+        sprite = { image, frameCount, columns, rows, scrollPxPerFrame }
+        target = Math.max(0, window.scrollY) / scrollPxPerFrame
+        current = target
+        lastFrame = -1
+        queuePaint()
+      } catch {
+        // Keep the currently active sprite if a replacement fails.
+      }
+    }
+
+    // Start immediately with the bundled fallback so there is never a blank layer.
+    activateSprite(FALLBACK_SPRITE, 6, 3, 2, 42)
+
+    const applyHQ = (base64: string) => {
+      const clean = base64.replace(/\s/g, '')
+      if (!clean || cancelled) return
+      activateSprite(`data:image/webp;base64,${clean}`, 12, 4, 3, 21)
     }
 
     try {
       const cached = window.localStorage.getItem(HQ_CACHE_KEY)
       if (cached) {
-        applyHighQualitySprite(cached)
-        return () => {
-          cancelled = true
-        }
+        applyHQ(cached)
+      } else {
+        fetch(HQ_BLOB_API, { headers: { Accept: 'application/vnd.github+json' } })
+          .then((response) => {
+            if (!response.ok) throw new Error(`HQ sprite: ${response.status}`)
+            return response.json()
+          })
+          .then((payload: { content?: string }) => {
+            if (!payload.content || cancelled) return
+            const clean = payload.content.replace(/\s/g, '')
+            try {
+              window.localStorage.setItem(HQ_CACHE_KEY, clean)
+            } catch {
+              // Cache is optional.
+            }
+            applyHQ(clean)
+          })
+          .catch(() => {
+            // Bundled fallback remains available.
+          })
       }
     } catch {
-      // localStorage indisponível: segue para o carregamento direto.
+      fetch(HQ_BLOB_API, { headers: { Accept: 'application/vnd.github+json' } })
+        .then((response) => response.json())
+        .then((payload: { content?: string }) => payload.content && applyHQ(payload.content))
+        .catch(() => undefined)
     }
 
-    fetch(HQ_BLOB_API, {
-      headers: { Accept: 'application/vnd.github+json' },
-    })
-      .then((response) => {
-        if (!response.ok) throw new Error(`HQ sprite: ${response.status}`)
-        return response.json()
+    window.addEventListener('scroll', queuePaint, { passive: true })
+    window.addEventListener('resize', queuePaint, { passive: true })
+
+    if (canvasRef.current && 'ResizeObserver' in window) {
+      resizeObserver = new ResizeObserver(() => {
+        lastFrame = -1
+        queuePaint()
       })
-      .then((payload: { content?: string }) => {
-        if (!payload.content || cancelled) return
-        const clean = payload.content.replace(/\s/g, '')
-        try {
-          window.localStorage.setItem(HQ_CACHE_KEY, clean)
-        } catch {
-          // Cache é opcional.
-        }
-        applyHighQualitySprite(clean)
-      })
-      .catch(() => {
-        // O sprite de baixa resolução permanece apenas como fallback de segurança.
-      })
+      resizeObserver.observe(canvasRef.current)
+    }
 
     return () => {
       cancelled = true
+      window.removeEventListener('scroll', queuePaint)
+      window.removeEventListener('resize', queuePaint)
+      resizeObserver?.disconnect()
+      if (raf) window.cancelAnimationFrame(raf)
     }
   }, [])
 
-  useEffect(() => {
-    let raf = 0
-    let target = Math.max(0, window.scrollY) / sprite.scrollPxPerFrame
-    let current = target
-
-    const paint = () => {
-      const distance = target - current
-      current += distance * EASING
-      if (Math.abs(distance) < 0.002) current = target
-
-      const normalized = ((current % sprite.frameCount) + sprite.frameCount) % sprite.frameCount
-      const frameA = Math.floor(normalized)
-      const frameB = (frameA + 1) % sprite.frameCount
-      const mix = normalized - frameA
-
-      if (layerA.current) {
-        layerA.current.style.backgroundPosition = framePosition(frameA, sprite.columns, sprite.rows)
-        layerA.current.style.opacity = String(1 - mix)
-      }
-
-      if (layerB.current) {
-        layerB.current.style.backgroundPosition = framePosition(frameB, sprite.columns, sprite.rows)
-        layerB.current.style.opacity = String(mix)
-      }
-
-      if (Math.abs(target - current) > 0.002) {
-        raf = window.requestAnimationFrame(paint)
-      } else {
-        raf = 0
-      }
-    }
-
-    const queuePaint = () => {
-      target = Math.max(0, window.scrollY) / sprite.scrollPxPerFrame
-      if (!raf) raf = window.requestAnimationFrame(paint)
-    }
-
-    paint()
-    window.addEventListener('scroll', queuePaint, { passive: true })
-
-    return () => {
-      window.removeEventListener('scroll', queuePaint)
-      if (raf) window.cancelAnimationFrame(raf)
-    }
-  }, [sprite])
-
-  const layerStyle = {
-    backgroundImage: `url("${sprite.url}")`,
-    backgroundSize: `${sprite.columns * 100}% ${sprite.rows * 100}%`,
-    backgroundRepeat: 'no-repeat',
-  }
-
   return (
     <div className="triunfante-scroll-backdrop" aria-hidden="true">
-      <div ref={layerA} className="triunfante-frame-layer" style={layerStyle} />
-      <div ref={layerB} className="triunfante-frame-layer" style={layerStyle} />
+      <canvas ref={canvasRef} className="triunfante-hq-canvas" />
     </div>
   )
 }
