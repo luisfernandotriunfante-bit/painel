@@ -1,4 +1,5 @@
 import AppV3 from './AppV3'
+import ExportExcelButton from './ExportExcelButton'
 import ScrollTriunfanteBackdrop from './ScrollTriunfanteBackdrop'
 
 const backdropStyles = `
@@ -71,6 +72,8 @@ export default function AppShellAnimated() {
           </span>
         </button>
       </nav>
+
+      <ExportExcelButton />
 
       <div className="sidebar-footer">
         <span className="status-dot" />
