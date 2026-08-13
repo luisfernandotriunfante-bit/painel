@@ -1,0 +1,502 @@
+/* Executive Command Center — bolder art direction */
+:root {
+  --exec-ink: #0b1424;
+  --exec-navy: #0e1c33;
+  --exec-navy-2: #142a4b;
+  --exec-blue: #285888;
+  --exec-red: #ef3346;
+  --exec-red-2: #c91e31;
+  --exec-green: #16a273;
+  --exec-bg: #eef2f7;
+  --exec-line: #dce3ed;
+  --exec-shadow: 0 20px 55px rgba(12, 25, 47, .10);
+  --exec-shadow-soft: 0 10px 30px rgba(12, 25, 47, .065);
+}
+
+html,
+body {
+  background:
+    radial-gradient(circle at 8% -4%, rgba(34, 76, 125, .09), transparent 25%),
+    radial-gradient(circle at 96% 0%, rgba(239, 51, 70, .055), transparent 20%),
+    linear-gradient(rgba(17, 32, 57, .022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(17, 32, 57, .022) 1px, transparent 1px),
+    var(--exec-bg);
+  background-size: auto, auto, 32px 32px, 32px 32px, auto;
+}
+
+.v3-main {
+  max-width: 1820px !important;
+  padding-top: 30px !important;
+}
+
+/* Floating executive navigation */
+.shell-content .tabs {
+  width: max-content;
+  max-width: calc(100vw - 36px);
+  min-height: 54px !important;
+  margin: 14px auto 0;
+  padding: 5px !important;
+  gap: 3px !important;
+  border: 1px solid rgba(255,255,255,.09) !important;
+  border-radius: 16px !important;
+  background: rgba(10, 20, 37, .94) !important;
+  box-shadow: 0 18px 45px rgba(8, 18, 34, .20), inset 0 1px rgba(255,255,255,.06) !important;
+  backdrop-filter: blur(24px) saturate(1.25) !important;
+  overflow-x: auto;
+}
+.shell-content .tabs button {
+  min-height: 42px;
+  padding: 0 17px !important;
+  border-radius: 11px !important;
+  color: #9eabc0 !important;
+  font-size: 10px !important;
+  letter-spacing: .035em !important;
+  transition: color .18s ease, background .18s ease, transform .18s ease !important;
+}
+.shell-content .tabs button:hover {
+  color: #fff !important;
+  background: rgba(255,255,255,.065) !important;
+}
+.shell-content .tabs button.active {
+  color: #fff !important;
+  background: linear-gradient(145deg, rgba(239,51,70,.96), rgba(194,25,43,.95)) !important;
+  box-shadow: 0 7px 20px rgba(239,51,70,.24), inset 0 1px rgba(255,255,255,.22);
+}
+.shell-content .tabs button.active::after { display: none !important; }
+
+/* Hidden module rail gets a stronger product feel when revealed */
+.module-sidebar {
+  width: 268px !important;
+  background:
+    radial-gradient(circle at 15% 4%, rgba(239,51,70,.20), transparent 25%),
+    linear-gradient(180deg, #07111f 0%, #0b1729 55%, #0a1322 100%) !important;
+  border-right-color: rgba(255,255,255,.06) !important;
+  box-shadow: 28px 0 70px rgba(5,13,25,.32) !important;
+}
+.module-item {
+  min-height: 58px !important;
+  border-radius: 15px !important;
+}
+.module-item.active {
+  background: linear-gradient(90deg, rgba(239,51,70,.14), rgba(255,255,255,.045)) !important;
+}
+.module-icon {
+  background: linear-gradient(145deg, rgba(255,255,255,.10), rgba(255,255,255,.04)) !important;
+  box-shadow: inset 0 1px rgba(255,255,255,.07);
+}
+
+/* Surfaces: fewer generic boxes, stronger hierarchy */
+.v3-app .panel,
+.v3-app .section-block {
+  border-color: rgba(205, 215, 228, .84) !important;
+  box-shadow: var(--exec-shadow-soft) !important;
+}
+.v3-app .section-block {
+  overflow: hidden;
+}
+
+/* RESUMO — asymmetric executive KPI composition */
+.summary-kpis {
+  display: grid !important;
+  grid-template-columns: 1.65fr 1fr 1fr .78fr !important;
+  gap: 16px !important;
+  margin-top: 4px !important;
+}
+.summary-kpis .metric {
+  min-height: 154px !important;
+  padding: 27px 26px 24px !important;
+  border: 1px solid rgba(211,220,231,.92) !important;
+  border-top: 0 !important;
+  border-radius: 22px !important;
+  box-shadow: 0 15px 38px rgba(12,25,47,.075) !important;
+}
+.summary-kpis .metric::before {
+  left: 25px !important;
+  right: auto !important;
+  top: 21px !important;
+  width: 34px !important;
+  height: 3px !important;
+  border-radius: 99px;
+  background: #cbd5e3 !important;
+}
+.summary-kpis .metric > span {
+  margin-top: 11px;
+  font-size: 9px !important;
+  letter-spacing: .16em !important;
+}
+.summary-kpis .metric > strong {
+  margin-top: 20px !important;
+  font-size: clamp(27px, 2.2vw, 39px) !important;
+}
+.summary-kpis .metric:first-child {
+  min-height: 180px !important;
+  color: white !important;
+  border-color: #172d4e !important;
+  background:
+    radial-gradient(circle at 84% 20%, rgba(239,51,70,.34), transparent 25%),
+    radial-gradient(circle at 72% 110%, rgba(53,104,164,.35), transparent 37%),
+    linear-gradient(135deg, #09172a 0%, #122947 64%, #341b2a 100%) !important;
+  box-shadow: 0 24px 60px rgba(7,18,34,.24) !important;
+}
+.summary-kpis .metric:first-child::before {
+  background: var(--exec-red) !important;
+  box-shadow: 0 0 18px rgba(239,51,70,.35);
+}
+.summary-kpis .metric:first-child::after {
+  width: 180px !important;
+  height: 180px !important;
+  right: -45px !important;
+  top: -60px !important;
+  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.025) !important;
+  box-shadow: 0 0 0 28px rgba(255,255,255,.018), 0 0 0 56px rgba(255,255,255,.012);
+}
+.summary-kpis .metric:first-child > span { color: #aebcd0 !important; }
+.summary-kpis .metric:first-child > strong {
+  color: #fff !important;
+  font-size: clamp(34px, 3vw, 50px) !important;
+  text-shadow: 0 10px 30px rgba(0,0,0,.16);
+}
+.summary-kpis .metric:nth-child(2) {
+  background: linear-gradient(160deg, #fff, #f2f6fb) !important;
+}
+.summary-kpis .metric:nth-child(2)::before { background: #244f80 !important; }
+.summary-kpis .metric:nth-child(3)::before { background: #7a8da7 !important; }
+.summary-kpis .metric:nth-child(4)::before { background: var(--exec-green) !important; }
+
+/* Movement becomes an executive analytics canvas */
+.movement-panel {
+  margin-top: 24px !important;
+  border-radius: 24px !important;
+  box-shadow: var(--exec-shadow) !important;
+}
+.movement-panel .section-bar {
+  min-height: 96px !important;
+  padding: 24px 30px !important;
+  color: white;
+  border-bottom: 0 !important;
+  background:
+    linear-gradient(90deg, rgba(255,255,255,.035), transparent 35%),
+    linear-gradient(135deg, #0c1a30, #122a4a 74%, #1c2941) !important;
+}
+.movement-panel .section-bar span { color: #ff7180 !important; }
+.movement-panel .section-bar h2 { color: white !important; font-size: 25px !important; }
+.movement-dashboard {
+  padding: 22px 24px 26px !important;
+  background: linear-gradient(180deg, #f9fbfd, #fff 55%);
+}
+.movement-dashboard .movement-wrap {
+  padding: 20px 22px 14px !important;
+  border-radius: 17px 17px 0 0 !important;
+  border-color: #dfe6ef !important;
+  background:
+    radial-gradient(circle at 88% 5%, rgba(39,83,132,.065), transparent 22%),
+    linear-gradient(180deg, #f7fafe, #fff) !important;
+}
+.movement-dashboard .chart-legend span {
+  color: #526078 !important;
+  font-weight: 760;
+  box-shadow: 0 4px 12px rgba(15,31,55,.04);
+}
+.movement-dashboard .dual-bars i { width: 12px !important; }
+.movement-dashboard .movement-table {
+  max-height: 305px !important;
+  box-shadow: inset 0 12px 22px -24px rgba(14,30,54,.34);
+}
+
+/* GERENCIAL — dark command cockpit */
+.manager-info-grid {
+  position: relative;
+  padding: 20px !important;
+  gap: 14px !important;
+  border: 1px solid rgba(255,255,255,.065);
+  border-radius: 25px;
+  background:
+    radial-gradient(circle at 90% -10%, rgba(239,51,70,.22), transparent 25%),
+    radial-gradient(circle at 5% 110%, rgba(47,105,171,.24), transparent 30%),
+    linear-gradient(135deg, #081524 0%, #10233d 58%, #142943 100%);
+  box-shadow: 0 26px 65px rgba(6,16,31,.20);
+}
+.manager-info-grid::before {
+  content: 'EXECUTIVE PULSE';
+  position: absolute;
+  right: 23px;
+  top: 10px;
+  color: rgba(255,255,255,.18);
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: .22em;
+}
+.manager-info-grid .info-card {
+  border-color: rgba(255,255,255,.08) !important;
+  background: linear-gradient(180deg, rgba(255,255,255,.075), rgba(255,255,255,.035)) !important;
+  box-shadow: inset 0 1px rgba(255,255,255,.055), 0 12px 26px rgba(3,12,24,.11) !important;
+}
+.manager-info-grid .info-card:hover {
+  border-color: rgba(255,255,255,.13) !important;
+  box-shadow: inset 0 1px rgba(255,255,255,.07), 0 17px 34px rgba(3,12,24,.16) !important;
+}
+.manager-info-grid .info-card > header {
+  color: #dce6f3 !important;
+  background: transparent !important;
+  border-bottom: 1px solid rgba(255,255,255,.07);
+}
+.manager-info-grid .info-card:nth-child(1) > header { color: #ff6a79 !important; }
+.manager-info-grid .info-card:nth-child(2) > header { color: #78a8df !important; }
+.manager-info-grid .info-card:nth-child(3) > header { color: #55d6a8 !important; }
+.manager-info-grid .info-row { border-bottom-color: rgba(255,255,255,.065) !important; }
+.manager-info-grid .info-row span { color: #8f9eb3 !important; }
+.manager-info-grid .info-row strong { color: #f7f9fc !important; font-size: 14px !important; }
+.manager-info-grid .info-row small {
+  color: #aebbd0 !important;
+  background: rgba(255,255,255,.065) !important;
+  border: 1px solid rgba(255,255,255,.045);
+}
+.manager-kpis {
+  margin-top: 17px !important;
+  gap: 13px !important;
+}
+.manager-kpis .metric {
+  min-height: 112px !important;
+  border-top: 0 !important;
+}
+.manager-kpis .metric:first-child {
+  color: white;
+  border-color: #1c3458 !important;
+  background: linear-gradient(145deg, #10213a, #17365f) !important;
+}
+.manager-kpis .metric:first-child > span { color: #9cadc4 !important; }
+.manager-kpis .metric:first-child > strong { color: white !important; }
+.manager-kpis + .section-block .section-bar,
+.v3-main:has(.manager-info-grid) .section-block > .section-bar {
+  background: linear-gradient(180deg, #fcfdff, #f6f9fc) !important;
+}
+
+/* TEAM — sales floor look */
+.v3-main:has(.enhanced-metrics.four + .section-block) > .enhanced-metrics.four:not(.summary-kpis):not(.manager-kpis) .metric:first-child {
+  border-color: #18365e !important;
+  background:
+    radial-gradient(circle at 90% 10%, rgba(239,51,70,.22), transparent 25%),
+    linear-gradient(145deg, #0f2038, #193b67) !important;
+}
+.v3-main:has(.enhanced-metrics.four + .section-block) > .enhanced-metrics.four:not(.summary-kpis):not(.manager-kpis) .metric:first-child > span { color: #9fb0c7 !important; }
+.v3-main:has(.enhanced-metrics.four + .section-block) > .enhanced-metrics.four:not(.summary-kpis):not(.manager-kpis) .metric:first-child > strong { color: white !important; }
+
+/* STOCK — financial hierarchy instead of four equal cards */
+.v3-main:has(.stock-detail) > .enhanced-metrics.four {
+  grid-template-columns: 1.15fr .9fr 1.3fr 1fr !important;
+  gap: 15px !important;
+}
+.v3-main:has(.stock-detail) > .enhanced-metrics.four .metric {
+  min-height: 148px !important;
+  border-top: 0 !important;
+}
+.v3-main:has(.stock-detail) > .enhanced-metrics.four .metric:first-child {
+  border-color: #1b365c !important;
+  background: linear-gradient(145deg, #0e1e35, #17365f) !important;
+}
+.v3-main:has(.stock-detail) > .enhanced-metrics.four .metric:first-child > span { color: #a7b6ca !important; }
+.v3-main:has(.stock-detail) > .enhanced-metrics.four .metric:first-child > strong { color: #fff !important; }
+.v3-main:has(.stock-detail) > .enhanced-metrics.four .metric:nth-child(2)::before { background: #2a5a91 !important; }
+.v3-main:has(.stock-detail) > .enhanced-metrics.four .metric:nth-child(3) {
+  border-color: #e4c9ce !important;
+  background:
+    radial-gradient(circle at 90% 12%, rgba(239,51,70,.10), transparent 25%),
+    linear-gradient(145deg, #fff, #fff7f8) !important;
+}
+.v3-main:has(.stock-detail) > .enhanced-metrics.four .metric:nth-child(3)::before { background: var(--exec-red) !important; }
+.stock-detail {
+  border-radius: 24px !important;
+  box-shadow: var(--exec-shadow) !important;
+}
+.stock-detail .section-bar {
+  min-height: 94px !important;
+  color: white;
+  background: linear-gradient(135deg, #0d1b30, #132c4d) !important;
+}
+.stock-detail .section-bar span { color: #ff6e7d !important; }
+.stock-detail .section-bar h2 { color: white !important; }
+.stock-detail .stock-result {
+  border-color: rgba(255,255,255,.10) !important;
+  background: rgba(255,255,255,.075) !important;
+}
+.stock-detail .stock-result span { color: #aebad0 !important; }
+.stock-detail .stock-result strong { color: #fff !important; }
+.stock-detail .stock-result button {
+  color: #e7edf6 !important;
+  border-color: rgba(255,255,255,.12) !important;
+  background: rgba(255,255,255,.06) !important;
+}
+.stock-table .stock-header-row th {
+  color: #dce5f1 !important;
+  background: #172b48 !important;
+  box-shadow: 0 1px 0 rgba(255,255,255,.05) !important;
+}
+.stock-table .stock-filter-row th {
+  top: 43px !important;
+  background: #eef3f8 !important;
+}
+
+/* METAS — true control center */
+.target-control-grid-v3 {
+  grid-template-columns: 1.45fr 1.12fr 1fr 1fr .78fr !important;
+  gap: 15px !important;
+}
+.target-control-grid-v3 .target-control {
+  min-height: 180px !important;
+  border-top: 0 !important;
+  border-radius: 22px !important;
+  box-shadow: 0 15px 38px rgba(12,25,47,.075) !important;
+}
+.target-control-grid-v3 .target-control.primary {
+  border-color: #2a2336 !important;
+  background:
+    radial-gradient(circle at 88% 10%, rgba(239,51,70,.35), transparent 28%),
+    linear-gradient(145deg, #101d32, #2c1a2a) !important;
+}
+.target-control-grid-v3 .target-control.primary > span,
+.target-control-grid-v3 .target-control.primary > small { color: #aeb9cb !important; }
+.target-control-grid-v3 .target-control.primary .currency-input {
+  color: #fff !important;
+  border-color: rgba(255,255,255,.14) !important;
+  background: rgba(255,255,255,.07) !important;
+}
+.target-control-grid-v3 .target-control:nth-child(2) {
+  border-color: #d8e0ea !important;
+  background: linear-gradient(145deg, #fff, #f6f9fc) !important;
+}
+.target-control-grid-v3 .target-control.readonly {
+  background: linear-gradient(145deg, #f4f7fb, #fff) !important;
+}
+.v3-main:has(.target-control-grid-v3) .section-block {
+  border-radius: 23px !important;
+}
+.v3-main:has(.target-control-grid-v3) .section-block > .section-bar {
+  min-height: 88px !important;
+  background: linear-gradient(180deg, #0d1b30, #132a49) !important;
+}
+.v3-main:has(.target-control-grid-v3) .section-block > .section-bar span { color: #ff6e7d !important; }
+.v3-main:has(.target-control-grid-v3) .section-block > .section-bar h2 { color: #fff !important; }
+.v3-main:has(.target-control-grid-v3) .section-block > .section-bar .status-pill {
+  color: #dce5f2;
+  border-color: rgba(255,255,255,.11);
+  background: rgba(255,255,255,.07);
+}
+.lock-button.locked {
+  background: linear-gradient(145deg, #0d1d34, #1b3c67) !important;
+  box-shadow: 0 8px 18px rgba(14,32,57,.18) !important;
+}
+
+/* CONFERENCE — health dashboard */
+.conference-grid {
+  grid-template-columns: 1.3fr .7fr !important;
+  gap: 18px !important;
+}
+.conference-grid .panel {
+  border-radius: 24px !important;
+  box-shadow: var(--exec-shadow-soft) !important;
+}
+.conference-grid .section-bar {
+  color: white;
+  background: linear-gradient(135deg, #0d1c32, #153154) !important;
+}
+.conference-grid .section-bar span { color: #ff6c7b !important; }
+.conference-grid .section-bar h2 { color: white !important; }
+.source-list > div {
+  position: relative;
+  padding-left: 23px !important;
+}
+.source-list > div::before {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  margin-top: -4px;
+  border-radius: 50%;
+  background: var(--exec-green);
+  box-shadow: 0 0 0 5px rgba(22,162,115,.09);
+}
+
+/* UPLOAD — app-like ingestion workspace */
+.compact-upload {
+  counter-reset: upload-card;
+  gap: 18px !important;
+}
+.compact-upload .upload-card {
+  counter-increment: upload-card;
+  min-height: 190px !important;
+  padding: 24px !important;
+  border-radius: 22px !important;
+  border-top: 0 !important;
+  background:
+    radial-gradient(circle at 92% 8%, rgba(34,76,125,.08), transparent 28%),
+    linear-gradient(160deg, #fff, #f8fafd) !important;
+}
+.compact-upload .upload-card::before {
+  left: 24px !important;
+  top: 22px !important;
+  right: auto !important;
+  width: 34px !important;
+  height: 3px !important;
+  border-radius: 99px;
+  background: var(--exec-red) !important;
+}
+.compact-upload .upload-card::after {
+  content: '0' counter(upload-card);
+  position: absolute;
+  right: 20px;
+  top: 17px;
+  color: #d9e1eb;
+  font-size: 27px;
+  font-weight: 900;
+  letter-spacing: -.06em;
+}
+.compact-upload .upload-card > div { margin-top: 17px; }
+.compact-upload .upload-card > div span { color: #5e6e85 !important; }
+.compact-upload .upload-card strong { margin-top: 31px !important; font-size: 14px !important; }
+.storage {
+  min-height: 128px;
+  border-radius: 24px !important;
+  box-shadow: 0 24px 55px rgba(8,20,38,.19) !important;
+  background:
+    radial-gradient(circle at 88% 20%, rgba(239,51,70,.22), transparent 25%),
+    linear-gradient(135deg, #091729, #153257 72%, #291c2a) !important;
+}
+
+/* Data tables gain executive numerics */
+.v3-app table td:nth-child(n+3),
+.v3-app .metric > strong,
+.info-row strong,
+.target-control > strong,
+.stock-result strong {
+  font-variant-numeric: tabular-nums;
+}
+.v3-app table tbody tr:hover td {
+  background: #f1f6fb !important;
+}
+
+/* Responsive safeguards */
+@media (max-width: 1280px) {
+  .summary-kpis { grid-template-columns: 1.35fr 1fr 1fr 1fr !important; }
+  .target-control-grid-v3 { grid-template-columns: repeat(3, minmax(0,1fr)) !important; }
+  .conference-grid { grid-template-columns: 1fr !important; }
+}
+@media (max-width: 980px) {
+  .shell-content .tabs { width: calc(100vw - 24px); justify-content: flex-start !important; }
+  .summary-kpis,
+  .v3-main:has(.stock-detail) > .enhanced-metrics.four { grid-template-columns: repeat(2, minmax(0,1fr)) !important; }
+  .summary-kpis .metric:first-child { grid-column: 1 / -1; }
+  .manager-info-grid { grid-template-columns: 1fr !important; }
+  .target-control-grid-v3 { grid-template-columns: repeat(2, minmax(0,1fr)) !important; }
+}
+@media (max-width: 680px) {
+  .summary-kpis,
+  .v3-main:has(.stock-detail) > .enhanced-metrics.four,
+  .target-control-grid-v3 { grid-template-columns: 1fr !important; }
+  .summary-kpis .metric:first-child { grid-column: auto; }
+  .manager-info-grid { padding: 12px !important; }
+  .shell-content .tabs { margin-top: 8px; border-radius: 13px !important; }
+  .shell-content .tabs button { padding: 0 13px !important; }
+}
