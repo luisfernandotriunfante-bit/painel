@@ -1,0 +1,60 @@
+/* Isolated glass prototype: ONLY the Faturado KPI on Resumo.
+   Goal: prove true backdrop blur before applying globally. */
+.summary-kpis {
+  position: relative;
+  isolation: isolate;
+}
+
+/* Crisp background objects intentionally placed BEHIND the KPI cards.
+   The glass card must visibly blur these shapes. */
+.summary-kpis::before {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+  inset: -24px 0 -24px 0;
+  background:
+    radial-gradient(circle at 36% 26%, rgba(26, 73, 121, .92) 0 42px, rgba(26, 73, 121, .38) 43px 78px, transparent 79px),
+    radial-gradient(circle at 47% 78%, rgba(131, 15, 37, .88) 0 28px, rgba(131, 15, 37, .34) 29px 58px, transparent 59px),
+    linear-gradient(112deg, transparent 31%, rgba(29, 72, 116, .52) 31.2% 32.1%, transparent 32.3%),
+    linear-gradient(72deg, transparent 43%, rgba(133, 16, 38, .42) 43.2% 44%, transparent 44.2%);
+  opacity: .78;
+}
+
+.summary-kpis > .metric {
+  position: relative;
+  z-index: 1;
+}
+
+/* TRUE glass: neutral film, not a navy painted card. */
+.summary-kpis > .metric:nth-child(2) {
+  overflow: hidden;
+  background: rgba(10, 18, 29, .34) !important;
+  border: 1px solid rgba(255, 255, 255, .22) !important;
+  box-shadow:
+    0 18px 44px rgba(0, 0, 0, .36),
+    inset 0 1px 0 rgba(255, 255, 255, .22),
+    inset 0 -1px 0 rgba(255, 255, 255, .04) !important;
+  backdrop-filter: blur(22px) saturate(135%) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(135%) !important;
+}
+
+.summary-kpis > .metric:nth-child(2)::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(255,255,255,.13), transparent 28%, transparent 72%, rgba(255,255,255,.025));
+}
+
+.summary-kpis > .metric:nth-child(2)::after {
+  content: 'GLASS TEST';
+  position: absolute;
+  right: 14px;
+  bottom: 10px;
+  font-size: 8px;
+  letter-spacing: .18em;
+  color: rgba(255,255,255,.35);
+  pointer-events: none;
+}
