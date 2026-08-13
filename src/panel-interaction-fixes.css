@@ -1,4 +1,31 @@
-.premium-shell .module-sidebar { transform: translateX(-100%) !important; transition: transform 210ms cubic-bezier(.2,.8,.2,1) !important; }
-.premium-shell .module-sidebar:hover { transform: translateX(0) !important; }
-.premium-shell .module-sidebar:focus-within:not(:hover) { transform: translateX(-100%) !important; }
-.triunfante-scroll-backdrop { opacity: .56 !important; z-index: 1 !important; }
+html body #root .premium-shell > .module-sidebar {
+  transform: translateX(-100%) !important;
+  transition: transform 210ms cubic-bezier(.2,.8,.2,1), box-shadow 190ms ease !important;
+}
+
+html body #root .premium-shell > .module-sidebar:hover {
+  transform: translateX(0) !important;
+}
+
+html body #root .premium-shell > .module-sidebar:focus-within:not(:hover) {
+  transform: translateX(-100%) !important;
+}
+
+html body #root .premium-shell > .module-sidebar::after {
+  right: -14px !important;
+  width: 14px !important;
+}
+
+html body #root .premium-shell > .shell-content {
+  margin-left: 0 !important;
+  width: 100% !important;
+}
+
+html body #root .triunfante-scroll-backdrop {
+  opacity: .56 !important;
+  z-index: 1 !important;
+}
+
+html body #root .premium-shell > .shell-content {
+  z-index: 2 !important;
+}
