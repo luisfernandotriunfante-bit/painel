@@ -1,0 +1,408 @@
+/* Executive Glass Final — classic glassmorphism, no grain/noise */
+:root {
+  --exec-black: #020407;
+  --exec-blue: #123a61;
+  --exec-blue-deep: #0b2743;
+  --exec-blue-soft: #1c4d78;
+  --exec-blood: #8f1423;
+  --exec-blood-deep: #65101a;
+  --exec-blood-soft: #aa2232;
+  --glass-text: #f5f7fb;
+  --glass-muted: #9aa8ba;
+  --glass-hairline: rgba(236, 244, 255, .075);
+}
+
+/* Black executive canvas + two-color aurora behind the glass */
+html, body { min-height: 100%; }
+body {
+  position: relative;
+  background: var(--exec-black) !important;
+  color: var(--glass-text);
+  overflow-x: hidden;
+}
+body::before,
+body::after {
+  content: '';
+  position: fixed;
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(12px);
+}
+body::before {
+  inset: -12vh -8vw;
+  background:
+    radial-gradient(ellipse 54% 42% at 8% 18%, rgba(18,58,97,.52) 0%, rgba(18,58,97,.22) 28%, transparent 67%),
+    radial-gradient(ellipse 44% 38% at 94% 24%, rgba(143,20,35,.40) 0%, rgba(143,20,35,.16) 28%, transparent 68%),
+    radial-gradient(ellipse 48% 40% at 48% 82%, rgba(11,39,67,.46) 0%, rgba(11,39,67,.16) 31%, transparent 69%),
+    linear-gradient(150deg, #020407 0%, #05080d 52%, #020407 100%);
+}
+body::after {
+  width: 46vw;
+  height: 46vw;
+  right: -17vw;
+  bottom: -22vw;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(143,20,35,.22), rgba(143,20,35,.06) 46%, transparent 70%);
+  filter: blur(30px);
+}
+#root {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+}
+#root,
+.app,
+.v3-app,
+.shell-content,
+.v3-main {
+  background: transparent !important;
+}
+.v3-main { position: relative; }
+
+/* Core glass material */
+.v3-app .metric,
+.v3-app .panel,
+.v3-app .section-block,
+.v3-app .info-card,
+.v3-app .upload-card,
+.v3-app .storage,
+.v3-app .source-list > div,
+.v3-app .target-control-grid-v3 .target-control,
+.v3-app .conference-grid > article,
+.v3-app .manager-info-grid,
+.shell-content .tabs {
+  position: relative;
+  isolation: isolate;
+  color: var(--glass-text) !important;
+  border: 1px solid transparent !important;
+  background:
+    linear-gradient(145deg,
+      rgba(255,255,255,.145) 0%,
+      rgba(255,255,255,.075) 20%,
+      rgba(255,255,255,.038) 48%,
+      rgba(10,28,48,.16) 100%) padding-box,
+    linear-gradient(135deg,
+      rgba(255,255,255,.42) 0%,
+      rgba(255,255,255,.11) 30%,
+      rgba(18,58,97,.42) 65%,
+      rgba(143,20,35,.34) 100%) border-box !important;
+  box-shadow:
+    0 8px 22px rgba(0,0,0,.30),
+    0 32px 84px rgba(0,0,0,.20),
+    inset 0 1px 0 rgba(255,255,255,.17),
+    inset 0 -1px 0 rgba(0,0,0,.16) !important;
+  backdrop-filter: blur(32px) saturate(1.32) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(1.32) !important;
+}
+
+/* Specular reflection — smooth glass, no texture */
+.v3-app .metric::after,
+.v3-app .panel::after,
+.v3-app .section-block::after,
+.v3-app .info-card::after,
+.v3-app .upload-card::after,
+.v3-app .target-control-grid-v3 .target-control::after,
+.v3-app .conference-grid > article::after,
+.shell-content .tabs::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    linear-gradient(116deg,
+      rgba(255,255,255,.18) 0%,
+      rgba(255,255,255,.075) 13%,
+      transparent 31%,
+      transparent 72%,
+      rgba(255,255,255,.028) 88%,
+      transparent 100%);
+  opacity: .72;
+}
+.v3-app .metric > *,
+.v3-app .panel > *,
+.v3-app .section-block > *,
+.v3-app .info-card > *,
+.v3-app .upload-card > *,
+.v3-app .target-control-grid-v3 .target-control > *,
+.v3-app .conference-grid > article > *,
+.shell-content .tabs > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Remove legacy solid fills from all principal cards */
+.v3-app .summary-kpis .metric,
+.v3-app .summary-kpis .metric:first-child,
+.v3-app .manager-kpis .metric,
+.v3-app .manager-kpis .metric:first-child,
+.v3-app .target-control-grid-v3 .target-control,
+.v3-app .target-control-grid-v3 .target-control.primary,
+.v3-main:has(.stock-detail) > .enhanced-metrics.four .metric,
+.v3-main:has(.stock-detail) > .enhanced-metrics.four .metric:first-child {
+  background:
+    linear-gradient(145deg,
+      rgba(255,255,255,.14) 0%,
+      rgba(255,255,255,.065) 22%,
+      rgba(255,255,255,.026) 50%,
+      rgba(10,28,48,.14) 100%) padding-box,
+    linear-gradient(135deg,
+      rgba(255,255,255,.42),
+      rgba(255,255,255,.10) 34%,
+      rgba(18,58,97,.42) 70%,
+      rgba(143,20,35,.30)) border-box !important;
+}
+
+/* Two-color semantic accents only: dark blue + blood red */
+.v3-app .summary-kpis .metric:first-child,
+.v3-app .target-control-grid-v3 .target-control.primary,
+.v3-app .manager-kpis .metric:first-child,
+.v3-main:has(.stock-detail) > .enhanced-metrics.four .metric:first-child {
+  background:
+    radial-gradient(circle at 92% 5%, rgba(143,20,35,.22), transparent 35%),
+    linear-gradient(145deg,
+      rgba(255,255,255,.15),
+      rgba(255,255,255,.055) 40%,
+      rgba(18,58,97,.16) 100%) padding-box,
+    linear-gradient(135deg,
+      rgba(255,255,255,.46),
+      rgba(255,255,255,.10) 34%,
+      rgba(18,58,97,.46) 67%,
+      rgba(143,20,35,.55)) border-box !important;
+}
+.v3-app .metric::before { background: var(--exec-blue) !important; }
+.v3-app .metric.red::before,
+.v3-app .summary-kpis .metric:first-child::before,
+.v3-app .target-control.primary::before { background: var(--exec-blood-soft) !important; }
+.v3-app .metric.navy::before,
+.v3-app .summary-kpis .metric:nth-child(2)::before,
+.v3-app .summary-kpis .metric:nth-child(4)::before { background: var(--exec-blue-soft) !important; }
+
+/* Manager cockpit uses same glass instead of a solid dark slab */
+.v3-app .manager-info-grid {
+  padding: 18px !important;
+  gap: 13px !important;
+}
+.v3-app .manager-info-grid .info-card {
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.105), rgba(255,255,255,.030) 48%, rgba(18,58,97,.10)) padding-box,
+    linear-gradient(135deg, rgba(255,255,255,.28), rgba(255,255,255,.065) 45%, rgba(18,58,97,.30)) border-box !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.10), 0 12px 30px rgba(0,0,0,.14) !important;
+  backdrop-filter: blur(26px) saturate(1.25) !important;
+}
+.v3-app .manager-info-grid .info-card:nth-child(1) > header,
+.v3-app .manager-info-grid .info-card:nth-child(3) > header { color: #d65a67 !important; }
+.v3-app .manager-info-grid .info-card:nth-child(2) > header { color: #6f9bc4 !important; }
+
+/* Section bars and analytical interiors: no opaque navy */
+.v3-app .section-bar,
+.v3-app .table-title,
+.v3-app .stock-titlebar,
+.v3-app .movement-panel .section-bar,
+.v3-app .manager-kpis + .section-block .section-bar {
+  color: var(--glass-text) !important;
+  background: rgba(255,255,255,.035) !important;
+  border-bottom: 1px solid var(--glass-hairline) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.055) !important;
+  backdrop-filter: blur(18px) saturate(1.18) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(1.18) !important;
+}
+.v3-app .movement-dashboard,
+.v3-app .movement-wrap,
+.v3-app .stock-table-viewport,
+.v3-app .table-scroll {
+  background: rgba(3,9,16,.08) !important;
+  border-color: rgba(236,244,255,.075) !important;
+  backdrop-filter: blur(14px) saturate(1.18) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(1.18) !important;
+}
+.v3-app .movement-wrap {
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.040), rgba(255,255,255,.010)),
+    rgba(6,16,28,.10) !important;
+}
+
+/* Borderless-style charts and only the two approved accent colors */
+.v3-app .legend-billed,
+.v3-app .dual-bars .billed { background: var(--exec-blue) !important; }
+.v3-app .legend-pending,
+.v3-app .dual-bars .pending { background: var(--exec-blood-soft) !important; }
+.v3-app .legend-positive,
+.v3-app .positive-bubble {
+  background: var(--exec-blue-soft) !important;
+  color: #f5f7fb !important;
+}
+.v3-app .multi-bars,
+.v3-app .movement-wrap,
+.v3-app .day-group,
+.v3-app .dual-bars { border-color: rgba(255,255,255,.04) !important; }
+
+/* Tables — thin hairlines, translucent header */
+.v3-app table,
+.v3-app tbody,
+.v3-app tbody tr { background: transparent !important; }
+.v3-app thead,
+.v3-app .movement-table thead,
+.v3-app .stock-detail thead,
+.v3-app .manager-table thead,
+.v3-app .targets-table-v3 thead {
+  background: rgba(22,50,80,.16) !important;
+  backdrop-filter: blur(24px) saturate(1.22) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(1.22) !important;
+}
+.v3-app th {
+  color: #93a2b6 !important;
+  font-size: 9px !important;
+  font-weight: 500 !important;
+  letter-spacing: .035em !important;
+  border-color: rgba(236,244,255,.075) !important;
+}
+.v3-app td {
+  color: #d5dde8 !important;
+  font-size: 11px !important;
+  font-weight: 400 !important;
+  border-color: rgba(236,244,255,.055) !important;
+}
+.v3-app tbody tr:hover { background: rgba(18,58,97,.13) !important; }
+.v3-app .positive { color: #76a7d3 !important; }
+.v3-app .negative { color: #d45c68 !important; }
+
+/* Minimal typography */
+.v3-app .metric > span,
+.v3-app .target-control > span,
+.v3-app .section-bar > div > span,
+.v3-app .table-title span,
+.v3-app .info-card > header,
+.v3-app .upload-card > div > span {
+  color: var(--glass-muted) !important;
+  font-weight: 460 !important;
+  letter-spacing: .025em !important;
+}
+.v3-app .metric > strong,
+.v3-app .target-control > strong,
+.v3-app .info-row strong {
+  color: var(--glass-text) !important;
+  font-weight: 510 !important;
+  letter-spacing: -.028em !important;
+}
+.v3-app .section-bar h2,
+.v3-app .section-bar h3,
+.v3-app .table-title h3 {
+  color: #f5f7fb !important;
+  font-weight: 500 !important;
+  letter-spacing: -.022em !important;
+}
+
+/* Inputs and selects: inset glass */
+.v3-app input,
+.v3-app select,
+.v3-app .currency-input,
+.v3-app .number-input,
+.v3-app .network-select,
+.v3-app .target-input,
+.v3-app .stock-filter-input,
+.v3-app .stock-filter-select {
+  color: #f4f7fb !important;
+  border: 1px solid rgba(236,244,255,.13) !important;
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.080), rgba(255,255,255,.018)),
+    rgba(4,13,23,.22) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.075),
+    inset 0 -1px 0 rgba(0,0,0,.18) !important;
+  backdrop-filter: blur(22px) saturate(1.24) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(1.24) !important;
+}
+.v3-app option { color: #eef3f8 !important; background: #071522 !important; }
+.v3-app input::placeholder { color: #65778e !important; }
+.v3-app input:focus,
+.v3-app select:focus {
+  border-color: rgba(92,141,188,.48) !important;
+  box-shadow: 0 0 0 3px rgba(18,58,97,.16), inset 0 1px 0 rgba(255,255,255,.10) !important;
+}
+
+/* Approved horizontal navigation, now true glass */
+.shell-content .tabs {
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.13), rgba(255,255,255,.040) 48%, rgba(18,58,97,.11)) padding-box,
+    linear-gradient(135deg, rgba(255,255,255,.40), rgba(255,255,255,.075) 50%, rgba(18,58,97,.42)) border-box !important;
+  backdrop-filter: blur(34px) saturate(1.30) !important;
+  -webkit-backdrop-filter: blur(34px) saturate(1.30) !important;
+}
+.shell-content .tabs button {
+  color: #9ba8b8 !important;
+  font-weight: 450 !important;
+  letter-spacing: .004em !important;
+}
+.shell-content .tabs button:hover {
+  color: #fff !important;
+  background: rgba(255,255,255,.055) !important;
+}
+.shell-content .tabs button.active {
+  color: #fff !important;
+  background: linear-gradient(145deg, var(--exec-blood-soft), var(--exec-blood-deep)) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 8px 24px rgba(143,20,35,.24) !important;
+}
+
+/* Statuses/buttons use only blue or blood red */
+.v3-app .lock-button.locked,
+.v3-app .status-pill.warn,
+.v3-app .global-message.error {
+  color: #ffe9ec !important;
+  background: rgba(143,20,35,.76) !important;
+  border-color: rgba(198,78,92,.34) !important;
+}
+.v3-app .status-pill.ok,
+.v3-app .source-pill,
+.v3-app .badge,
+.v3-app .chip {
+  color: #dcecff !important;
+  background: rgba(18,58,97,.44) !important;
+  border-color: rgba(80,126,169,.30) !important;
+}
+
+/* Double-shadow hover state: slightly brighter glass, +2px */
+.v3-app .metric,
+.v3-app .target-control,
+.v3-app .upload-card,
+.v3-app .source-list > div,
+.v3-app .info-card {
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease !important;
+}
+.v3-app .metric:hover,
+.v3-app .target-control:hover,
+.v3-app .upload-card:hover,
+.v3-app .source-list > div:hover,
+.v3-app .info-card:hover {
+  transform: translateY(-2px);
+  background:
+    linear-gradient(145deg,
+      rgba(255,255,255,.20) 0%,
+      rgba(255,255,255,.095) 24%,
+      rgba(255,255,255,.045) 50%,
+      rgba(18,58,97,.18) 100%) padding-box,
+    linear-gradient(135deg,
+      rgba(255,255,255,.52),
+      rgba(255,255,255,.15) 34%,
+      rgba(18,58,97,.52) 68%,
+      rgba(143,20,35,.42)) border-box !important;
+  box-shadow:
+    0 10px 26px rgba(0,0,0,.32),
+    0 38px 92px rgba(0,0,0,.24),
+    inset 0 1px 0 rgba(255,255,255,.22) !important;
+  backdrop-filter: blur(36px) saturate(1.34) !important;
+  -webkit-backdrop-filter: blur(36px) saturate(1.34) !important;
+}
+
+@media (max-width: 760px) {
+  .v3-app .metric,
+  .v3-app .panel,
+  .v3-app .section-block,
+  .v3-app .info-card,
+  .v3-app .target-control-grid-v3 .target-control,
+  .shell-content .tabs {
+    backdrop-filter: blur(24px) saturate(1.24) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(1.24) !important;
+  }
+}
