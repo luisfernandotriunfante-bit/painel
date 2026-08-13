@@ -1,0 +1,426 @@
+/* Unified Executive Cockpit — apply the Gerencial visual language everywhere */
+:root {
+  --cockpit-0: #07111f;
+  --cockpit-1: #0a1728;
+  --cockpit-2: #0f2139;
+  --cockpit-3: #162d4b;
+  --cockpit-4: #1b3657;
+  --cockpit-line: rgba(255,255,255,.075);
+  --cockpit-line-2: rgba(255,255,255,.11);
+  --cockpit-text: #f6f8fb;
+  --cockpit-muted: #94a4ba;
+  --cockpit-muted-2: #71839c;
+  --cockpit-red: #ff4f62;
+  --cockpit-blue: #6da6e4;
+  --cockpit-green: #51d5a6;
+  --cockpit-amber: #f5bd63;
+  --cockpit-shadow: 0 24px 64px rgba(5,14,28,.18);
+}
+
+/* App canvas */
+html, body {
+  background:
+    radial-gradient(circle at 7% -5%, rgba(41,84,136,.12), transparent 28%),
+    radial-gradient(circle at 96% 0%, rgba(239,51,70,.07), transparent 23%),
+    #eaf0f6 !important;
+}
+.v3-main {
+  max-width: 1840px !important;
+  padding-top: 34px !important;
+}
+
+/* horizontal navigation: keep the approved visual, sharpen it slightly */
+.shell-content .tabs {
+  border-color: rgba(255,255,255,.10) !important;
+  background: rgba(7,17,31,.965) !important;
+  box-shadow: 0 20px 52px rgba(4,12,24,.26), inset 0 1px rgba(255,255,255,.07) !important;
+}
+.shell-content .tabs button.active {
+  background: linear-gradient(135deg, #ff4c60, #d9263b) !important;
+  box-shadow: 0 8px 24px rgba(239,51,70,.34), inset 0 1px rgba(255,255,255,.22) !important;
+}
+
+/* Universal dark surfaces */
+.v3-app .panel,
+.v3-app .section-block,
+.v3-app .metric,
+.v3-app .target-control,
+.v3-app .info-card,
+.v3-app .upload-card,
+.v3-app .storage {
+  color: var(--cockpit-text) !important;
+  border-color: var(--cockpit-line) !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.025)),
+    linear-gradient(145deg, var(--cockpit-1), var(--cockpit-2)) !important;
+  box-shadow: inset 0 1px rgba(255,255,255,.055), var(--cockpit-shadow) !important;
+}
+.v3-app .panel,
+.v3-app .section-block {
+  border-radius: 25px !important;
+}
+.v3-app .metric,
+.v3-app .target-control,
+.v3-app .info-card,
+.v3-app .upload-card {
+  border-radius: 19px !important;
+}
+
+/* KPI system — one visual grammar, functional accents */
+.v3-app .metric {
+  --metric-accent: #8194ad;
+  border-top: 0 !important;
+  overflow: hidden;
+  isolation: isolate;
+}
+.v3-app .metric::before {
+  content: '' !important;
+  position: absolute !important;
+  left: 22px !important;
+  top: 20px !important;
+  width: 30px !important;
+  height: 3px !important;
+  right: auto !important;
+  bottom: auto !important;
+  border-radius: 999px !important;
+  background: var(--metric-accent) !important;
+  box-shadow: 0 0 16px color-mix(in srgb, var(--metric-accent) 38%, transparent) !important;
+  z-index: 2;
+}
+.v3-app .metric::after {
+  content: '' !important;
+  position: absolute;
+  width: 150px !important;
+  height: 150px !important;
+  right: -75px !important;
+  top: -80px !important;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,.04);
+  background: color-mix(in srgb, var(--metric-accent) 7%, transparent) !important;
+  box-shadow: 0 0 0 26px rgba(255,255,255,.012), 0 0 0 52px rgba(255,255,255,.008);
+  pointer-events: none;
+}
+.v3-app .metric.red { --metric-accent: var(--cockpit-red); }
+.v3-app .metric.navy { --metric-accent: var(--cockpit-blue); }
+.v3-app .metric > span {
+  margin-top: 9px !important;
+  color: var(--cockpit-muted) !important;
+  font-size: 9px !important;
+  letter-spacing: .15em !important;
+  font-weight: 900 !important;
+}
+.v3-app .metric > strong {
+  color: #fff !important;
+  font-weight: 760 !important;
+  letter-spacing: -.045em !important;
+  text-shadow: 0 8px 24px rgba(0,0,0,.13);
+}
+.v3-app .metric:hover {
+  border-color: var(--cockpit-line-2) !important;
+  transform: translateY(-3px) !important;
+  box-shadow: inset 0 1px rgba(255,255,255,.07), 0 28px 66px rgba(5,14,28,.22) !important;
+}
+
+/* Summary — cockpit family without losing the hero KPI */
+.summary-kpis .metric:first-child,
+.manager-kpis .metric:first-child,
+.v3-main:has(.stock-detail) > .enhanced-metrics.four .metric:first-child {
+  background:
+    radial-gradient(circle at 82% 8%, rgba(255,79,98,.25), transparent 25%),
+    linear-gradient(145deg, #071525, #142b4a 70%, #2d1d30) !important;
+}
+.summary-kpis .metric:nth-child(2) { --metric-accent: var(--cockpit-blue); }
+.summary-kpis .metric:nth-child(3) { --metric-accent: #a5b4c8; }
+.summary-kpis .metric:nth-child(4) { --metric-accent: var(--cockpit-green); }
+
+/* Section headers */
+.v3-app .section-bar,
+.v3-main:has(.manager-info-grid) .section-block > .section-bar,
+.stock-titlebar {
+  min-height: 86px !important;
+  color: #fff !important;
+  border-bottom: 1px solid var(--cockpit-line) !important;
+  background:
+    linear-gradient(90deg, rgba(255,255,255,.025), transparent 45%),
+    rgba(255,255,255,.018) !important;
+}
+.v3-app .section-bar > div:first-child > span,
+.v3-app .section-bar span {
+  color: var(--cockpit-red) !important;
+}
+.v3-app .section-bar h2 {
+  color: #f7f9fc !important;
+}
+
+/* Gerencial — keep cockpit as reference source of truth */
+.manager-info-grid {
+  background:
+    radial-gradient(circle at 91% -8%, rgba(239,51,70,.22), transparent 25%),
+    radial-gradient(circle at 3% 115%, rgba(50,112,181,.26), transparent 31%),
+    linear-gradient(135deg, #071421, #10233d 58%, #182c48) !important;
+  box-shadow: 0 30px 72px rgba(5,14,27,.22) !important;
+}
+.manager-info-grid .info-card {
+  background: linear-gradient(180deg, rgba(255,255,255,.075), rgba(255,255,255,.035)) !important;
+}
+.manager-info-grid .info-row strong { color: #fff !important; }
+
+/* All info cards, including future cockpit-like components */
+.info-card > header {
+  background: transparent !important;
+  color: #d9e3f0 !important;
+  border-bottom: 1px solid var(--cockpit-line) !important;
+}
+.info-row { border-bottom-color: var(--cockpit-line) !important; }
+.info-row span { color: var(--cockpit-muted) !important; }
+.info-row strong { color: #fff !important; }
+.info-row small {
+  color: #b6c3d4 !important;
+  border: 1px solid rgba(255,255,255,.045);
+  background: rgba(255,255,255,.065) !important;
+}
+
+/* Tables — executive data grids */
+.v3-app .table-scroll,
+.stock-table-viewport,
+.movement-dashboard .movement-table {
+  background: transparent !important;
+}
+.v3-app table {
+  color: #eaf0f7 !important;
+  background: transparent !important;
+}
+.v3-app table th,
+.stock-table .stock-header-row th,
+.stock-table .stock-filter-row th,
+.movement-dashboard .movement-table th {
+  color: #899bb3 !important;
+  background: rgba(255,255,255,.035) !important;
+  border-bottom-color: var(--cockpit-line) !important;
+}
+.v3-app table td {
+  color: #d2dbe7 !important;
+  border-bottom-color: rgba(255,255,255,.055) !important;
+  background: transparent !important;
+}
+.v3-app table td b,
+.v3-app table td strong,
+.stock-table td:nth-child(5),
+.stock-table td:nth-child(7),
+.product-cell {
+  color: #f7f9fc !important;
+}
+.v3-app table tbody tr:nth-child(even) td { background: rgba(255,255,255,.012) !important; }
+.v3-app table tbody tr:hover td { background: rgba(110,158,214,.075) !important; }
+.manager-table th:nth-child(1), .manager-table td:nth-child(1),
+.manager-table thead th:nth-child(1) {
+  background: #0d1d32 !important;
+}
+.positive { color: #58d7a9 !important; }
+.negative { color: #ff7c8a !important; }
+
+/* Movement area becomes part of the same dark system */
+.movement-panel .section-bar {
+  background:
+    radial-gradient(circle at 94% 0%, rgba(239,51,70,.13), transparent 27%),
+    linear-gradient(135deg, #09172a, #132a48) !important;
+}
+.movement-dashboard {
+  background: linear-gradient(180deg, #0c1a2d, #0b1829) !important;
+}
+.movement-dashboard .movement-wrap {
+  border-color: var(--cockpit-line) !important;
+  background:
+    radial-gradient(circle at 90% 0%, rgba(85,135,193,.10), transparent 23%),
+    rgba(255,255,255,.025) !important;
+}
+.movement-dashboard .chart-legend span {
+  color: #b2bfd0 !important;
+  border-color: rgba(255,255,255,.06) !important;
+  background: rgba(255,255,255,.045) !important;
+  box-shadow: none !important;
+}
+.movement-dashboard .multi-bars {
+  border-bottom-color: rgba(255,255,255,.10) !important;
+  background: repeating-linear-gradient(to bottom, transparent 0, transparent 59px, rgba(255,255,255,.055) 60px) !important;
+}
+.movement-dashboard .day-group > span { color: #8091aa !important; }
+.movement-dashboard .movement-table {
+  border-color: var(--cockpit-line) !important;
+  background: rgba(255,255,255,.018) !important;
+}
+
+/* Targets — command console */
+.target-control-grid-v3 .target-control {
+  min-height: 170px !important;
+  border-top: 0 !important;
+}
+.target-control.primary {
+  background:
+    radial-gradient(circle at 88% 10%, rgba(255,79,98,.25), transparent 28%),
+    linear-gradient(145deg, #071525, #152c4b 70%, #321d2c) !important;
+}
+.target-control.readonly {
+  background:
+    radial-gradient(circle at 90% 0%, rgba(83,139,205,.14), transparent 29%),
+    linear-gradient(145deg, #0b1a2e, #132c4a) !important;
+}
+.target-control > span { color: var(--cockpit-muted) !important; }
+.target-control > strong { color: #fff !important; }
+.target-control > small { color: #8495ad !important; }
+
+/* Inputs — dark glass controls */
+.currency-input,
+.number-input,
+.network-select,
+.stock-filter-row input {
+  color: #f4f7fb !important;
+  border-color: rgba(255,255,255,.085) !important;
+  background: rgba(255,255,255,.055) !important;
+  box-shadow: inset 0 1px rgba(255,255,255,.025) !important;
+}
+.currency-input::placeholder,
+.number-input::placeholder,
+.stock-filter-row input::placeholder { color: #65768d !important; }
+.currency-input:hover,
+.number-input:hover,
+.network-select:hover,
+.stock-filter-row input:hover {
+  border-color: rgba(255,255,255,.15) !important;
+  background: rgba(255,255,255,.075) !important;
+}
+.currency-input:focus,
+.number-input:focus,
+.network-select:focus,
+.stock-filter-row input:focus {
+  color: white !important;
+  border-color: rgba(109,166,228,.55) !important;
+  background: rgba(255,255,255,.085) !important;
+  box-shadow: 0 0 0 3px rgba(109,166,228,.10) !important;
+}
+.network-select option { color: #17243b; background: #fff; }
+
+/* Stock */
+.stock-result {
+  border-color: rgba(255,255,255,.075) !important;
+  background: rgba(255,255,255,.045) !important;
+}
+.stock-result span { color: var(--cockpit-muted) !important; }
+.stock-result strong { color: #fff !important; }
+.stock-result button {
+  color: #c0ccda !important;
+  border-color: rgba(255,255,255,.10) !important;
+  background: rgba(255,255,255,.055) !important;
+}
+.stock-result button:hover {
+  color: #fff !important;
+  background: rgba(255,255,255,.09) !important;
+}
+.stock-table-viewport { border-top-color: var(--cockpit-line) !important; }
+
+/* Status chips and buttons */
+.status-pill,
+.mini-lock,
+.lock-button {
+  color: #c4d0de !important;
+  border-color: rgba(255,255,255,.09) !important;
+  background: rgba(255,255,255,.055) !important;
+}
+.status-pill.ok { color: #65dbb1 !important; background: rgba(81,213,166,.09) !important; border-color: rgba(81,213,166,.16) !important; }
+.status-pill.warn { color: #f6c979 !important; background: rgba(245,189,99,.09) !important; border-color: rgba(245,189,99,.16) !important; }
+.lock-button.locked {
+  color: #fff !important;
+  border-color: rgba(239,51,70,.42) !important;
+  background: linear-gradient(135deg, #d72a3e, #a91d31) !important;
+  box-shadow: 0 8px 22px rgba(215,42,62,.17) !important;
+}
+
+/* Conference — system health center */
+.conference-grid .panel:first-child {
+  background:
+    radial-gradient(circle at 8% 0%, rgba(81,213,166,.10), transparent 28%),
+    linear-gradient(145deg, #091827, #10263f) !important;
+}
+.conference-grid .panel:last-child {
+  background:
+    radial-gradient(circle at 90% 0%, rgba(245,189,99,.10), transparent 28%),
+    linear-gradient(145deg, #0a1728, #17263a) !important;
+}
+.source-list > div { border-bottom-color: rgba(255,255,255,.055) !important; }
+.source-list span { color: #8798b0 !important; }
+.source-list strong { color: #f2f6fb !important; }
+.source-list small { color: #7588a2 !important; }
+.warning-list { color: #b3c0d0 !important; }
+.warning-list li { border-bottom-color: rgba(255,255,255,.05) !important; }
+.compact-empty,
+.empty-state {
+  color: #8ea0b8 !important;
+  border-color: rgba(255,255,255,.09) !important;
+  background: rgba(255,255,255,.025) !important;
+}
+.inline-alert {
+  color: #f6cf8b !important;
+  border-color: rgba(245,189,99,.15) !important;
+  background: rgba(245,189,99,.07) !important;
+}
+
+/* Upload — ingestion console */
+.compact-upload { gap: 18px !important; }
+.upload-card {
+  min-height: 180px !important;
+  background:
+    radial-gradient(circle at 96% 0%, rgba(109,166,228,.08), transparent 26%),
+    linear-gradient(145deg, #0a192b, #112640) !important;
+}
+.upload-card::before {
+  height: 2px !important;
+  background: linear-gradient(90deg, #5d93ce, #ff5163) !important;
+  opacity: .9 !important;
+}
+.upload-card::after {
+  color: rgba(255,255,255,.08) !important;
+}
+.upload-card > div span { color: #91a2ba !important; }
+.upload-card > div p { color: #71849e !important; }
+.upload-card strong { color: #f4f7fb !important; }
+.upload-card small { color: #7488a2 !important; }
+.upload-card:hover {
+  border-color: rgba(255,255,255,.13) !important;
+  background:
+    radial-gradient(circle at 96% 0%, rgba(109,166,228,.13), transparent 28%),
+    linear-gradient(145deg, #0c1d32, #15304f) !important;
+}
+.storage {
+  background:
+    radial-gradient(circle at 90% 0%, rgba(239,51,70,.16), transparent 26%),
+    linear-gradient(135deg, #071421, #102640 72%, #2c1d2c) !important;
+}
+.storage > div > span { color: #ff6e7e !important; }
+.storage h3 { color: #fff !important; }
+.storage p { color: #91a3ba !important; }
+
+/* Dark scrollbars inside analytic areas */
+.v3-app .table-scroll::-webkit-scrollbar-track,
+.stock-table-viewport::-webkit-scrollbar-track,
+.movement-dashboard .movement-table::-webkit-scrollbar-track { background: #091827 !important; }
+.v3-app .table-scroll::-webkit-scrollbar-thumb,
+.stock-table-viewport::-webkit-scrollbar-thumb,
+.movement-dashboard .movement-table::-webkit-scrollbar-thumb {
+  background: #31465f !important;
+  border-color: #091827 !important;
+}
+
+/* Responsive: preserve executive hierarchy */
+@media (max-width: 1100px) {
+  .summary-kpis,
+  .v3-main:has(.stock-detail) > .enhanced-metrics.four {
+    grid-template-columns: repeat(2, minmax(0,1fr)) !important;
+  }
+}
+@media (max-width: 700px) {
+  .summary-kpis,
+  .v3-main:has(.stock-detail) > .enhanced-metrics.four,
+  .target-control-grid-v3 { grid-template-columns: 1fr !important; }
+  .v3-app .panel,
+  .v3-app .section-block { border-radius: 19px !important; }
+}
