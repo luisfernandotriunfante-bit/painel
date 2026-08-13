@@ -1,6 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import App from './AppShell'
+import App from './AppShellAnimated'
 import './styles.css'
 import './real-data.css'
 import './enhanced.css'
