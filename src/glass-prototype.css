@@ -1,25 +1,39 @@
 /* Isolated glass prototype: ONLY the Faturado KPI on Resumo.
-   Diagnostic goal: verify native backdrop blur using a REAL scrolling background,
-   not pseudo-element copies or fixed layers. */
+   Diagnostic goal: the red line is FIXED to the viewport while the KPI cards scroll over it. */
+
+/* Keep the main content as the stacking context for the fixed test backdrop. */
+.v3-main {
+  position: relative;
+  isolation: isolate;
+  background: transparent !important;
+}
+
+/* FIXED BACKDROP TEST LINE.
+   It belongs to the page backdrop, not to the KPI strip, so scrolling the page moves
+   the cards while this line stays in the same viewport position. */
+.v3-main::before {
+  content: '';
+  position: fixed;
+  z-index: -1;
+  pointer-events: none;
+  left: -4vw;
+  top: 18vh;
+  width: 52vw;
+  height: 7px;
+  border-radius: 999px;
+  background: #b3132f;
+  transform: rotate(-9deg);
+  transform-origin: center;
+  box-shadow: 0 0 18px rgba(179, 19, 47, .12);
+}
+
+/* The KPI strip itself has NO diagnostic background anymore. */
 .summary-kpis {
   position: relative;
   isolation: auto !important;
-  /* The red diagonal is part of the section's own background, so it scrolls with the cards. */
-  background-image:
-    linear-gradient(171deg,
-      transparent 0%,
-      transparent 45%,
-      rgba(179, 19, 47, .98) 45.15%,
-      rgba(179, 19, 47, .98) 46.15%,
-      transparent 46.30%,
-      transparent 100%),
-    radial-gradient(ellipse 360px 220px at 39% 34%, rgba(22, 70, 116, .18) 0%, rgba(22, 70, 116, .07) 44%, transparent 74%),
-    radial-gradient(ellipse 300px 190px at 49% 78%, rgba(124, 17, 38, .11) 0%, rgba(124, 17, 38, .04) 46%, transparent 76%) !important;
-  background-repeat: no-repeat !important;
-  background-size: 100% 100% !important;
+  background: transparent !important;
 }
 
-/* Disable the previous pseudo-element diagnostics completely. */
 .summary-kpis::before,
 .summary-kpis::after {
   content: none !important;
@@ -28,10 +42,9 @@
 
 .summary-kpis > .metric {
   position: relative;
-  z-index: 1;
 }
 
-/* Faturado: clean glass only. No copied backdrop, no decorative layers. */
+/* Faturado: clean glass only. No copied backdrop and no decorative layers. */
 .summary-kpis > .metric:nth-child(2) {
   overflow: hidden;
   isolation: auto !important;
