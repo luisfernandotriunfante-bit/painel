@@ -3,10 +3,10 @@
 :root {
   --glass-fixed-backdrop:
     repeating-linear-gradient(0deg,
-      rgba(118, 153, 190, .048) 0 1px,
+      rgba(118, 153, 190, .042) 0 1px,
       transparent 1px 72px),
     repeating-linear-gradient(90deg,
-      rgba(118, 153, 190, .040) 0 1px,
+      rgba(118, 153, 190, .035) 0 1px,
       transparent 1px 84px),
     linear-gradient(126deg,
       transparent 0 43.5%,
@@ -30,7 +30,7 @@
   background-position: center top !important;
 }
 
-/* Remove opaque sheets between the shell and the KPI. */
+/* No opaque sheet is allowed between the shell and the KPI. */
 .premium-shell .shell-content,
 .premium-shell .app,
 .premium-shell .enhanced-app,
@@ -40,43 +40,52 @@
   background: transparent !important;
 }
 
-/* Faturado: clean frame only. */
+/* Prevent old composition rules from isolating the tested backdrop. */
+.premium-shell .summary-kpis {
+  isolation: auto !important;
+  transform: none !important;
+  filter: none !important;
+  contain: none !important;
+}
+
+/* Faturado: clean transparent frame. */
 .premium-shell .summary-kpis .metric:nth-child(2) {
   position: relative !important;
   isolation: auto !important;
   overflow: hidden !important;
+  contain: none !important;
+  transform: none !important;
+  filter: none !important;
   background: transparent !important;
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
-  border: 1px solid rgba(185, 207, 232, .24) !important;
+  border: 1px solid rgba(185, 207, 232, .26) !important;
   box-shadow:
     0 18px 42px rgba(0, 0, 0, .32),
-    inset 0 1px 0 rgba(255, 255, 255, .12),
+    inset 0 1px 0 rgba(255, 255, 255, .13),
     inset 0 -1px 0 rgba(255, 255, 255, .025) !important;
 }
 
-/* Deterministic frosted backdrop: same fixed background, but visibly diffused. */
+/* Actual frosted glass: this layer samples what is physically behind the card. */
 .premium-shell .summary-kpis .metric:nth-child(2)::before {
   content: '' !important;
   position: absolute !important;
-  inset: -34px !important;
+  inset: 0 !important;
   width: auto !important;
   height: auto !important;
-  border-radius: 42px !important;
-  background-color: #02050a !important;
-  background-image: var(--glass-fixed-backdrop) !important;
-  background-attachment: fixed !important;
-  background-position: center top !important;
-  filter: blur(18px) saturate(104%) brightness(1.02) !important;
-  -webkit-filter: blur(18px) saturate(104%) brightness(1.02) !important;
-  transform: scale(1.025) !important;
-  transform-origin: center !important;
+  border-radius: inherit !important;
+  background: rgba(20, 31, 45, .28) !important;
+  -webkit-backdrop-filter: blur(26px) saturate(118%) !important;
+  backdrop-filter: blur(26px) saturate(118%) !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  transform: none !important;
   opacity: 1 !important;
   pointer-events: none !important;
   z-index: 0 !important;
 }
 
-/* Thin frosted film over the blurred backdrop. */
+/* Very light frosted film and edge reflection; no decorative shapes. */
 .premium-shell .summary-kpis .metric:nth-child(2)::after {
   content: '' !important;
   display: block !important;
@@ -94,10 +103,10 @@
   max-height: none !important;
   border-radius: inherit !important;
   background: linear-gradient(145deg,
-    rgba(154, 177, 202, .060),
-    rgba(42, 59, 78, .024)) !important;
+    rgba(174, 196, 220, .075),
+    rgba(54, 70, 88, .020)) !important;
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.11),
+    inset 0 1px 0 rgba(255,255,255,.14),
     inset 0 -1px 0 rgba(255,255,255,.018) !important;
   pointer-events: none !important;
   z-index: 1 !important;
@@ -110,6 +119,7 @@
 }
 
 .premium-shell .summary-kpis .metric:nth-child(2):hover {
+  transform: none !important;
   background: transparent !important;
-  border-color: rgba(197, 217, 239, .30) !important;
+  border-color: rgba(197, 217, 239, .32) !important;
 }
