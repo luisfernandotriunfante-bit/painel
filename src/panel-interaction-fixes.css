@@ -29,3 +29,37 @@ html body #root .triunfante-scroll-backdrop {
 html body #root .premium-shell > .shell-content {
   z-index: 2 !important;
 }
+
+/* O controle do Excel acompanha exatamente a abertura do menu lateral. */
+html body #root .excel-export-fixed {
+  transform: translateX(-100%);
+  transition: transform 210ms cubic-bezier(.2,.8,.2,1), box-shadow 190ms ease;
+}
+
+html body #root:has(.module-sidebar:hover) .excel-export-fixed,
+html body #root:has(.excel-export-fixed:hover) .excel-export-fixed,
+html body #root:has(.excel-export-fixed:focus-within) .excel-export-fixed {
+  transform: translateX(0);
+}
+
+html body #root:has(.excel-export-fixed:hover) .premium-shell > .module-sidebar,
+html body #root:has(.excel-export-fixed:focus-within) .premium-shell > .module-sidebar {
+  transform: translateX(0) !important;
+}
+
+html body #root .excel-export-fixed .excel-export-wrap {
+  padding: 10px 12px 8px;
+  background: transparent;
+}
+
+@media (max-width: 760px) {
+  html body #root .excel-export-fixed {
+    transform: translateX(calc(100% + 30px));
+  }
+
+  html body #root:has(.module-sidebar:hover) .excel-export-fixed,
+  html body #root:has(.excel-export-fixed:hover) .excel-export-fixed,
+  html body #root:has(.excel-export-fixed:focus-within) .excel-export-fixed {
+    transform: translateX(0);
+  }
+}
