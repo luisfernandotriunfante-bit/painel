@@ -1,7 +1,7 @@
 /* Isolated glass prototype: ONLY the Faturado KPI on Resumo.
    The red reference remains fixed to the viewport while the KPI cards scroll.
    Native backdrop-filter was not blurring in Chromium in this composition, so the
-   card now renders a viewport-aligned blurred backdrop layer inside its own clip. */
+   card renders a viewport-aligned blurred backdrop layer inside its own clip. */
 
 /* Fixed diagnostic backdrop. */
 .v3-main {
@@ -71,17 +71,17 @@
 }
 
 /* Viewport-aligned frosted backdrop.
-   background-attachment: fixed keeps this graphic aligned to the fixed page backdrop
-   while the card itself scrolls. Negative inset gives the blur room to spread beyond
-   the rounded card edge before overflow clips it. */
+   The solid dark base intentionally masks the ORIGINAL sharp line beneath the card.
+   The same fixed line is then rendered in this layer and blurred, so only the blurred
+   version is visible inside the card while scrolling remains aligned to the viewport. */
 .summary-kpis > .metric:nth-child(2)::before {
   content: '' !important;
   display: block !important;
   position: absolute;
   z-index: 0;
   pointer-events: none;
-  inset: -42px;
-  background-color: rgba(3, 8, 14, .82);
+  inset: -52px;
+  background-color: #03080e;
   background-image:
     linear-gradient(171deg,
       transparent 0%,
@@ -94,7 +94,7 @@
   background-position: 0 0 !important;
   background-size: 100vw 100vh !important;
   background-attachment: fixed !important;
-  filter: blur(18px) !important;
+  filter: blur(24px) !important;
   transform: translateZ(0);
 }
 
