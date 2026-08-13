@@ -11,10 +11,7 @@ import './premium-v3.css'
 import './executive-command.css'
 import './executive-unified.css'
 import './executive-blackout.css'
-import './executive-glass.css'
-import './executive-glass-v2.css'
-import './executive-glass-v3.css'
-import './executive-glass-final.css'
+import './glassmorphism-clean.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
