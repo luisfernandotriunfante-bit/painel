@@ -1,9 +1,9 @@
 /* Isolated glass prototype: ONLY the Faturado KPI on Resumo.
-   Diagnostic goal: a fixed red backdrop stays in the viewport while the KPI cards scroll.
-   This version removes compositing boundaries that can prevent Chromium from sampling the backdrop. */
+   The red reference remains fixed to the viewport while the KPI cards scroll.
+   Native backdrop-filter was not blurring in Chromium in this composition, so the
+   card now renders a viewport-aligned blurred backdrop layer inside its own clip. */
 
-/* Put the diagnostic line in the REAL scrolling surface as a viewport-fixed background.
-   No pseudo-element, copied line, or card decoration is used. */
+/* Fixed diagnostic backdrop. */
 .v3-main {
   position: relative;
   isolation: auto !important;
@@ -22,16 +22,13 @@
   background-attachment: fixed !important;
 }
 
-/* Remove the previous fixed pseudo-element diagnostic. */
 .v3-main::before,
 .v3-main::after {
   content: none !important;
   display: none !important;
 }
 
-/* This section was receiving premium-enter with transform: translateY(0) and fill-mode: both.
-   Even at zero displacement that transform creates a compositing layer. Remove it ONLY here so
-   backdrop-filter can sample the fixed background behind the glass card. */
+/* Keep this KPI strip out of transformed/composited animation layers. */
 .v3-main > .summary-kpis {
   position: relative;
   isolation: auto !important;
@@ -54,10 +51,10 @@
   position: relative;
 }
 
-/* Faturado: keep exactly the current film/border/shadow; change only the blur architecture. */
+/* Faturado: retain the current glass film, border and shadow. */
 .summary-kpis > .metric:nth-child(2) {
   overflow: hidden;
-  isolation: auto !important;
+  isolation: isolate !important;
   transform: none !important;
   filter: none !important;
   contain: none !important;
@@ -69,12 +66,45 @@
     0 5px 18px rgba(0, 0, 0, .22),
     inset 0 1px 0 rgba(255, 255, 255, .24),
     inset 0 0 68px rgba(205, 225, 240, .04) !important;
-  backdrop-filter: blur(30px) !important;
-  -webkit-backdrop-filter: blur(30px) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
-.summary-kpis > .metric:nth-child(2)::before,
+/* Viewport-aligned frosted backdrop.
+   background-attachment: fixed keeps this graphic aligned to the fixed page backdrop
+   while the card itself scrolls. Negative inset gives the blur room to spread beyond
+   the rounded card edge before overflow clips it. */
+.summary-kpis > .metric:nth-child(2)::before {
+  content: '' !important;
+  display: block !important;
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+  inset: -42px;
+  background-color: rgba(3, 8, 14, .82);
+  background-image:
+    linear-gradient(171deg,
+      transparent 0%,
+      transparent 18.0%,
+      rgba(179, 19, 47, .98) 18.12%,
+      rgba(179, 19, 47, .98) 18.62%,
+      transparent 18.74%,
+      transparent 100%) !important;
+  background-repeat: no-repeat !important;
+  background-position: 0 0 !important;
+  background-size: 100vw 100vh !important;
+  background-attachment: fixed !important;
+  filter: blur(18px) !important;
+  transform: translateZ(0);
+}
+
 .summary-kpis > .metric:nth-child(2)::after {
   content: none !important;
   display: none !important;
+}
+
+/* Keep the real KPI content above the frosted backdrop. */
+.summary-kpis > .metric:nth-child(2) > * {
+  position: relative;
+  z-index: 2;
 }
