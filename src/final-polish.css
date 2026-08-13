@@ -1,0 +1,176 @@
+:root {
+  --final-glass-bg: rgba(5, 11, 19, .30);
+  --final-glass-blur: 18px;
+  --final-glass-sat: 116%;
+  --final-glass-border: rgba(255,255,255,.10);
+  --final-glass-border-soft: rgba(255,255,255,.07);
+}
+
+/* Keep the page background visible behind every glass surface. */
+.premium-shell .shell-content,
+.premium-shell .v3-app,
+.premium-shell .v3-main,
+.premium-shell .compact-main,
+.premium-shell .metrics,
+.premium-shell .enhanced-metrics,
+.premium-shell .summary-kpis,
+.premium-shell .manager-kpis {
+  background: transparent !important;
+}
+
+/* Strong final overrides for chart/panel surfaces that older theme files made opaque. */
+.premium-shell .v3-app .movement-panel,
+.premium-shell .v3-app .movement-dashboard,
+.premium-shell .v3-app .panel,
+.premium-shell .v3-app .section-block,
+.premium-shell .v3-app .manager-info-grid,
+.premium-shell .v3-app .conference-grid .panel {
+  background: var(--final-glass-bg) !important;
+  border-color: var(--final-glass-border) !important;
+  -webkit-backdrop-filter: blur(var(--final-glass-blur)) saturate(var(--final-glass-sat)) !important;
+  backdrop-filter: blur(var(--final-glass-blur)) saturate(var(--final-glass-sat)) !important;
+  box-shadow: none !important;
+}
+
+/* The chart interior must stay transparent. */
+.premium-shell .v3-app .movement-dashboard .movement-wrap,
+.premium-shell .v3-app .movement-dashboard .movement-table,
+.premium-shell .v3-app .movement-dashboard .multi-bars,
+.premium-shell .v3-app .movement-dashboard .chart-area,
+.premium-shell .v3-app .movement-dashboard .chart-wrap,
+.premium-shell .v3-app .movement-dashboard .movement-chart,
+.premium-shell .v3-app .movement-dashboard svg,
+.premium-shell .v3-app .movement-dashboard canvas {
+  background-color: transparent !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  box-shadow: none !important;
+}
+
+.premium-shell .v3-app .movement-dashboard .movement-wrap,
+.premium-shell .v3-app .movement-dashboard .movement-table {
+  background: transparent !important;
+  border-color: var(--final-glass-border-soft) !important;
+}
+
+.premium-shell .v3-app .movement-dashboard .chart-legend span {
+  background: rgba(255,255,255,.035) !important;
+  border-color: var(--final-glass-border-soft) !important;
+}
+
+/* Tables: one glass container, transparent rows/cells. */
+.premium-shell .v3-app .table-scroll,
+.premium-shell .v3-app .stock-table-viewport {
+  background: var(--final-glass-bg) !important;
+  border: 1px solid var(--final-glass-border) !important;
+  -webkit-backdrop-filter: blur(var(--final-glass-blur)) saturate(var(--final-glass-sat)) !important;
+  backdrop-filter: blur(var(--final-glass-blur)) saturate(var(--final-glass-sat)) !important;
+  box-shadow: none !important;
+}
+
+.premium-shell .v3-app table,
+.premium-shell .v3-app table tbody,
+.premium-shell .v3-app table tbody tr,
+.premium-shell .v3-app table tbody td,
+.premium-shell .v3-app .movement-table,
+.premium-shell .v3-app .movement-table tbody,
+.premium-shell .v3-app .movement-table tbody tr,
+.premium-shell .v3-app .movement-table tbody td {
+  background: transparent !important;
+}
+
+.premium-shell .v3-app table thead,
+.premium-shell .v3-app table thead tr,
+.premium-shell .v3-app table thead th,
+.premium-shell .v3-app .stock-table .stock-header-row th,
+.premium-shell .v3-app .stock-table .stock-filter-row th,
+.premium-shell .v3-app .movement-dashboard .movement-table th {
+  background: rgba(255,255,255,.035) !important;
+  border-color: var(--final-glass-border-soft) !important;
+}
+
+.premium-shell .v3-app table tbody tr:nth-child(even) td {
+  background: rgba(255,255,255,.01) !important;
+}
+
+.premium-shell .v3-app table tbody tr:hover td {
+  background: rgba(255,255,255,.045) !important;
+}
+
+/* Old blue section bars are neutralized. */
+.premium-shell .v3-app .section-bar,
+.premium-shell .v3-app .panel > .section-bar,
+.premium-shell .v3-app .table-title,
+.premium-shell .v3-app .panel-toolbar,
+.premium-shell .v3-app .stock-titlebar,
+.premium-shell .v3-app .info-card > header {
+  background: rgba(255,255,255,.025) !important;
+  border-color: var(--final-glass-border-soft) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* Crisp vector 3D background logo. Overrides the old sprite sizing rules. */
+.triunfante-scroll-backdrop {
+  position: fixed !important;
+  left: 50% !important;
+  top: 50% !important;
+  width: clamp(360px, 38vw, 720px) !important;
+  aspect-ratio: 600 / 430 !important;
+  transform: translate(-50%, -50%) !important;
+  display: grid !important;
+  place-items: center !important;
+  perspective: 1500px !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+  opacity: .42 !important;
+  overflow: visible !important;
+  background: none !important;
+}
+
+.triunfante-3d-logo {
+  position: absolute !important;
+  inset: 0 !important;
+  transform-style: preserve-3d !important;
+  transform-origin: 50% 50% !important;
+  will-change: transform !important;
+  filter: drop-shadow(0 26px 38px rgba(0,0,0,.38)) !important;
+}
+
+.triunfante-face,
+.triunfante-depth-layer {
+  position: absolute !important;
+  inset: 0 !important;
+  display: grid !important;
+  place-items: center !important;
+  transform-style: preserve-3d !important;
+  backface-visibility: hidden !important;
+  -webkit-backface-visibility: hidden !important;
+}
+
+.triunfante-face svg,
+.triunfante-depth-layer svg {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  overflow: visible !important;
+  shape-rendering: geometricPrecision !important;
+  text-rendering: geometricPrecision !important;
+}
+
+.triunfante-front { transform: translateZ(17px) !important; }
+.triunfante-back { transform: rotateY(180deg) translateZ(17px) !important; }
+.triunfante-depth-layer { opacity: .96 !important; }
+
+.premium-shell > .module-sidebar,
+.premium-shell > .shell-content {
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+@media (max-width:760px) {
+  .triunfante-scroll-backdrop {
+    width: min(84vw, 560px) !important;
+    opacity: .34 !important;
+  }
+}
