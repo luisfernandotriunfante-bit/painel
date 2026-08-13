@@ -22,8 +22,26 @@ html body #root .premium-shell > .shell-content {
 }
 
 html body #root .triunfante-scroll-backdrop {
-  opacity: .56 !important;
+  opacity: .62 !important;
   z-index: 1 !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+}
+
+html body #root .triunfante-hq-canvas {
+  position: absolute !important;
+  inset: 0 !important;
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  pointer-events: none !important;
+  image-rendering: auto !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  transform: translateZ(0) !important;
+  backface-visibility: hidden !important;
 }
 
 html body #root .premium-shell > .shell-content {
