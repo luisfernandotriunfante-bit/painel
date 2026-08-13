@@ -76,12 +76,24 @@
   z-index: 0 !important;
 }
 
-/* Thin frosted film over the blurred background; no decorative shapes. */
+/* Thin frosted film over the blurred background; no decorative shapes.
+   Explicitly reset every size/offset because older metric styles assign a
+   fixed 150x150 pseudo-element. */
 .premium-shell .summary-kpis .metric:nth-child(2)::after {
   content: '' !important;
   display: block !important;
   position: absolute !important;
   inset: 0 !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: none !important;
+  max-height: none !important;
   border-radius: inherit !important;
   background: linear-gradient(145deg,
     rgba(154, 177, 202, .075),
