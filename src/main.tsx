@@ -14,6 +14,7 @@ import './executive-blackout.css'
 import './sidebar-material.css'
 import './glass-stable.css'
 import './frosted-everywhere.css'
+import './final-polish.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
