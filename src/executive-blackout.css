@@ -1,0 +1,392 @@
+/* Final executive dark pass — loaded last on purpose */
+:root {
+  --blk-bg: #02050a;
+  --blk-bg-2: #050a12;
+  --blk-surface: #0b1626;
+  --blk-surface-2: #10223a;
+  --blk-surface-3: #162b46;
+  --blk-line: rgba(164, 184, 211, .14);
+  --blk-line-strong: rgba(188, 205, 226, .22);
+  --blk-text: #f5f8fc;
+  --blk-muted: #91a3bc;
+  --blk-red: #ef3346;
+  --blk-blue: #68a6e8;
+  --blk-green: #4dd7a6;
+  --blk-amber: #f1b75c;
+}
+
+html,
+body,
+#root,
+.app,
+.enhanced-app,
+.v3-app,
+.shell-content {
+  background: var(--blk-bg) !important;
+}
+
+html,
+body {
+  min-height: 100%;
+  color-scheme: dark;
+}
+
+body {
+  color: var(--blk-text) !important;
+  background:
+    radial-gradient(circle at 11% -4%, rgba(37, 85, 139, .20), transparent 26%),
+    radial-gradient(circle at 93% 4%, rgba(239, 51, 70, .13), transparent 23%),
+    linear-gradient(180deg, #03070d 0%, #02050a 42%, #000 100%) !important;
+  background-attachment: fixed !important;
+}
+
+.v3-main,
+.compact-main {
+  background: transparent !important;
+}
+
+/* Universal premium dark surfaces */
+.v3-app .panel,
+.v3-app .section-block,
+.v3-app .metric,
+.v3-app .info-card,
+.v3-app .target-control,
+.v3-app .upload-card,
+.v3-app .storage {
+  color: var(--blk-text) !important;
+  border-color: var(--blk-line) !important;
+  background:
+    linear-gradient(145deg, rgba(25, 45, 72, .90), rgba(8, 18, 31, .96)) !important;
+  box-shadow:
+    0 18px 44px rgba(0, 0, 0, .34),
+    inset 0 1px rgba(255, 255, 255, .045) !important;
+}
+
+.v3-app .metric:hover,
+.v3-app .target-control:hover,
+.v3-app .upload-card:hover {
+  border-color: var(--blk-line-strong) !important;
+  transform: translateY(-2px);
+  box-shadow:
+    0 22px 52px rgba(0, 0, 0, .42),
+    inset 0 1px rgba(255, 255, 255, .065) !important;
+}
+
+.v3-app .metric > span,
+.v3-app .target-control > span,
+.v3-app .upload-card span,
+.v3-app .section-bar > div > span,
+.v3-app .source-list span {
+  color: #91a5c1 !important;
+}
+
+.v3-app .metric > strong,
+.v3-app .target-control > strong,
+.v3-app .upload-card strong,
+.v3-app .stock-result strong,
+.v3-app .section-bar h2,
+.v3-app h2,
+.v3-app h3 {
+  color: var(--blk-text) !important;
+}
+
+.v3-app small,
+.v3-app .note,
+.v3-app .target-control small,
+.v3-app .upload-card small,
+.v3-app .source-list small {
+  color: var(--blk-muted) !important;
+}
+
+/* Summary: retain hierarchy, remove the remaining light cards */
+.summary-kpis .metric {
+  background:
+    linear-gradient(145deg, rgba(18, 38, 64, .96), rgba(7, 16, 29, .98)) !important;
+  border-color: var(--blk-line) !important;
+}
+.summary-kpis .metric:first-child {
+  background:
+    radial-gradient(circle at 84% 20%, rgba(239,51,70,.34), transparent 26%),
+    radial-gradient(circle at 70% 112%, rgba(53,104,164,.34), transparent 38%),
+    linear-gradient(135deg, #081526 0%, #132b4b 62%, #351a2a 100%) !important;
+}
+.summary-kpis .metric:nth-child(2) {
+  background: linear-gradient(145deg, #102540, #0a1728) !important;
+}
+.summary-kpis .metric:nth-child(3) {
+  background: linear-gradient(145deg, #101d31, #080f1b) !important;
+}
+.summary-kpis .metric:nth-child(4) {
+  background: linear-gradient(145deg, #102b2a, #081917) !important;
+}
+
+/* Movement is now part of the same cockpit instead of returning to white */
+.movement-panel,
+.movement-dashboard,
+.movement-dashboard .movement-wrap {
+  background:
+    radial-gradient(circle at 85% 0%, rgba(46, 101, 164, .12), transparent 26%),
+    linear-gradient(180deg, #0b1729, #07111e) !important;
+  border-color: var(--blk-line) !important;
+}
+.movement-dashboard .chart-legend span {
+  color: #b4c2d5 !important;
+  background: rgba(255,255,255,.045) !important;
+  border-color: rgba(255,255,255,.06) !important;
+}
+.multi-bars {
+  border-bottom-color: rgba(188, 205, 226, .14) !important;
+  background-image: linear-gradient(rgba(161,184,211,.075) 1px, transparent 1px) !important;
+}
+.day-group > span { color: #8295af !important; }
+
+/* Gerencial cockpit remains the reference visual */
+.manager-info-grid {
+  border-color: rgba(255,255,255,.08) !important;
+  background:
+    radial-gradient(circle at 90% -10%, rgba(239,51,70,.22), transparent 25%),
+    radial-gradient(circle at 5% 110%, rgba(47,105,171,.24), transparent 30%),
+    linear-gradient(135deg, #071321 0%, #0e2037 58%, #142943 100%) !important;
+}
+.manager-info-grid .info-card {
+  background: linear-gradient(180deg, rgba(255,255,255,.075), rgba(255,255,255,.028)) !important;
+}
+
+/* Metric strips on Team / Stock / Managerial */
+.enhanced-metrics:not(.summary-kpis) .metric {
+  background: linear-gradient(145deg, #0e1f36, #081421) !important;
+}
+.enhanced-metrics:not(.summary-kpis) .metric:first-child {
+  background:
+    radial-gradient(circle at 92% 5%, rgba(239,51,70,.20), transparent 28%),
+    linear-gradient(145deg, #0c2039, #15365e) !important;
+}
+.enhanced-metrics:not(.summary-kpis) .metric:nth-child(2) {
+  background: linear-gradient(145deg, #10213a, #0a1728) !important;
+}
+.enhanced-metrics:not(.summary-kpis) .metric:nth-child(3) {
+  background: linear-gradient(145deg, #12223a, #091421) !important;
+}
+.enhanced-metrics:not(.summary-kpis) .metric:nth-child(4) {
+  background: linear-gradient(145deg, #102b2a, #071815) !important;
+}
+
+/* Section headers */
+.v3-app .section-bar,
+.stock-titlebar,
+.v3-app .panel > .section-bar {
+  color: var(--blk-text) !important;
+  border-bottom-color: var(--blk-line) !important;
+  background:
+    linear-gradient(90deg, rgba(255,255,255,.035), transparent 40%),
+    linear-gradient(135deg, #0c1a2d, #102844) !important;
+}
+.v3-app .section-bar > div > span { color: #ff6a79 !important; }
+.v3-app .section-bar h2 { color: #fff !important; }
+
+/* Tables: no white islands */
+.v3-app table,
+.v3-app .table-scroll,
+.v3-app .stock-table-viewport,
+.v3-app .movement-table {
+  background: #07111e !important;
+}
+.v3-app thead,
+.v3-app thead tr,
+.v3-app thead th {
+  color: #9fb0c7 !important;
+  border-color: var(--blk-line) !important;
+  background: #0e2035 !important;
+}
+.v3-app tbody tr,
+.v3-app tbody td {
+  color: #d9e3f0 !important;
+  border-color: rgba(164,184,211,.10) !important;
+  background: #081421 !important;
+}
+.v3-app tbody tr:nth-child(even) td {
+  background: #0a1828 !important;
+}
+.v3-app tbody tr:hover td {
+  color: #fff !important;
+  background: #112844 !important;
+}
+.v3-app td b,
+.v3-app td strong { color: #f5f8fc !important; }
+.v3-app td.positive { color: var(--blk-green) !important; }
+.v3-app td.negative { color: #ff7381 !important; }
+
+/* All form controls use one dark-glass system */
+.v3-app input,
+.v3-app select,
+.v3-app textarea,
+.v3-app .currency-input,
+.v3-app .number-input,
+.v3-app .network-select,
+.v3-app .stock-filter-row input,
+.v3-app .targets-table-v3 input,
+.v3-app .targets-table-v3 select {
+  color: #f5f8fc !important;
+  caret-color: #fff !important;
+  border: 1px solid rgba(167, 188, 216, .20) !important;
+  background: rgba(4, 13, 24, .72) !important;
+  box-shadow: inset 0 1px rgba(255,255,255,.035), 0 8px 22px rgba(0,0,0,.10) !important;
+}
+.v3-app input::placeholder,
+.v3-app textarea::placeholder {
+  color: #687c98 !important;
+  opacity: 1;
+}
+.v3-app input:hover,
+.v3-app select:hover,
+.v3-app textarea:hover {
+  border-color: rgba(167, 188, 216, .32) !important;
+}
+.v3-app input:focus,
+.v3-app select:focus,
+.v3-app textarea:focus {
+  outline: none !important;
+  border-color: rgba(104, 166, 232, .78) !important;
+  background: rgba(7, 19, 34, .96) !important;
+  box-shadow: 0 0 0 3px rgba(104, 166, 232, .12), inset 0 1px rgba(255,255,255,.04) !important;
+}
+.v3-app select option {
+  color: #f5f8fc !important;
+  background: #091522 !important;
+}
+
+/* Metas — fix the exact light areas visible in screenshot */
+.target-control-grid-v3 .target-control {
+  min-height: 184px;
+  border-color: var(--blk-line) !important;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(66,121,182,.10), transparent 30%),
+    linear-gradient(145deg, #0d1d31, #08131f) !important;
+}
+.target-control-grid-v3 .target-control.primary {
+  background:
+    radial-gradient(circle at 90% 0%, rgba(239,51,70,.32), transparent 34%),
+    linear-gradient(145deg, #0d1d33, #2b1423) !important;
+}
+.target-control-grid-v3 .target-control.readonly {
+  background:
+    radial-gradient(circle at 92% 4%, rgba(91,144,203,.14), transparent 32%),
+    linear-gradient(145deg, #102039, #091522) !important;
+}
+.target-control-grid-v3 .target-control:last-child {
+  background: linear-gradient(145deg, #0f233d, #0a1929) !important;
+}
+.target-control-grid-v3 .target-control .currency-input,
+.target-control-grid-v3 .target-control .number-input {
+  color: #fff !important;
+  background: rgba(255,255,255,.055) !important;
+}
+.targets-table-v3 .target-input-cell .currency-input,
+.targets-table-v3 .network-select {
+  min-height: 42px;
+  color: #f4f7fb !important;
+  background: #0c1d31 !important;
+}
+
+/* Status controls */
+.lock-button {
+  color: #dbe5f1 !important;
+  border-color: rgba(167,188,216,.18) !important;
+  background: rgba(255,255,255,.055) !important;
+}
+.lock-button.locked {
+  color: #fff !important;
+  border-color: rgba(239,51,70,.38) !important;
+  background: linear-gradient(145deg, #ef3346, #c61d31) !important;
+  box-shadow: 0 8px 20px rgba(239,51,70,.20) !important;
+}
+.status-pill {
+  color: #dce5f1 !important;
+  border-color: rgba(167,188,216,.16) !important;
+  background: rgba(255,255,255,.055) !important;
+}
+.status-pill.ok { color: #aaf2d4 !important; border-color: rgba(77,215,166,.24) !important; }
+.status-pill.warn { color: #f7d696 !important; border-color: rgba(241,183,92,.26) !important; }
+
+/* Conference and upload */
+.conference-grid .panel,
+.upload-card,
+.storage {
+  background:
+    linear-gradient(145deg, rgba(18, 38, 64, .94), rgba(7, 16, 28, .98)) !important;
+}
+.source-list > div {
+  border-color: rgba(164,184,211,.11) !important;
+  background: rgba(255,255,255,.025) !important;
+}
+.source-list > div:hover { background: rgba(255,255,255,.05) !important; }
+.upload-card input[type='file'] { color: #9fb0c7 !important; }
+.storage button,
+.stock-result button {
+  color: #fff !important;
+  border-color: rgba(239,51,70,.38) !important;
+  background: rgba(239,51,70,.11) !important;
+}
+.storage button:hover,
+.stock-result button:hover {
+  background: rgba(239,51,70,.20) !important;
+}
+
+/* Alerts / empty states */
+.inline-alert,
+.empty-state,
+.compact-empty,
+.global-message {
+  color: #c8d5e5 !important;
+  border-color: rgba(164,184,211,.13) !important;
+  background: rgba(19, 37, 60, .72) !important;
+}
+.global-message.error,
+.inline-alert.error {
+  color: #ff9ca7 !important;
+  border-color: rgba(239,51,70,.28) !important;
+  background: rgba(94, 20, 32, .45) !important;
+}
+
+/* Keep navigation exactly in the style the user approved */
+.shell-content .tabs {
+  border-color: rgba(255,255,255,.09) !important;
+  background: rgba(8, 18, 32, .96) !important;
+  box-shadow: 0 18px 46px rgba(0,0,0,.40), inset 0 1px rgba(255,255,255,.055) !important;
+}
+.shell-content .tabs button { color: #9eabc0 !important; }
+.shell-content .tabs button:hover { color: #fff !important; background: rgba(255,255,255,.06) !important; }
+.shell-content .tabs button.active {
+  color: #fff !important;
+  background: linear-gradient(145deg, #f13b50, #d42037) !important;
+  box-shadow: 0 7px 20px rgba(239,51,70,.28), inset 0 1px rgba(255,255,255,.20) !important;
+}
+
+/* Dark scrollbars */
+* {
+  scrollbar-color: #2a4260 #06101b;
+}
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-track { background: #06101b; }
+*::-webkit-scrollbar-thumb {
+  border: 2px solid #06101b;
+  border-radius: 999px;
+  background: #2a4260;
+}
+*::-webkit-scrollbar-thumb:hover { background: #3b5b80; }
+
+@media (max-width: 900px) {
+  .summary-kpis,
+  .v3-main:has(.stock-detail) > .enhanced-metrics.four {
+    grid-template-columns: 1fr 1fr !important;
+  }
+  .target-control-grid-v3 { grid-template-columns: 1fr 1fr !important; }
+}
+
+@media (max-width: 620px) {
+  .summary-kpis,
+  .v3-main:has(.stock-detail) > .enhanced-metrics.four,
+  .target-control-grid-v3 {
+    grid-template-columns: 1fr !important;
+  }
+}
