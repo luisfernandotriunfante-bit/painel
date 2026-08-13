@@ -1,36 +1,46 @@
 /* Isolated glass prototype: ONLY the Faturado KPI on Resumo.
-   Diagnostic goal: the red line is FIXED to the viewport while the KPI cards scroll over it. */
+   Diagnostic goal: a fixed red backdrop stays in the viewport while the KPI cards scroll.
+   This version removes compositing boundaries that can prevent Chromium from sampling the backdrop. */
 
-/* Keep the main content as the stacking context for the fixed test backdrop. */
+/* Put the diagnostic line in the REAL scrolling surface as a viewport-fixed background.
+   No pseudo-element, copied line, or card decoration is used. */
 .v3-main {
   position: relative;
-  isolation: isolate;
-  background: transparent !important;
+  isolation: auto !important;
+  background-color: transparent !important;
+  background-image:
+    linear-gradient(171deg,
+      transparent 0%,
+      transparent 18.0%,
+      rgba(179, 19, 47, .98) 18.12%,
+      rgba(179, 19, 47, .98) 18.62%,
+      transparent 18.74%,
+      transparent 100%) !important;
+  background-repeat: no-repeat !important;
+  background-position: 0 0 !important;
+  background-size: 100vw 100vh !important;
+  background-attachment: fixed !important;
 }
 
-/* FIXED BACKDROP TEST LINE.
-   It belongs to the page backdrop, not to the KPI strip, so scrolling the page moves
-   the cards while this line stays in the same viewport position. */
-.v3-main::before {
-  content: '';
-  position: fixed;
-  z-index: -1;
-  pointer-events: none;
-  left: -4vw;
-  top: 18vh;
-  width: 52vw;
-  height: 7px;
-  border-radius: 999px;
-  background: #b3132f;
-  transform: rotate(-9deg);
-  transform-origin: center;
-  box-shadow: 0 0 18px rgba(179, 19, 47, .12);
+/* Remove the previous fixed pseudo-element diagnostic. */
+.v3-main::before,
+.v3-main::after {
+  content: none !important;
+  display: none !important;
 }
 
-/* The KPI strip itself has NO diagnostic background anymore. */
-.summary-kpis {
+/* This section was receiving premium-enter with transform: translateY(0) and fill-mode: both.
+   Even at zero displacement that transform creates a compositing layer. Remove it ONLY here so
+   backdrop-filter can sample the fixed background behind the glass card. */
+.v3-main > .summary-kpis {
   position: relative;
   isolation: auto !important;
+  animation: none !important;
+  transform: none !important;
+  filter: none !important;
+  opacity: 1 !important;
+  contain: none !important;
+  will-change: auto !important;
   background: transparent !important;
 }
 
@@ -44,10 +54,14 @@
   position: relative;
 }
 
-/* Faturado: clean glass only. No copied backdrop and no decorative layers. */
+/* Faturado: keep exactly the current film/border/shadow; change only the blur architecture. */
 .summary-kpis > .metric:nth-child(2) {
   overflow: hidden;
   isolation: auto !important;
+  transform: none !important;
+  filter: none !important;
+  contain: none !important;
+  will-change: auto !important;
   background: rgba(142, 170, 194, .10) !important;
   border: 1px solid rgba(220, 234, 244, .28) !important;
   box-shadow:
@@ -55,8 +69,8 @@
     0 5px 18px rgba(0, 0, 0, .22),
     inset 0 1px 0 rgba(255, 255, 255, .24),
     inset 0 0 68px rgba(205, 225, 240, .04) !important;
-  backdrop-filter: blur(32px) saturate(92%) contrast(78%) brightness(108%) !important;
-  -webkit-backdrop-filter: blur(32px) saturate(92%) contrast(78%) brightness(108%) !important;
+  backdrop-filter: blur(30px) !important;
+  -webkit-backdrop-filter: blur(30px) !important;
 }
 
 .summary-kpis > .metric:nth-child(2)::before,
