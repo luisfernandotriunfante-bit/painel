@@ -1,0 +1,117 @@
+/* Final visual enforcement: use the same frosted film as the lateral menu item. */
+
+:root {
+  --final-glass-blur: 18px;
+  --final-glass-border: rgba(255,255,255,.10);
+  --final-glass-film: linear-gradient(90deg, rgba(255,255,255,.10), rgba(255,255,255,.045));
+  --final-glass-film-soft: linear-gradient(90deg, rgba(255,255,255,.085), rgba(255,255,255,.035));
+  --final-glass-shadow: 0 18px 46px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.08);
+}
+
+/* KPIs: no dark solid layer. Blur + the same translucent white film used by the lateral menu. */
+.premium-shell .summary-kpis .metric:nth-child(n),
+.premium-shell .manager-kpis .metric:nth-child(n),
+.premium-shell .metrics .metric:nth-child(n),
+.premium-shell .enhanced-metrics .metric:nth-child(n),
+.premium-shell .metric.red,
+.premium-shell .metric.navy,
+.premium-shell .metric.green,
+.premium-shell .metric {
+  position: relative !important;
+  overflow: hidden !important;
+  background: transparent !important;
+  border: 1px solid var(--final-glass-border) !important;
+  box-shadow: var(--final-glass-shadow) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+.premium-shell .summary-kpis .metric:nth-child(n)::before,
+.premium-shell .manager-kpis .metric:nth-child(n)::before,
+.premium-shell .metrics .metric:nth-child(n)::before,
+.premium-shell .enhanced-metrics .metric:nth-child(n)::before,
+.premium-shell .metric::before {
+  content: '' !important;
+  display: block !important;
+  position: absolute !important;
+  inset: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: none !important;
+  max-height: none !important;
+  border-radius: inherit !important;
+  background: rgba(255,255,255,.020) !important;
+  -webkit-backdrop-filter: blur(var(--final-glass-blur)) saturate(116%) brightness(1.05) !important;
+  backdrop-filter: blur(var(--final-glass-blur)) saturate(116%) brightness(1.05) !important;
+  opacity: 1 !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+}
+
+.premium-shell .summary-kpis .metric:nth-child(n)::after,
+.premium-shell .manager-kpis .metric:nth-child(n)::after,
+.premium-shell .metrics .metric:nth-child(n)::after,
+.premium-shell .enhanced-metrics .metric:nth-child(n)::after,
+.premium-shell .metric::after {
+  content: '' !important;
+  display: block !important;
+  position: absolute !important;
+  inset: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: none !important;
+  max-height: none !important;
+  border-radius: inherit !important;
+  background: var(--final-glass-film) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.12), inset 0 -1px 0 rgba(255,255,255,.02) !important;
+  opacity: 1 !important;
+  pointer-events: none !important;
+  z-index: 1 !important;
+}
+
+.premium-shell .metric > span,
+.premium-shell .metric > strong,
+.premium-shell .metric > small {
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+/* Major surfaces: same sidebar-like film, not blue solid panels. */
+.premium-shell .panel,
+.premium-shell .section-block,
+.premium-shell .info-card,
+.premium-shell .target-control,
+.premium-shell .upload-card,
+.premium-shell .storage,
+.premium-shell .stock-result,
+.premium-shell .manager-info-grid,
+.premium-shell .movement-wrap,
+.premium-shell .movement-table,
+.premium-shell .table-scroll,
+.premium-shell .stock-table-viewport,
+.premium-shell .inline-alert,
+.premium-shell .empty-state,
+.premium-shell .conference-grid .panel {
+  background: var(--final-glass-film-soft) !important;
+  border: 1px solid var(--final-glass-border) !important;
+  -webkit-backdrop-filter: blur(var(--final-glass-blur)) saturate(116%) brightness(1.04) !important;
+  backdrop-filter: blur(var(--final-glass-blur)) saturate(116%) brightness(1.04) !important;
+  box-shadow: var(--final-glass-shadow) !important;
+}
+
+/* Keep table internals transparent so the frosted parent remains visible. */
+.premium-shell table,
+.premium-shell table td {
+  background: transparent !important;
+}
+
+.premium-shell table th,
+.premium-shell .stock-table .stock-header-row th,
+.premium-shell .stock-table .stock-filter-row th,
+.premium-shell .movement-dashboard .movement-table th {
+  background: rgba(255,255,255,.045) !important;
+}
