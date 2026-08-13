@@ -5,22 +5,20 @@
   isolation: isolate;
 }
 
-/* Subtle scenery behind the glass. It exists only to reveal refraction/blur. */
+/* Soft ambient color BEHIND the glass.
+   No crisp lines or geometric decoration: only low-contrast light for the frost to diffuse. */
 .summary-kpis::before {
   content: '';
   position: absolute;
   z-index: 0;
   pointer-events: none;
-  inset: -34px -20px;
+  inset: -54px -40px;
   background:
-    linear-gradient(rgba(52, 86, 120, .035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(52, 86, 120, .03) 1px, transparent 1px),
-    linear-gradient(111deg, transparent 39.0%, rgba(31, 73, 116, .18) 39.12% 39.24%, transparent 39.36%),
-    linear-gradient(73deg, transparent 47.2%, rgba(126, 16, 36, .14) 47.32% 47.44%, transparent 47.56%),
-    radial-gradient(ellipse 300px 180px at 43% 42%, rgba(24, 62, 102, .09), transparent 74%),
-    radial-gradient(ellipse 250px 150px at 47% 72%, rgba(112, 14, 34, .065), transparent 76%);
-  background-size: 38px 38px, 38px 38px, auto, auto, auto, auto;
-  opacity: .58;
+    radial-gradient(ellipse 360px 220px at 39% 34%, rgba(22, 70, 116, .20) 0%, rgba(22, 70, 116, .09) 44%, transparent 74%),
+    radial-gradient(ellipse 300px 190px at 49% 78%, rgba(124, 17, 38, .135) 0%, rgba(124, 17, 38, .055) 46%, transparent 76%);
+  filter: blur(30px);
+  opacity: .64;
+  transform: scale(1.05);
 }
 
 .summary-kpis > .metric {
@@ -28,25 +26,20 @@
   z-index: 1;
 }
 
-/* Frosted material:
-   - stronger translucent blue-gray film creates haze even over flat backdrop
-   - heavy blur softens anything behind
-   - lower contrast + slight brightness reproduces the milky/frosted look */
+/* Milky frosted glass:
+   the surface itself carries a translucent blue-gray haze so it reads as frosted
+   even where the backdrop is visually flat. */
 .summary-kpis > .metric:nth-child(2) {
   overflow: hidden;
-  background:
-    linear-gradient(135deg,
-      rgba(164, 194, 219, .19) 0%,
-      rgba(104, 142, 176, .145) 46%,
-      rgba(72, 105, 137, .12) 100%) !important;
-  border: 1px solid rgba(220, 236, 248, .30) !important;
+  background: rgba(174, 198, 218, .175) !important;
+  border: 1px solid rgba(228, 239, 248, .32) !important;
   box-shadow:
-    0 20px 50px rgba(0, 0, 0, .34),
-    0 5px 16px rgba(0, 0, 0, .20),
-    inset 0 1px 0 rgba(255, 255, 255, .24),
-    inset 0 0 48px rgba(194, 222, 242, .055) !important;
-  backdrop-filter: blur(44px) saturate(112%) contrast(82%) brightness(112%) !important;
-  -webkit-backdrop-filter: blur(44px) saturate(112%) contrast(82%) brightness(112%) !important;
+    0 22px 54px rgba(0, 0, 0, .34),
+    0 5px 18px rgba(0, 0, 0, .22),
+    inset 0 1px 0 rgba(255, 255, 255, .28),
+    inset 0 0 70px rgba(215, 233, 247, .075) !important;
+  backdrop-filter: blur(58px) saturate(86%) contrast(68%) brightness(122%) !important;
+  -webkit-backdrop-filter: blur(58px) saturate(86%) contrast(68%) brightness(122%) !important;
 }
 
 /* Keep the KPI card completely clean: no decorative pseudo-elements. */
