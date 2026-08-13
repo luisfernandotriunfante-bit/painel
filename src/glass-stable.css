@@ -1,52 +1,49 @@
-/* Final executive glass system — loaded last and intentionally authoritative. */
+/* Final validated executive glass layer — loaded last. */
 
 :root {
-  --final-bg-top: #0b1522;
-  --final-bg-mid: #050a11;
-  --final-bg-bottom: #000205;
-  --final-navy: #173a63;
-  --final-navy-soft: #244f82;
-  --final-blood: #8f1029;
-  --final-blood-soft: #b21c39;
-  --final-text: #f5f8fc;
-  --final-muted: #98a9bf;
-  --final-line: rgba(180, 204, 230, .18);
-  --final-line-strong: rgba(198, 218, 240, .28);
-  --final-glass: rgba(16, 27, 41, .27);
-  --final-glass-soft: rgba(19, 33, 50, .20);
-  --final-glass-strong: rgba(13, 24, 38, .38);
-  --final-blur: 18px;
-  --final-shadow: 0 22px 54px rgba(0, 0, 0, .34);
-
-  /* Real application backdrop: no test lines, no grid, only executive light. */
-  --glass-fixed-backdrop:
-    radial-gradient(ellipse at 18% -8%, rgba(23, 58, 99, .34) 0%, rgba(23, 58, 99, .11) 26%, transparent 48%),
-    radial-gradient(ellipse at 86% -10%, rgba(143, 16, 41, .26) 0%, rgba(143, 16, 41, .07) 24%, transparent 44%),
-    linear-gradient(180deg, var(--final-bg-top) 0%, #08101a 22%, var(--final-bg-mid) 50%, #020509 76%, var(--final-bg-bottom) 100%);
+  --ui-bg-top: #0b1624;
+  --ui-bg-mid: #040910;
+  --ui-bg-bottom: #000205;
+  --ui-navy: #173a63;
+  --ui-navy-soft: #285786;
+  --ui-blood: #8f1029;
+  --ui-blood-soft: #b51d3a;
+  --ui-text: #f5f8fc;
+  --ui-muted: #98a9bd;
+  --ui-border: rgba(191, 211, 234, .22);
+  --ui-border-soft: rgba(191, 211, 234, .12);
+  --ui-glass: rgba(20, 31, 45, .28);
+  --ui-glass-soft: rgba(13, 24, 38, .23);
+  --ui-blur: 18px;
+  --ui-shadow: 0 20px 48px rgba(0, 0, 0, .34);
 }
 
 html,
 body,
 #root {
   min-height: 100%;
-  background: var(--final-bg-bottom) !important;
+  background: #000205 !important;
 }
 
 body {
-  color: var(--final-text) !important;
+  color: var(--ui-text) !important;
 }
 
-/* Real black-to-dark backdrop, fixed independently from scrolling content. */
+/* Real fixed backdrop: black base, brighter at the top, darker toward the bottom. */
 .premium-shell {
   min-height: 100vh !important;
-  background-color: var(--final-bg-bottom) !important;
-  background-image: var(--glass-fixed-backdrop) !important;
+  color: var(--ui-text) !important;
+  background-color: #000205 !important;
+  background-image:
+    radial-gradient(ellipse at 18% -10%, rgba(23, 58, 99, .28) 0%, rgba(23, 58, 99, .08) 27%, transparent 48%),
+    radial-gradient(ellipse at 84% -12%, rgba(143, 16, 41, .19) 0%, rgba(143, 16, 41, .045) 25%, transparent 45%),
+    linear-gradient(180deg, var(--ui-bg-top) 0%, #07101a 22%, var(--ui-bg-mid) 52%, #020509 75%, var(--ui-bg-bottom) 100%) !important;
   background-attachment: fixed !important;
   background-position: center top !important;
   background-size: cover !important;
 }
 
-/* No opaque sheet may sit between the backdrop and a glass surface. */
+/* Nothing opaque may sit between the fixed backdrop and the glass surfaces. */
 .premium-shell .shell-content,
 .premium-shell .app,
 .premium-shell .enhanced-app,
@@ -56,12 +53,11 @@ body {
   background: transparent !important;
 }
 
-/* The old large masthead remains removed; horizontal navigation is the visual anchor. */
 .premium-shell .header {
   display: none !important;
 }
 
-/* Horizontal menu — centered, clean and glassy. */
+/* Horizontal navigation. */
 .premium-shell .tabs {
   width: max-content !important;
   max-width: calc(100vw - 44px) !important;
@@ -70,12 +66,12 @@ body {
   min-height: 0 !important;
   justify-content: center !important;
   gap: 4px !important;
-  border: 1px solid rgba(179, 204, 231, .18) !important;
+  border: 1px solid var(--ui-border-soft) !important;
   border-radius: 18px !important;
-  background: rgba(8, 17, 28, .42) !important;
-  -webkit-backdrop-filter: blur(18px) saturate(118%) !important;
-  backdrop-filter: blur(18px) saturate(118%) !important;
-  box-shadow: 0 18px 44px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.08) !important;
+  background: rgba(8, 16, 27, .34) !important;
+  -webkit-backdrop-filter: blur(var(--ui-blur)) saturate(116%) !important;
+  backdrop-filter: blur(var(--ui-blur)) saturate(116%) !important;
+  box-shadow: 0 16px 38px rgba(0, 0, 0, .28), inset 0 1px 0 rgba(255, 255, 255, .07) !important;
 }
 
 .premium-shell .tabs button,
@@ -84,7 +80,7 @@ body {
   padding: 12px 17px !important;
   border: 0 !important;
   border-radius: 12px !important;
-  color: #9cafc6 !important;
+  color: #9eb0c7 !important;
   background: transparent !important;
   font-size: 11px !important;
   font-weight: 650 !important;
@@ -92,68 +88,29 @@ body {
 }
 
 .premium-shell .tabs button:hover {
-  color: #eef4fb !important;
-  background: rgba(23, 58, 99, .20) !important;
+  color: #f2f6fb !important;
+  background: rgba(23, 58, 99, .14) !important;
 }
 
 .premium-shell .tabs button.active {
   color: #fff !important;
-  background: linear-gradient(135deg, var(--final-blood-soft), var(--final-blood)) !important;
-  box-shadow: 0 7px 18px rgba(143,16,41,.30), inset 0 1px 0 rgba(255,255,255,.17) !important;
+  background: linear-gradient(135deg, var(--ui-blood-soft), var(--ui-blood)) !important;
+  box-shadow: 0 7px 18px rgba(143, 16, 41, .30), inset 0 1px 0 rgba(255, 255, 255, .16) !important;
 }
 
 .premium-shell .tabs button.active::after {
   display: none !important;
 }
 
-/* Keep the sidebar behavior already approved; when visible, use the same material. */
+/* Sidebar uses the same material when visible. */
 .premium-shell .module-sidebar {
-  border-color: rgba(180,204,230,.12) !important;
-  background: rgba(5, 11, 19, .40) !important;
-  -webkit-backdrop-filter: blur(18px) saturate(116%) !important;
-  backdrop-filter: blur(18px) saturate(116%) !important;
+  border-color: var(--ui-border-soft) !important;
+  background: rgba(5, 11, 19, .30) !important;
+  -webkit-backdrop-filter: blur(var(--ui-blur)) saturate(116%) !important;
+  backdrop-filter: blur(var(--ui-blur)) saturate(116%) !important;
 }
 
-/* Shared real glass material for all executive containers. */
-.premium-shell .panel,
-.premium-shell .section-block,
-.premium-shell .info-card,
-.premium-shell .target-control,
-.premium-shell .upload-card,
-.premium-shell .storage,
-.premium-shell .stock-result,
-.premium-shell .manager-info-grid,
-.premium-shell .movement-dashboard .movement-wrap,
-.premium-shell .movement-dashboard .movement-table,
-.premium-shell .table-scroll,
-.premium-shell .stock-table-viewport,
-.premium-shell .conference-grid .panel,
-.premium-shell .inline-alert,
-.premium-shell .empty-state {
-  color: var(--final-text) !important;
-  border-color: var(--final-line) !important;
-  background: var(--final-glass) !important;
-  -webkit-backdrop-filter: blur(var(--final-blur)) saturate(118%) !important;
-  backdrop-filter: blur(var(--final-blur)) saturate(118%) !important;
-  box-shadow: var(--final-shadow), inset 0 1px 0 rgba(255,255,255,.09) !important;
-}
-
-.premium-shell .panel,
-.premium-shell .section-block,
-.premium-shell .manager-info-grid,
-.premium-shell .stock-table-viewport {
-  border-radius: 22px !important;
-}
-
-.premium-shell .info-card,
-.premium-shell .target-control,
-.premium-shell .upload-card,
-.premium-shell .storage,
-.premium-shell .stock-result {
-  border-radius: 18px !important;
-}
-
-/* KPI glass — exact material validated on Faturado, now applied consistently. */
+/* ===== KPI: exact material validated on Faturado ===== */
 .premium-shell .metrics,
 .premium-shell .enhanced-metrics,
 .premium-shell .summary-kpis,
@@ -162,10 +119,17 @@ body {
   transform: none !important;
   filter: none !important;
   contain: none !important;
+  background: transparent !important;
 }
 
-.premium-shell .metric {
-  --metric-accent: var(--final-navy-soft);
+/* Specificity intentionally high to neutralize old red/navy/green/gray KPI rules. */
+.premium-shell .summary-kpis .metric:nth-child(n),
+.premium-shell .manager-kpis .metric:nth-child(n),
+.premium-shell .metrics .metric:nth-child(n),
+.premium-shell .enhanced-metrics .metric:nth-child(n),
+.premium-shell .metric.red,
+.premium-shell .metric.navy,
+.premium-shell .metric.green {
   position: relative !important;
   isolation: auto !important;
   contain: none !important;
@@ -179,47 +143,22 @@ body {
   align-items: center !important;
   justify-content: center !important;
   text-align: center !important;
-  border: 1px solid var(--final-line) !important;
+  color: var(--ui-text) !important;
+  border: 1px solid var(--ui-border) !important;
   border-radius: 22px !important;
   background: transparent !important;
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
-  box-shadow: var(--final-shadow), inset 0 1px 0 rgba(255,255,255,.12), inset 0 -1px 0 rgba(255,255,255,.02) !important;
+  box-shadow: var(--ui-shadow), inset 0 1px 0 rgba(255, 255, 255, .12), inset 0 -1px 0 rgba(255, 255, 255, .02) !important;
 }
 
-.premium-shell .metric.red,
-.premium-shell .summary-kpis .metric:first-child,
-.premium-shell .manager-kpis .metric:first-child {
-  --metric-accent: var(--final-blood-soft);
-}
-
-.premium-shell .metric.navy,
-.premium-shell .summary-kpis .metric:nth-child(2),
-.premium-shell .summary-kpis .metric:nth-child(3),
-.premium-shell .summary-kpis .metric:nth-child(4) {
-  --metric-accent: var(--final-navy-soft);
-}
-
-/* The backdrop-filter lives on a dedicated layer to preserve the validated blur. */
-.premium-shell .metric::before {
-  content: '' !important;
-  position: absolute !important;
-  inset: 0 !important;
-  width: auto !important;
-  height: auto !important;
-  border-radius: inherit !important;
-  background: rgba(15, 27, 42, .28) !important;
-  -webkit-backdrop-filter: blur(var(--final-blur)) saturate(118%) !important;
-  backdrop-filter: blur(var(--final-blur)) saturate(118%) !important;
-  filter: none !important;
-  transform: none !important;
-  opacity: 1 !important;
-  pointer-events: none !important;
-  z-index: 0 !important;
-}
-
-/* Subtle material tint only; no circles, lines or decorative shapes. */
-.premium-shell .metric::after {
+.premium-shell .summary-kpis .metric:nth-child(n)::before,
+.premium-shell .manager-kpis .metric:nth-child(n)::before,
+.premium-shell .metrics .metric:nth-child(n)::before,
+.premium-shell .enhanced-metrics .metric:nth-child(n)::before,
+.premium-shell .metric.red::before,
+.premium-shell .metric.navy::before,
+.premium-shell .metric.green::before {
   content: '' !important;
   display: block !important;
   position: absolute !important;
@@ -231,12 +170,37 @@ body {
   max-width: none !important;
   max-height: none !important;
   border-radius: inherit !important;
-  background:
-    linear-gradient(145deg,
-      color-mix(in srgb, var(--metric-accent) 7%, transparent),
-      rgba(54, 70, 88, .018) 58%,
-      rgba(4, 8, 14, .018)) !important;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.13), inset 0 -1px 0 rgba(255,255,255,.018) !important;
+  background: var(--ui-glass) !important;
+  -webkit-backdrop-filter: blur(var(--ui-blur)) saturate(118%) !important;
+  backdrop-filter: blur(var(--ui-blur)) saturate(118%) !important;
+  filter: none !important;
+  transform: none !important;
+  opacity: 1 !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+}
+
+.premium-shell .summary-kpis .metric:nth-child(n)::after,
+.premium-shell .manager-kpis .metric:nth-child(n)::after,
+.premium-shell .metrics .metric:nth-child(n)::after,
+.premium-shell .enhanced-metrics .metric:nth-child(n)::after,
+.premium-shell .metric.red::after,
+.premium-shell .metric.navy::after,
+.premium-shell .metric.green::after {
+  content: '' !important;
+  display: block !important;
+  position: absolute !important;
+  inset: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: none !important;
+  max-height: none !important;
+  border-radius: inherit !important;
+  background: linear-gradient(145deg, rgba(174, 196, 220, .075), rgba(54, 70, 88, .020)) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .14), inset 0 -1px 0 rgba(255, 255, 255, .018) !important;
+  opacity: 1 !important;
   pointer-events: none !important;
   z-index: 1 !important;
 }
@@ -258,16 +222,6 @@ body {
   letter-spacing: .14em !important;
 }
 
-.premium-shell .metric.red > span,
-.premium-shell .summary-kpis .metric:first-child > span,
-.premium-shell .manager-kpis .metric:first-child > span {
-  color: #d96a7d !important;
-}
-
-.premium-shell .metric.navy > span {
-  color: #89a9cd !important;
-}
-
 .premium-shell .metric > strong {
   margin-top: 12px !important;
   color: #fff !important;
@@ -280,16 +234,73 @@ body {
 
 .premium-shell .metric > small {
   margin-top: 8px !important;
-  color: var(--final-muted) !important;
+  color: var(--ui-muted) !important;
+}
+
+/* Only subtle accent differences: never solid card fills. */
+.premium-shell .summary-kpis .metric:first-child,
+.premium-shell .manager-kpis .metric:first-child,
+.premium-shell .metric.red {
+  border-color: rgba(181, 29, 58, .30) !important;
+}
+
+.premium-shell .summary-kpis .metric:first-child > span,
+.premium-shell .manager-kpis .metric:first-child > span,
+.premium-shell .metric.red > span {
+  color: #d76a7e !important;
+}
+
+.premium-shell .metric.navy > span,
+.premium-shell .summary-kpis .metric:nth-child(n+2) > span {
+  color: #91a9c4 !important;
 }
 
 .premium-shell .metric:hover {
   transform: translateY(-2px) !important;
-  border-color: var(--final-line-strong) !important;
-  box-shadow: 0 26px 58px rgba(0,0,0,.38), inset 0 1px 0 rgba(255,255,255,.15) !important;
+  border-color: rgba(198, 218, 240, .30) !important;
+  box-shadow: 0 25px 56px rgba(0, 0, 0, .38), inset 0 1px 0 rgba(255, 255, 255, .15) !important;
 }
 
-/* Simple titles only: keep concise eyebrow labels and remove long duplicate headings. */
+/* ===== Shared glass surfaces across the project ===== */
+.premium-shell .panel,
+.premium-shell .section-block,
+.premium-shell .info-card,
+.premium-shell .target-control,
+.premium-shell .upload-card,
+.premium-shell .storage,
+.premium-shell .stock-result,
+.premium-shell .manager-info-grid,
+.premium-shell .movement-dashboard .movement-wrap,
+.premium-shell .movement-dashboard .movement-table,
+.premium-shell .table-scroll,
+.premium-shell .stock-table-viewport,
+.premium-shell .conference-grid .panel,
+.premium-shell .inline-alert,
+.premium-shell .empty-state {
+  color: var(--ui-text) !important;
+  border-color: var(--ui-border-soft) !important;
+  background: var(--ui-glass-soft) !important;
+  -webkit-backdrop-filter: blur(var(--ui-blur)) saturate(116%) !important;
+  backdrop-filter: blur(var(--ui-blur)) saturate(116%) !important;
+  box-shadow: var(--ui-shadow), inset 0 1px 0 rgba(255, 255, 255, .08) !important;
+}
+
+.premium-shell .panel,
+.premium-shell .section-block,
+.premium-shell .manager-info-grid,
+.premium-shell .stock-table-viewport {
+  border-radius: 22px !important;
+}
+
+.premium-shell .info-card,
+.premium-shell .target-control,
+.premium-shell .upload-card,
+.premium-shell .storage,
+.premium-shell .stock-result {
+  border-radius: 18px !important;
+}
+
+/* Short, simple section labels. Long duplicate headings stay hidden. */
 .premium-shell .section-bar h2,
 .premium-shell .table-title h3,
 .premium-shell .panel-toolbar h3,
@@ -305,9 +316,9 @@ body {
 .premium-shell .panel-toolbar,
 .premium-shell .stock-titlebar,
 .premium-shell .info-card > header {
-  color: var(--final-text) !important;
-  border-color: rgba(180,204,230,.13) !important;
-  background: rgba(10, 21, 34, .24) !important;
+  color: var(--ui-text) !important;
+  border-color: rgba(191, 211, 234, .11) !important;
+  background: rgba(10, 20, 33, .20) !important;
 }
 
 .premium-shell .section-bar,
@@ -322,13 +333,13 @@ body {
 .premium-shell .stock-titlebar > div:first-child > span,
 .premium-shell .title > span,
 .premium-shell .storage > div > span {
-  color: #d66075 !important;
+  color: #d76479 !important;
   font-size: 10px !important;
   font-weight: 780 !important;
   letter-spacing: .14em !important;
 }
 
-/* Tables inherit the glass shell; rows stay clean and readable. */
+/* Tables stay transparent enough for the underlying glass to read. */
 .premium-shell table {
   color: #dce6f2 !important;
   background: transparent !important;
@@ -338,25 +349,25 @@ body {
 .premium-shell .stock-table .stock-header-row th,
 .premium-shell .stock-table .stock-filter-row th,
 .premium-shell .movement-dashboard .movement-table th {
-  color: #91a3ba !important;
-  background: rgba(13, 30, 49, .50) !important;
-  border-color: rgba(180,204,230,.11) !important;
+  color: #95a7bd !important;
+  background: rgba(18, 41, 66, .28) !important;
+  border-color: rgba(191, 211, 234, .10) !important;
   -webkit-backdrop-filter: blur(12px) !important;
   backdrop-filter: blur(12px) !important;
 }
 
 .premium-shell table td {
-  color: #d4dfeb !important;
-  background: rgba(6, 13, 22, .10) !important;
-  border-color: rgba(180,204,230,.08) !important;
+  color: #d5e0ec !important;
+  background: rgba(4, 10, 17, .07) !important;
+  border-color: rgba(191, 211, 234, .07) !important;
 }
 
 .premium-shell table tbody tr:nth-child(even) td {
-  background: rgba(23, 58, 99, .035) !important;
+  background: rgba(23, 58, 99, .025) !important;
 }
 
 .premium-shell table tbody tr:hover td {
-  background: rgba(23, 58, 99, .13) !important;
+  background: rgba(23, 58, 99, .10) !important;
 }
 
 .premium-shell table td strong,
@@ -365,173 +376,72 @@ body {
   color: #f6f9fd !important;
 }
 
-/* Inputs and editable controls — no white blocks. */
+/* Inputs and editable controls — dark translucent, never white. */
 .premium-shell .currency-input,
 .premium-shell .number-input,
 .premium-shell .network-select,
 .premium-shell .stock-filter-row input,
 .premium-shell .stock-filters input,
-.premium-shell .stock-filters select {
+.premium-shell .stock-filters select,
+.premium-shell input,
+.premium-shell select {
   color: #f4f8fd !important;
-  border-color: rgba(180,204,230,.16) !important;
-  background: rgba(8, 18, 30, .46) !important;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.035) !important;
+  border-color: rgba(191, 211, 234, .15) !important;
+  background-color: rgba(7, 16, 27, .42) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .03) !important;
 }
 
-.premium-shell .currency-input::placeholder,
-.premium-shell .number-input::placeholder,
-.premium-shell .stock-filter-row input::placeholder,
-.premium-shell .stock-filters input::placeholder {
-  color: #6f829a !important;
+.premium-shell input::placeholder {
+  color: #71849c !important;
 }
 
-.premium-shell .currency-input:hover,
-.premium-shell .number-input:hover,
-.premium-shell .network-select:hover,
-.premium-shell .stock-filter-row input:hover,
-.premium-shell .stock-filters input:hover,
-.premium-shell .stock-filters select:hover {
-  border-color: rgba(137,169,205,.30) !important;
-  background: rgba(13, 30, 49, .56) !important;
+.premium-shell input:focus,
+.premium-shell select:focus {
+  border-color: rgba(40, 87, 134, .70) !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(23, 58, 99, .15) !important;
 }
 
-.premium-shell .currency-input:focus,
-.premium-shell .number-input:focus,
-.premium-shell .network-select:focus,
-.premium-shell .stock-filter-row input:focus,
-.premium-shell .stock-filters input:focus,
-.premium-shell .stock-filters select:focus {
-  border-color: rgba(63,111,165,.70) !important;
-  background: rgba(13, 30, 49, .70) !important;
-  box-shadow: 0 0 0 3px rgba(23,58,99,.18) !important;
+/* Buttons and status accents are restricted to navy and blood red. */
+.premium-shell button:not(.tab-button):not(.module-item) {
+  border-color: rgba(191, 211, 234, .14) !important;
 }
 
-.premium-shell .network-select option,
-.premium-shell .stock-filters select option {
-  color: #eef4fb !important;
-  background: #07101b !important;
-}
-
-/* Buttons, status chips and locks: effects restricted to navy and blood red. */
-.premium-shell .status-pill,
-.premium-shell .mini-lock,
-.premium-shell .lock-button,
-.premium-shell .stock-result button,
-.premium-shell .segmented {
-  color: #c6d3e2 !important;
-  border-color: rgba(180,204,230,.14) !important;
-  background: rgba(15, 34, 55, .46) !important;
-}
-
-.premium-shell .segmented button {
-  color: #9dafc5 !important;
-  background: transparent !important;
-}
-
-.premium-shell .segmented button.active,
+.premium-shell .primary,
+.premium-shell .danger,
+.premium-shell .locked,
 .premium-shell .lock-button.locked {
   color: #fff !important;
-  border-color: rgba(178,28,57,.45) !important;
-  background: linear-gradient(135deg, var(--final-blood-soft), var(--final-blood)) !important;
-  box-shadow: 0 8px 20px rgba(143,16,41,.22) !important;
+  background: linear-gradient(135deg, var(--ui-blood-soft), var(--ui-blood)) !important;
 }
 
-/* Chart system: navy + blood red only. */
+.premium-shell .secondary,
+.premium-shell .ghost,
+.premium-shell .lock-button:not(.locked) {
+  color: #dce8f5 !important;
+  background: rgba(23, 58, 99, .28) !important;
+}
+
+/* Remove legacy decorative KPI shapes/lines globally. */
+.premium-shell .metric > i,
+.premium-shell .metric .metric-decor,
+.premium-shell .metric .metric-orbit,
+.premium-shell .metric .metric-line {
+  display: none !important;
+}
+
+/* Chart palette: navy + blood red only. */
 .premium-shell .movement-dashboard {
-  background: transparent !important;
+  --chart-navy: #285786;
+  --chart-red: #b51d3a;
 }
 
-.premium-shell .movement-dashboard .movement-wrap {
-  border-radius: 17px 17px 0 0 !important;
-}
-
-.premium-shell .movement-dashboard .movement-table {
-  border-radius: 0 0 17px 17px !important;
-}
-
-.premium-shell .movement-dashboard .chart-legend span {
-  color: #aab9cb !important;
-  border-color: rgba(180,204,230,.11) !important;
-  background: rgba(10, 23, 38, .36) !important;
-}
-
-.premium-shell .movement-dashboard .legend-billed,
-.premium-shell .movement-dashboard .dual-bars .billed,
-.premium-shell .movement-dashboard .legend-positive,
-.premium-shell .movement-dashboard .positive-bubble {
-  background: var(--final-navy-soft) !important;
-}
-
-.premium-shell .movement-dashboard .legend-pending,
-.premium-shell .movement-dashboard .dual-bars .pending {
-  background: var(--final-blood-soft) !important;
-}
-
-.premium-shell .movement-dashboard .multi-bars {
-  background: transparent !important;
-  border-bottom-color: rgba(180,204,230,.12) !important;
-}
-
-/* Target/manager surfaces should not reintroduce opaque gradients from old themes. */
-.premium-shell .target-control.primary,
-.premium-shell .target-control.readonly,
-.premium-shell .summary-kpis .metric:first-child,
-.premium-shell .manager-kpis .metric:first-child,
-.premium-shell .conference-grid .panel:first-child,
-.premium-shell .conference-grid .panel:last-child {
-  background: transparent !important;
-}
-
-/* Remove green/orange decorative states; keep semantic text readable. */
-.premium-shell .status-pill.ok,
-.premium-shell .status-pill.warn {
-  color: #cbd7e5 !important;
-  border-color: rgba(180,204,230,.14) !important;
-  background: rgba(23,58,99,.18) !important;
-}
-
-/* Scrollbars stay inside the dark system. */
-.premium-shell *::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-
-.premium-shell *::-webkit-scrollbar-track {
-  background: rgba(3, 8, 14, .45);
-}
-
-.premium-shell *::-webkit-scrollbar-thumb {
-  background: rgba(36, 79, 130, .52);
-  border: 2px solid rgba(3, 8, 14, .55);
-  border-radius: 999px;
-}
-
-.premium-shell *::-webkit-scrollbar-thumb:hover {
-  background: rgba(143, 16, 41, .62);
-}
-
-/* Final spacing cleanup. */
-.premium-shell .v3-main {
-  padding-top: 0 !important;
-}
-
-.premium-shell .summary-kpis,
-.premium-shell .manager-kpis,
-.premium-shell .enhanced-metrics.four,
-.premium-shell .target-control-grid-v3,
-.premium-shell .manager-info-grid {
-  gap: 16px !important;
-}
-
-@media (max-width: 900px) {
-  .premium-shell .tabs {
-    width: calc(100vw - 24px) !important;
-    max-width: none !important;
-    overflow-x: auto !important;
-    justify-content: flex-start !important;
-  }
-
-  .premium-shell .metric {
-    min-height: 122px !important;
-  }
+/* Neutralize common legacy green highlights. */
+.premium-shell .green,
+.premium-shell .success,
+.premium-shell .positive,
+.premium-shell .status-ok {
+  color: #b7c8dc !important;
+  border-color: rgba(40, 87, 134, .30) !important;
+  background-color: rgba(23, 58, 99, .16) !important;
 }
