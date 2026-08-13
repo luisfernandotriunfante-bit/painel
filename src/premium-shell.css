@@ -1,0 +1,259 @@
+.premium-shell {
+  min-height: 100vh;
+  background: #f4f6f9;
+}
+
+.shell-content {
+  min-height: 100vh;
+  margin-left: 68px;
+  transition: margin-left 180ms ease;
+}
+
+.module-sidebar {
+  position: fixed;
+  z-index: 1000;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 68px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(circle at 22% 4%, rgba(239, 51, 70, .15), transparent 24%),
+    linear-gradient(180deg, #0d1729 0%, #101a2d 48%, #12192a 100%);
+  border-right: 1px solid rgba(255, 255, 255, .08);
+  box-shadow: 14px 0 36px rgba(8, 18, 35, .12);
+  color: #fff;
+  transition: width 190ms cubic-bezier(.2,.8,.2,1), box-shadow 190ms ease;
+}
+
+.module-sidebar:hover,
+.module-sidebar:focus-within {
+  width: 246px;
+  box-shadow: 20px 0 46px rgba(8, 18, 35, .2);
+}
+
+.sidebar-brand {
+  height: 86px;
+  flex: 0 0 86px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, .08);
+}
+
+.brand-mark {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  background: linear-gradient(145deg, #f13b4f, #c91529);
+  box-shadow: 0 10px 24px rgba(225, 28, 48, .3), inset 0 1px rgba(255,255,255,.24);
+  color: white;
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: -.04em;
+}
+
+.brand-copy {
+  min-width: 150px;
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: opacity 140ms ease, transform 160ms ease;
+}
+
+.module-sidebar:hover .brand-copy,
+.module-sidebar:focus-within .brand-copy {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.brand-copy strong,
+.brand-copy span {
+  display: block;
+  white-space: nowrap;
+}
+
+.brand-copy strong {
+  font-size: 14px;
+  letter-spacing: .01em;
+}
+
+.brand-copy span {
+  margin-top: 3px;
+  color: #8f9caf;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+}
+
+.module-nav {
+  flex: 1;
+  padding: 18px 9px;
+}
+
+.module-item {
+  position: relative;
+  width: 100%;
+  min-height: 54px;
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  color: #aeb9c9;
+  cursor: pointer;
+  text-align: left;
+  transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.module-item:hover,
+.module-item.active {
+  color: white;
+  background: linear-gradient(90deg, rgba(255,255,255,.10), rgba(255,255,255,.045));
+}
+
+.module-item.active::before {
+  content: '';
+  position: absolute;
+  left: -9px;
+  top: 11px;
+  bottom: 11px;
+  width: 3px;
+  border-radius: 0 4px 4px 0;
+  background: #ef3346;
+  box-shadow: 0 0 16px rgba(239, 51, 70, .55);
+}
+
+.module-icon {
+  grid-column: 1;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: rgba(255,255,255,.055);
+}
+
+.module-icon svg {
+  width: 19px;
+  height: 19px;
+}
+
+.module-number {
+  display: none;
+}
+
+.module-label {
+  grid-column: 2;
+  min-width: 158px;
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: opacity 130ms ease, transform 160ms ease;
+}
+
+.module-sidebar:hover .module-label,
+.module-sidebar:focus-within .module-label {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.module-label b,
+.module-label small {
+  display: block;
+  white-space: nowrap;
+}
+
+.module-label b {
+  font-size: 11px;
+  letter-spacing: .1em;
+}
+
+.module-label small {
+  margin-top: 3px;
+  color: #8f9caf;
+  font-size: 9px;
+}
+
+.sidebar-footer {
+  height: 72px;
+  flex: 0 0 72px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 22px;
+  border-top: 1px solid rgba(255,255,255,.075);
+}
+
+.status-dot {
+  width: 9px;
+  height: 9px;
+  flex: 0 0 9px;
+  border-radius: 50%;
+  background: #34d399;
+  box-shadow: 0 0 0 4px rgba(52, 211, 153, .10), 0 0 14px rgba(52, 211, 153, .35);
+}
+
+.sidebar-footer > div {
+  min-width: 150px;
+  opacity: 0;
+  transition: opacity 130ms ease;
+}
+
+.module-sidebar:hover .sidebar-footer > div,
+.module-sidebar:focus-within .sidebar-footer > div {
+  opacity: 1;
+}
+
+.sidebar-footer strong,
+.sidebar-footer small {
+  display: block;
+  white-space: nowrap;
+}
+
+.sidebar-footer strong {
+  font-size: 10px;
+  color: #e5ebf3;
+}
+
+.sidebar-footer small {
+  margin-top: 3px;
+  font-size: 8px;
+  color: #748197;
+}
+
+/* Mantém o menu horizontal do SELL OUT como navegação interna do módulo. */
+.shell-content .tabs {
+  position: relative;
+  z-index: 20;
+}
+
+@media (max-width: 760px) {
+  .shell-content { margin-left: 0; }
+  .module-sidebar {
+    top: auto;
+    right: 16px;
+    left: auto;
+    bottom: 16px;
+    width: 52px;
+    height: 52px;
+    border: 0;
+    border-radius: 16px;
+  }
+  .module-sidebar:hover,
+  .module-sidebar:focus-within {
+    width: 210px;
+    height: 146px;
+  }
+  .sidebar-brand,
+  .sidebar-footer { display: none; }
+  .module-nav { padding: 5px; }
+  .module-item { min-height: 42px; }
+}
