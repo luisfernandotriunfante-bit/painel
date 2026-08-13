@@ -1,0 +1,11 @@
+export const NS='http://schemas.openxmlformats.org/spreadsheetml/2006/main'
+const XML_NS='http://www.w3.org/XML/1998/namespace'
+export function parseXml(xml:string){const d=new DOMParser().parseFromString(xml,'application/xml');if(d.getElementsByTagName('parsererror').length)throw new Error('Falha ao interpretar o modelo Excel.');return d}
+export const serializeXml=(d:XMLDocument)=>new XMLSerializer().serializeToString(d)
+function colNum(a:string){let n=0;for(const c of a.match(/^[A-Z]+/)?.[0]??'A')n=n*26+c.charCodeAt(0)-64;return n}
+function getRow(d:XMLDocument,n:number){const data=d.getElementsByTagNameNS(NS,'sheetData')[0];let r=Array.from(data.getElementsByTagNameNS(NS,'row')).find(x=>+`${x.getAttribute('r')}`===n);if(r)return r;r=d.createElementNS(NS,'row');r.setAttribute('r',`${n}`);const next=Array.from(data.children).find(x=>x.localName==='row'&&+`${x.getAttribute('r')}`>n);next?data.insertBefore(r,next):data.appendChild(r);return r}
+export function getCell(d:XMLDocument,a:string){const r=getRow(d,+(a.match(/\d+$/)?.[0]??1));let c=Array.from(r.getElementsByTagNameNS(NS,'c')).find(x=>x.getAttribute('r')===a);if(c)return c;c=d.createElementNS(NS,'c');c.setAttribute('r',a);const next=Array.from(r.children).find(x=>x.localName==='c'&&colNum(x.getAttribute('r')??'A1')>colNum(a));next?r.insertBefore(c,next):r.appendChild(c);return c}
+export function clearParts(c:Element,formula=true){for(const x of Array.from(c.children))if(x.localName==='v'||x.localName==='is'||(formula&&x.localName==='f'))c.removeChild(x)}
+export function setNumber(d:XMLDocument,a:string,v:number|null|undefined){const c=getCell(d,a);clearParts(c);c.removeAttribute('t');if(v==null||!Number.isFinite(v))return;const x=d.createElementNS(NS,'v');x.textContent=`${v}`;c.appendChild(x)}
+export function setText(d:XMLDocument,a:string,v:string|null|undefined){const c=getCell(d,a);clearParts(c);if(!v){c.removeAttribute('t');return}c.setAttribute('t','inlineStr');const i=d.createElementNS(NS,'is'),t=d.createElementNS(NS,'t');if(/^\s|\s$/.test(v))t.setAttributeNS(XML_NS,'xml:space','preserve');t.textContent=v;i.appendChild(t);c.appendChild(i)}
+export function clearCell(d:XMLDocument,a:string){const c=getCell(d,a);clearParts(c);c.removeAttribute('t')}
