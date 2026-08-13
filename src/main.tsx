@@ -14,7 +14,7 @@ import './executive-blackout.css'
 import './executive-glass.css'
 import './executive-glass-v2.css'
 import './executive-glass-v3.css'
-import './executive-frosted-glass.css'
+import './executive-glass-final.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
