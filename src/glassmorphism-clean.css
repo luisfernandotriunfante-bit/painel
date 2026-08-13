@@ -1,0 +1,286 @@
+/* Clean executive glassmorphism — single source of truth */
+:root {
+  --glass-bg: rgba(9, 18, 30, .56);
+  --glass-bg-strong: rgba(10, 21, 36, .66);
+  --glass-bg-soft: rgba(17, 31, 49, .38);
+  --glass-line: rgba(229, 239, 252, .14);
+  --glass-line-soft: rgba(229, 239, 252, .075);
+  --glass-text: #f5f8fc;
+  --glass-muted: #8f9db0;
+  --accent-blue: #123b66;
+  --accent-blue-bright: #2e6da9;
+  --accent-red: #8f1226;
+  --accent-red-bright: #c61f39;
+}
+
+html,
+body,
+#root,
+.app,
+.enhanced-app,
+.v3-app,
+.shell-content {
+  min-height: 100%;
+  background: #02050a !important;
+  color: var(--glass-text) !important;
+}
+
+body {
+  background:
+    radial-gradient(circle at 8% 8%, rgba(18, 59, 102, .46) 0 8%, rgba(18,59,102,.18) 18%, transparent 38%),
+    radial-gradient(circle at 92% 18%, rgba(143, 18, 38, .30) 0 7%, rgba(143,18,38,.12) 18%, transparent 36%),
+    radial-gradient(circle at 52% 78%, rgba(20, 53, 88, .24) 0 10%, transparent 38%),
+    linear-gradient(180deg, #03070c 0%, #02050a 58%, #000 100%) !important;
+  background-attachment: fixed !important;
+}
+
+.v3-main,
+.compact-main {
+  position: relative;
+  z-index: 0;
+  background: transparent !important;
+}
+
+.v3-main::before {
+  content: '';
+  position: fixed;
+  z-index: -1;
+  width: 420px;
+  height: 420px;
+  left: 5vw;
+  top: 18vh;
+  border-radius: 50%;
+  pointer-events: none;
+  background: rgba(26, 78, 130, .22);
+  filter: blur(110px);
+}
+
+.v3-main::after {
+  content: '';
+  position: fixed;
+  z-index: -1;
+  width: 360px;
+  height: 360px;
+  right: 5vw;
+  top: 10vh;
+  border-radius: 50%;
+  pointer-events: none;
+  background: rgba(132, 18, 38, .18);
+  filter: blur(120px);
+}
+
+/* One glass material for all primary surfaces */
+.v3-app .metric,
+.v3-app .panel,
+.v3-app .section-block,
+.v3-app .info-card,
+.v3-app .target-control,
+.v3-app .upload-card,
+.v3-app .storage,
+.v3-app .conference-grid > article,
+.v3-app .source-list > div,
+.shell-content .tabs {
+  position: relative;
+  color: var(--glass-text) !important;
+  border: 1px solid transparent !important;
+  background:
+    linear-gradient(145deg, rgba(18, 31, 48, .58), rgba(6, 13, 23, .46)) padding-box,
+    linear-gradient(135deg, rgba(255,255,255,.24), rgba(255,255,255,.055) 38%, rgba(46,109,169,.20) 70%, rgba(143,18,38,.14)) border-box !important;
+  box-shadow:
+    0 10px 24px rgba(0,0,0,.28),
+    0 28px 70px rgba(0,0,0,.30),
+    inset 0 1px 0 rgba(255,255,255,.12),
+    inset 0 -1px 0 rgba(255,255,255,.025) !important;
+  backdrop-filter: blur(30px) saturate(145%) !important;
+  -webkit-backdrop-filter: blur(30px) saturate(145%) !important;
+}
+
+.v3-app .metric::before,
+.v3-app .panel::before,
+.v3-app .section-block::before,
+.v3-app .info-card::before,
+.v3-app .target-control::before,
+.v3-app .upload-card::before,
+.v3-app .storage::before,
+.v3-app .conference-grid > article::before,
+.v3-app .source-list > div::before,
+.shell-content .tabs::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(120deg, rgba(255,255,255,.08), transparent 24%, transparent 72%, rgba(255,255,255,.018));
+  opacity: .75;
+}
+
+/* Restore dark, high-contrast KPI hierarchy */
+.v3-app .summary-kpis .metric,
+.v3-app .enhanced-metrics .metric,
+.v3-app .target-control-grid-v3 .target-control {
+  background:
+    linear-gradient(145deg, rgba(15, 28, 44, .58), rgba(6, 13, 23, .48)) padding-box,
+    linear-gradient(135deg, rgba(255,255,255,.20), rgba(255,255,255,.05) 42%, rgba(18,59,102,.25)) border-box !important;
+}
+
+.v3-app .summary-kpis .metric:first-child,
+.v3-app .manager-kpis .metric:first-child,
+.v3-app .target-control-grid-v3 .target-control.primary,
+.v3-main:has(.stock-detail) > .enhanced-metrics.four .metric:first-child {
+  background:
+    radial-gradient(circle at 92% 8%, rgba(143,18,38,.22), transparent 34%),
+    linear-gradient(145deg, rgba(17, 30, 48, .60), rgba(7, 14, 24, .48)) padding-box,
+    linear-gradient(135deg, rgba(255,255,255,.24), rgba(143,18,38,.30) 48%, rgba(18,59,102,.26)) border-box !important;
+}
+
+/* Movement and analytical sections: glass, not opaque blocks */
+.v3-app .movement-panel,
+.v3-app .movement-dashboard,
+.v3-app .movement-wrap,
+.v3-app .table-scroll,
+.v3-app .stock-table-viewport {
+  color: var(--glass-text) !important;
+  background: rgba(6, 14, 24, .34) !important;
+  border-color: var(--glass-line-soft) !important;
+  backdrop-filter: blur(22px) saturate(130%) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(130%) !important;
+}
+
+.v3-app .section-bar,
+.v3-app .table-title,
+.v3-app .stock-titlebar {
+  color: var(--glass-text) !important;
+  background: rgba(255,255,255,.025) !important;
+  border-bottom: 1px solid var(--glass-line-soft) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.045) !important;
+}
+
+/* Tables: transparent rows on glass */
+.v3-app table,
+.v3-app tbody,
+.v3-app tbody tr,
+.v3-app tbody td {
+  background: transparent !important;
+}
+.v3-app thead,
+.v3-app thead tr,
+.v3-app thead th {
+  color: #9eabc0 !important;
+  background: rgba(18, 35, 55, .38) !important;
+  border-color: var(--glass-line-soft) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+}
+.v3-app tbody td {
+  color: #dce5f0 !important;
+  border-color: rgba(229,239,252,.055) !important;
+}
+.v3-app tbody tr:hover td {
+  background: rgba(18,59,102,.10) !important;
+}
+
+/* Typography */
+.v3-app .metric > span,
+.v3-app .target-control > span,
+.v3-app .info-card > header,
+.v3-app .section-bar > div > span,
+.v3-app th {
+  color: var(--glass-muted) !important;
+  font-weight: 500 !important;
+  letter-spacing: .035em !important;
+}
+.v3-app .metric > strong,
+.v3-app .target-control > strong,
+.v3-app .info-row strong,
+.v3-app h2,
+.v3-app h3 {
+  color: #f7f9fc !important;
+}
+.v3-app .metric > strong,
+.v3-app .target-control > strong {
+  font-weight: 520 !important;
+  letter-spacing: -.025em !important;
+}
+
+/* Inputs: inset glass, never white */
+.v3-app input,
+.v3-app select,
+.v3-app textarea,
+.v3-app .currency-input,
+.v3-app .number-input,
+.v3-app .network-select,
+.v3-app .target-input,
+.v3-app .stock-filter-input,
+.v3-app .stock-filter-select {
+  color: #f6f8fb !important;
+  background: rgba(4, 11, 20, .46) !important;
+  border: 1px solid rgba(229,239,252,.14) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06) !important;
+  backdrop-filter: blur(18px) !important;
+  -webkit-backdrop-filter: blur(18px) !important;
+}
+.v3-app input::placeholder,
+.v3-app textarea::placeholder { color: #68778b !important; }
+.v3-app option { color: #f5f8fc !important; background: #091420 !important; }
+.v3-app input:focus,
+.v3-app select:focus,
+.v3-app textarea:focus {
+  outline: none !important;
+  border-color: rgba(46,109,169,.65) !important;
+  box-shadow: 0 0 0 3px rgba(46,109,169,.12), inset 0 1px 0 rgba(255,255,255,.07) !important;
+}
+
+/* Navigation stays dark and glassy */
+.shell-content .tabs {
+  background:
+    linear-gradient(145deg, rgba(13, 25, 40, .68), rgba(5, 11, 19, .58)) padding-box,
+    linear-gradient(135deg, rgba(255,255,255,.20), rgba(255,255,255,.04) 55%, rgba(18,59,102,.25)) border-box !important;
+}
+.shell-content .tabs button { color: #9ca9bb !important; }
+.shell-content .tabs button:hover { color: #fff !important; background: rgba(255,255,255,.045) !important; }
+.shell-content .tabs button.active {
+  color: #fff !important;
+  background: linear-gradient(145deg, var(--accent-red-bright), var(--accent-red)) !important;
+  box-shadow: 0 8px 22px rgba(143,18,38,.28), inset 0 1px 0 rgba(255,255,255,.14) !important;
+}
+
+/* Standardize all accents to dark blue + blood red */
+.v3-app .legend-billed,
+.v3-app .billed,
+.v3-app .positive-bubble,
+.v3-app .legend-positive { background: var(--accent-blue-bright) !important; }
+.v3-app .legend-pending,
+.v3-app .pending { background: var(--accent-red-bright) !important; }
+.v3-app .positive { color: #6f9fd0 !important; }
+.v3-app .negative { color: #e0596b !important; }
+.v3-app .section-bar > div > span,
+.v3-app .table-title span { color: #e65a6b !important; }
+.v3-app .lock-button.locked {
+  color: #fff !important;
+  background: linear-gradient(145deg, var(--accent-red-bright), var(--accent-red)) !important;
+  border-color: rgba(230,89,107,.35) !important;
+}
+.v3-app .status-pill.ok,
+.v3-app .status-pill.warn {
+  color: #cbd8e8 !important;
+  border-color: rgba(46,109,169,.30) !important;
+  background: rgba(18,59,102,.16) !important;
+}
+
+/* Hover: subtle increase in opacity, not a glow bomb */
+.v3-app .metric,
+.v3-app .target-control,
+.v3-app .upload-card,
+.v3-app .source-list > div {
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, background-color .18s ease !important;
+}
+.v3-app .metric:hover,
+.v3-app .target-control:hover,
+.v3-app .upload-card:hover,
+.v3-app .source-list > div:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 12px 28px rgba(0,0,0,.32),
+    0 34px 76px rgba(0,0,0,.34),
+    inset 0 1px 0 rgba(255,255,255,.16) !important;
+}
