@@ -1,0 +1,56 @@
+/* Controlled glass prototype: only Faturado KPI. Loaded last. */
+
+/* The shell itself is the real fixed backdrop. It stays black, with only
+   subtle executive accents so glass has something to refract. */
+.premium-shell {
+  background:
+    linear-gradient(126deg,
+      transparent 0 43.5%,
+      rgba(136, 18, 38, .055) 43.7% 43.95%,
+      transparent 44.15% 100%),
+    repeating-linear-gradient(90deg,
+      rgba(76, 126, 176, .018) 0 1px,
+      transparent 1px 92px),
+    radial-gradient(circle at 18% 21%,
+      rgba(25, 76, 128, .20) 0,
+      rgba(25, 76, 128, .065) 19%,
+      transparent 39%),
+    radial-gradient(circle at 82% 27%,
+      rgba(128, 12, 31, .16) 0,
+      rgba(128, 12, 31, .045) 17%,
+      transparent 36%),
+    #02050a !important;
+  background-attachment: fixed !important;
+}
+
+/* These layers previously painted an opaque black sheet above the shell,
+   which prevented backdrop-filter from sampling the actual background. */
+.premium-shell .shell-content,
+.premium-shell .app,
+.premium-shell .enhanced-app,
+.premium-shell .v3-app,
+.premium-shell .compact-main,
+.premium-shell .v3-main {
+  background: transparent !important;
+}
+
+/* Isolated prototype: clean card, title + value only. */
+.premium-shell .summary-kpis .metric:nth-child(2) {
+  background: linear-gradient(135deg,
+    rgba(107, 132, 158, .14),
+    rgba(18, 29, 43, .24)) !important;
+  -webkit-backdrop-filter: blur(30px) saturate(118%) !important;
+  backdrop-filter: blur(30px) saturate(118%) !important;
+  border: 1px solid rgba(185, 207, 232, .24) !important;
+  box-shadow:
+    0 18px 42px rgba(0, 0, 0, .32),
+    inset 0 1px 0 rgba(255, 255, 255, .14),
+    inset 0 -1px 0 rgba(255, 255, 255, .025) !important;
+}
+
+.premium-shell .summary-kpis .metric:nth-child(2):hover {
+  background: linear-gradient(135deg,
+    rgba(113, 139, 167, .17),
+    rgba(20, 32, 47, .27)) !important;
+  border-color: rgba(197, 217, 239, .30) !important;
+}
