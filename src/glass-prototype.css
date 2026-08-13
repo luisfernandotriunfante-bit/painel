@@ -21,6 +21,23 @@
   transform: scale(1.05);
 }
 
+/* TEMPORARY TEST LINE: deliberately crisp and strong, positioned behind the Faturado card.
+   This exists only to verify whether the card is actually blurring the backdrop. */
+.summary-kpis::after {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+  left: 26%;
+  top: 52%;
+  width: 22%;
+  height: 7px;
+  border-radius: 999px;
+  background: #b3132f;
+  transform: rotate(-9deg);
+  transform-origin: center;
+}
+
 .summary-kpis > .metric {
   position: relative;
   z-index: 1;
