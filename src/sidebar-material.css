@@ -1,13 +1,7 @@
 /* Sidebar-material system — authoritative visual layer loaded last.
-   Goal: every executive surface uses the SAME material as the lateral menu. */
+   Sidebar is the visual reference; dashboard surfaces reproduce its frosted feel. */
 
 :root {
-  --side-surface: rgba(5, 11, 19, .30);
-  --side-surface-strong: rgba(9, 18, 31, .40);
-  --side-surface-soft: rgba(255, 255, 255, .045);
-  --side-surface-hover: rgba(255, 255, 255, .075);
-  --side-border: rgba(255, 255, 255, .08);
-  --side-border-strong: rgba(255, 255, 255, .13);
   --side-text: #f5f8fc;
   --side-muted: #8f9caf;
   --side-navy: #173a63;
@@ -15,15 +9,21 @@
   --side-blood: #8f1029;
   --side-blood-soft: #c41d38;
   --side-blur: 18px;
-  --side-shadow: 0 18px 46px rgba(0, 0, 0, .24), inset 0 1px 0 rgba(255, 255, 255, .07);
+  --side-border: rgba(255,255,255,.09);
+  --side-border-strong: rgba(255,255,255,.14);
+  --glass-base: rgba(5,11,19,.13);
+  --glass-film-top: rgba(214,226,241,.060);
+  --glass-film-mid: rgba(132,153,177,.022);
+  --glass-film-bottom: rgba(5,11,19,.055);
+  --glass-shadow: 0 18px 46px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.08);
 }
 
-/* Keep the approved black executive backdrop. */
+/* Approved executive backdrop: black, softly illuminated at the top. */
 .premium-shell {
   background-color: #000205 !important;
   background-image:
-    radial-gradient(ellipse at 20% -8%, rgba(23, 58, 99, .24) 0%, rgba(23, 58, 99, .065) 28%, transparent 50%),
-    radial-gradient(ellipse at 82% -12%, rgba(143, 16, 41, .17) 0%, rgba(143, 16, 41, .04) 27%, transparent 47%),
+    radial-gradient(ellipse at 20% -8%, rgba(23,58,99,.24) 0%, rgba(23,58,99,.065) 28%, transparent 50%),
+    radial-gradient(ellipse at 82% -12%, rgba(143,16,41,.17) 0%, rgba(143,16,41,.04) 27%, transparent 47%),
     linear-gradient(180deg, #0b1624 0%, #07101a 22%, #040910 52%, #020509 76%, #000205 100%) !important;
   background-attachment: fixed !important;
 }
@@ -33,141 +33,24 @@
 .premium-shell .enhanced-app,
 .premium-shell .v3-app,
 .premium-shell .compact-main,
-.premium-shell .v3-main {
+.premium-shell .v3-main,
+.premium-shell .metrics,
+.premium-shell .enhanced-metrics,
+.premium-shell .summary-kpis,
+.premium-shell .manager-kpis {
   background: transparent !important;
-}
-
-/* One canonical glass recipe: exactly the language of the lateral menu. */
-.premium-shell .module-sidebar,
-.premium-shell .tabs,
-.premium-shell .panel,
-.premium-shell .section-block,
-.premium-shell .info-card,
-.premium-shell .target-control,
-.premium-shell .upload-card,
-.premium-shell .storage,
-.premium-shell .stock-result,
-.premium-shell .manager-info-grid,
-.premium-shell .movement-wrap,
-.premium-shell .movement-table,
-.premium-shell .table-scroll,
-.premium-shell .stock-table-viewport,
-.premium-shell .inline-alert,
-.premium-shell .empty-state,
-.premium-shell .conference-grid .panel {
-  color: var(--side-text) !important;
-  background: var(--side-surface) !important;
-  border: 1px solid var(--side-border) !important;
-  -webkit-backdrop-filter: blur(var(--side-blur)) saturate(116%) !important;
-  backdrop-filter: blur(var(--side-blur)) saturate(116%) !important;
-  box-shadow: var(--side-shadow) !important;
-}
-
-/* KPI cards: direct sidebar material. No pseudo-layer tinting, no solid color fills. */
-.premium-shell .summary-kpis .metric:nth-child(n),
-.premium-shell .manager-kpis .metric:nth-child(n),
-.premium-shell .metrics .metric:nth-child(n),
-.premium-shell .enhanced-metrics .metric:nth-child(n),
-.premium-shell .metric.red,
-.premium-shell .metric.navy,
-.premium-shell .metric.green,
-.premium-shell .metric {
-  position: relative !important;
-  overflow: hidden !important;
   isolation: auto !important;
-  contain: none !important;
   filter: none !important;
-  min-height: 138px !important;
-  padding: 24px 26px !important;
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  justify-content: center !important;
-  text-align: center !important;
-  color: var(--side-text) !important;
-  background: var(--side-surface) !important;
-  border: 1px solid var(--side-border) !important;
-  border-radius: 22px !important;
-  -webkit-backdrop-filter: blur(var(--side-blur)) saturate(116%) !important;
-  backdrop-filter: blur(var(--side-blur)) saturate(116%) !important;
-  box-shadow: var(--side-shadow) !important;
+  contain: none !important;
 }
 
-/* Remove every decorative/tinted pseudo layer inherited from older themes. */
-.premium-shell .summary-kpis .metric:nth-child(n)::before,
-.premium-shell .summary-kpis .metric:nth-child(n)::after,
-.premium-shell .manager-kpis .metric:nth-child(n)::before,
-.premium-shell .manager-kpis .metric:nth-child(n)::after,
-.premium-shell .metrics .metric:nth-child(n)::before,
-.premium-shell .metrics .metric:nth-child(n)::after,
-.premium-shell .enhanced-metrics .metric:nth-child(n)::before,
-.premium-shell .enhanced-metrics .metric:nth-child(n)::after,
-.premium-shell .metric::before,
-.premium-shell .metric::after {
-  display: none !important;
-  content: none !important;
+/* Keep the sidebar itself untouched as the approved reference. */
+.premium-shell .module-sidebar {
+  -webkit-backdrop-filter: blur(18px) saturate(116%) !important;
+  backdrop-filter: blur(18px) saturate(116%) !important;
 }
 
-.premium-shell .metric > span,
-.premium-shell .metric > strong,
-.premium-shell .metric > small {
-  position: relative !important;
-  z-index: 1 !important;
-  width: 100% !important;
-  text-align: center !important;
-}
-
-.premium-shell .metric > span {
-  margin: 0 !important;
-  color: #a8b5c7 !important;
-  font-size: 9px !important;
-  font-weight: 760 !important;
-  letter-spacing: .14em !important;
-}
-
-.premium-shell .metric > strong {
-  margin-top: 12px !important;
-  color: #fff !important;
-  font-size: clamp(25px, 2vw, 36px) !important;
-  font-weight: 720 !important;
-  line-height: 1 !important;
-  letter-spacing: -.045em !important;
-  white-space: nowrap !important;
-}
-
-.premium-shell .metric > small {
-  margin-top: 8px !important;
-  color: var(--side-muted) !important;
-}
-
-/* Accent only — never a full-card fill. */
-.premium-shell .summary-kpis .metric:first-child,
-.premium-shell .manager-kpis .metric:first-child,
-.premium-shell .metric.red {
-  border-color: rgba(196, 29, 56, .20) !important;
-}
-
-.premium-shell .summary-kpis .metric:first-child > span,
-.premium-shell .manager-kpis .metric:first-child > span,
-.premium-shell .metric.red > span {
-  color: #cf6174 !important;
-}
-
-.premium-shell .metric.navy > span,
-.premium-shell .summary-kpis .metric:nth-child(n+2) > span {
-  color: #8ca4bf !important;
-}
-
-.premium-shell .metric:hover,
-.premium-shell .panel:hover,
-.premium-shell .info-card:hover,
-.premium-shell .upload-card:hover {
-  border-color: var(--side-border-strong) !important;
-  background: rgba(7, 14, 24, .34) !important;
-  box-shadow: 0 22px 52px rgba(0, 0, 0, .28), inset 0 1px 0 rgba(255, 255, 255, .09) !important;
-}
-
-/* Horizontal navigation follows the same sidebar surface. */
+/* Horizontal navigation uses the same dark frosted family. */
 .premium-shell .tabs {
   width: max-content !important;
   max-width: calc(100vw - 44px) !important;
@@ -176,7 +59,12 @@
   gap: 4px !important;
   min-height: 0 !important;
   justify-content: center !important;
+  border: 1px solid var(--side-border) !important;
   border-radius: 18px !important;
+  background: rgba(5,11,19,.24) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(116%) brightness(1.04) !important;
+  backdrop-filter: blur(18px) saturate(116%) brightness(1.04) !important;
+  box-shadow: var(--glass-shadow) !important;
 }
 
 .premium-shell .tabs button,
@@ -194,23 +82,202 @@
 
 .premium-shell .tabs button:hover {
   color: #fff !important;
-  background: linear-gradient(90deg, rgba(255,255,255,.10), rgba(255,255,255,.045)) !important;
+  background: rgba(255,255,255,.055) !important;
 }
 
 .premium-shell .tabs button.active {
   color: #fff !important;
   background: linear-gradient(145deg, var(--side-blood-soft), var(--side-blood)) !important;
-  box-shadow: 0 8px 20px rgba(143, 16, 41, .28), inset 0 1px 0 rgba(255,255,255,.18) !important;
+  box-shadow: 0 8px 20px rgba(143,16,41,.28), inset 0 1px 0 rgba(255,255,255,.18) !important;
 }
 
-/* Section headers mimic the selected module item: a faint internal reflection, not a solid strip. */
+/* ===== KPI — frosted material, not a dark solid tile ===== */
+.premium-shell .summary-kpis .metric:nth-child(n),
+.premium-shell .manager-kpis .metric:nth-child(n),
+.premium-shell .metrics .metric:nth-child(n),
+.premium-shell .enhanced-metrics .metric:nth-child(n),
+.premium-shell .metric.red,
+.premium-shell .metric.navy,
+.premium-shell .metric.green,
+.premium-shell .metric {
+  position: relative !important;
+  overflow: hidden !important;
+  isolation: auto !important;
+  contain: none !important;
+  transform: none !important;
+  filter: none !important;
+  min-height: 138px !important;
+  padding: 24px 26px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  color: var(--side-text) !important;
+  background: transparent !important;
+  border: 1px solid var(--side-border) !important;
+  border-radius: 22px !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  box-shadow: var(--glass-shadow) !important;
+}
+
+/* Real blur layer. Much lighter tint than before so the backdrop can actually read through. */
+.premium-shell .summary-kpis .metric:nth-child(n)::before,
+.premium-shell .manager-kpis .metric:nth-child(n)::before,
+.premium-shell .metrics .metric:nth-child(n)::before,
+.premium-shell .enhanced-metrics .metric:nth-child(n)::before,
+.premium-shell .metric::before {
+  content: '' !important;
+  display: block !important;
+  position: absolute !important;
+  inset: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: none !important;
+  max-height: none !important;
+  border-radius: inherit !important;
+  background: var(--glass-base) !important;
+  -webkit-backdrop-filter: blur(var(--side-blur)) saturate(116%) brightness(1.055) !important;
+  backdrop-filter: blur(var(--side-blur)) saturate(116%) brightness(1.055) !important;
+  filter: none !important;
+  transform: none !important;
+  opacity: 1 !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+}
+
+/* Uniform frost film: no circles, no lines, no decorative geometry. */
+.premium-shell .summary-kpis .metric:nth-child(n)::after,
+.premium-shell .manager-kpis .metric:nth-child(n)::after,
+.premium-shell .metrics .metric:nth-child(n)::after,
+.premium-shell .enhanced-metrics .metric:nth-child(n)::after,
+.premium-shell .metric::after {
+  content: '' !important;
+  display: block !important;
+  position: absolute !important;
+  inset: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: none !important;
+  max-height: none !important;
+  border-radius: inherit !important;
+  background: linear-gradient(145deg,
+    var(--glass-film-top) 0%,
+    var(--glass-film-mid) 42%,
+    rgba(255,255,255,.010) 67%,
+    var(--glass-film-bottom) 100%) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.12), inset 0 -1px 0 rgba(255,255,255,.018) !important;
+  opacity: 1 !important;
+  pointer-events: none !important;
+  z-index: 1 !important;
+}
+
+.premium-shell .metric > span,
+.premium-shell .metric > strong,
+.premium-shell .metric > small {
+  position: relative !important;
+  z-index: 2 !important;
+  width: 100% !important;
+  text-align: center !important;
+}
+
+.premium-shell .metric > span {
+  margin: 0 !important;
+  color: #a8b5c7 !important;
+  font-size: 9px !important;
+  font-weight: 760 !important;
+  letter-spacing: .14em !important;
+}
+
+.premium-shell .metric > strong {
+  margin-top: 12px !important;
+  color: #fff !important;
+  font-size: clamp(25px,2vw,36px) !important;
+  font-weight: 720 !important;
+  line-height: 1 !important;
+  letter-spacing: -.045em !important;
+  white-space: nowrap !important;
+}
+
+.premium-shell .metric > small {
+  margin-top: 8px !important;
+  color: var(--side-muted) !important;
+}
+
+/* Accent only; never a full-card fill. */
+.premium-shell .summary-kpis .metric:first-child,
+.premium-shell .manager-kpis .metric:first-child,
+.premium-shell .metric.red {
+  border-color: rgba(196,29,56,.20) !important;
+}
+
+.premium-shell .summary-kpis .metric:first-child > span,
+.premium-shell .manager-kpis .metric:first-child > span,
+.premium-shell .metric.red > span {
+  color: #cf6174 !important;
+}
+
+.premium-shell .metric.navy > span,
+.premium-shell .summary-kpis .metric:nth-child(n+2) > span {
+  color: #8ca4bf !important;
+}
+
+/* ===== All other executive surfaces use the same translucent frost ===== */
+.premium-shell .panel,
+.premium-shell .section-block,
+.premium-shell .info-card,
+.premium-shell .target-control,
+.premium-shell .upload-card,
+.premium-shell .storage,
+.premium-shell .stock-result,
+.premium-shell .manager-info-grid,
+.premium-shell .movement-wrap,
+.premium-shell .movement-table,
+.premium-shell .table-scroll,
+.premium-shell .stock-table-viewport,
+.premium-shell .inline-alert,
+.premium-shell .empty-state,
+.premium-shell .conference-grid .panel {
+  color: var(--side-text) !important;
+  background: linear-gradient(145deg, rgba(210,224,240,.045), rgba(5,11,19,.11) 48%, rgba(5,11,19,.15)) !important;
+  border: 1px solid var(--side-border) !important;
+  -webkit-backdrop-filter: blur(var(--side-blur)) saturate(116%) brightness(1.045) !important;
+  backdrop-filter: blur(var(--side-blur)) saturate(116%) brightness(1.045) !important;
+  box-shadow: var(--glass-shadow) !important;
+}
+
+.premium-shell .panel,
+.premium-shell .section-block,
+.premium-shell .manager-info-grid,
+.premium-shell .stock-table-viewport { border-radius: 22px !important; }
+
+.premium-shell .info-card,
+.premium-shell .target-control,
+.premium-shell .upload-card,
+.premium-shell .storage,
+.premium-shell .stock-result { border-radius: 18px !important; }
+
+.premium-shell .metric:hover,
+.premium-shell .panel:hover,
+.premium-shell .info-card:hover,
+.premium-shell .upload-card:hover {
+  border-color: var(--side-border-strong) !important;
+  box-shadow: 0 22px 52px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.10) !important;
+}
+
+/* Section bars remain subtle reflections, not opaque strips. */
 .premium-shell .section-bar,
 .premium-shell .table-title,
 .premium-shell .panel-toolbar,
 .premium-shell .stock-titlebar,
 .premium-shell .info-card > header {
   color: var(--side-text) !important;
-  background: linear-gradient(90deg, rgba(255,255,255,.055), rgba(255,255,255,.018)) !important;
+  background: linear-gradient(90deg, rgba(255,255,255,.045), rgba(255,255,255,.010)) !important;
   border-color: var(--side-border) !important;
 }
 
@@ -219,40 +286,27 @@
 .premium-shell .panel-toolbar > div:first-child > span,
 .premium-shell .stock-titlebar > div:first-child > span,
 .premium-shell .title > span,
-.premium-shell .storage > div > span {
-  color: #cf6174 !important;
-}
+.premium-shell .storage > div > span { color: #cf6174 !important; }
 
-/* Tables: same glass, with only a faint reflective header. */
-.premium-shell table {
-  color: #dce5ef !important;
-  background: transparent !important;
-}
-
+/* Tables remain transparent inside their frosted parent. */
+.premium-shell table { color: #dce5ef !important; background: transparent !important; }
 .premium-shell table th,
 .premium-shell .stock-table .stock-header-row th,
 .premium-shell .stock-table .stock-filter-row th,
 .premium-shell .movement-dashboard .movement-table th {
   color: #aeb9c9 !important;
-  background: rgba(255,255,255,.055) !important;
-  border-color: var(--side-border) !important;
+  background: rgba(255,255,255,.040) !important;
+  border-color: rgba(255,255,255,.07) !important;
 }
-
 .premium-shell table td {
   color: #d7e0eb !important;
   background: transparent !important;
-  border-color: rgba(255,255,255,.055) !important;
+  border-color: rgba(255,255,255,.05) !important;
 }
+.premium-shell table tbody tr:nth-child(even) td { background: rgba(255,255,255,.010) !important; }
+.premium-shell table tbody tr:hover td { background: rgba(255,255,255,.045) !important; }
 
-.premium-shell table tbody tr:nth-child(even) td {
-  background: rgba(255,255,255,.012) !important;
-}
-
-.premium-shell table tbody tr:hover td {
-  background: linear-gradient(90deg, rgba(255,255,255,.065), rgba(255,255,255,.025)) !important;
-}
-
-/* Inputs use the same little glass tile as the sidebar icon. */
+/* Inputs: tiny glass tiles, never white. */
 .premium-shell .currency-input,
 .premium-shell .number-input,
 .premium-shell .network-select,
@@ -260,7 +314,7 @@
 .premium-shell select,
 .premium-shell textarea {
   color: #f4f8fd !important;
-  background: rgba(255,255,255,.055) !important;
+  background: rgba(255,255,255,.050) !important;
   border: 1px solid var(--side-border) !important;
   box-shadow: inset 0 1px 0 rgba(255,255,255,.035) !important;
 }
@@ -268,12 +322,12 @@
 .premium-shell input:focus,
 .premium-shell select:focus,
 .premium-shell textarea:focus {
-  border-color: rgba(40, 87, 134, .52) !important;
-  box-shadow: 0 0 0 3px rgba(23, 58, 99, .15), inset 0 1px 0 rgba(255,255,255,.05) !important;
+  border-color: rgba(40,87,134,.52) !important;
+  box-shadow: 0 0 0 3px rgba(23,58,99,.15), inset 0 1px 0 rgba(255,255,255,.05) !important;
   outline: none !important;
 }
 
-/* Remove green from the executive visual language. Positive states use dark blue. */
+/* Blue + blood-red only. */
 .premium-shell .positive,
 .premium-shell .success,
 .premium-shell .status-success,
@@ -282,13 +336,8 @@
 .premium-shell .status-dot {
   color: #8fb3d9 !important;
   background-color: var(--side-navy-soft) !important;
-  border-color: rgba(40, 87, 134, .50) !important;
-  box-shadow: 0 0 14px rgba(40, 87, 134, .24) !important;
-}
-
-/* Buttons: blue secondary, blood-red primary/active. */
-.premium-shell button:not(.module-item):not(.tabs button) {
-  border-color: var(--side-border) !important;
+  border-color: rgba(40,87,134,.50) !important;
+  box-shadow: 0 0 14px rgba(40,87,134,.24) !important;
 }
 
 .premium-shell .primary,
@@ -296,28 +345,26 @@
 .premium-shell .danger,
 .premium-shell .lock-button.locked {
   color: #fff !important;
-  background: linear-gradient(145deg, var(--side-blood-soft), var(--side-blood)) !important;
+  background: linear-gradient(145deg,var(--side-blood-soft),var(--side-blood)) !important;
 }
 
 .premium-shell .secondary,
 .premium-shell .button-secondary,
 .premium-shell .lock-button:not(.locked) {
   color: #dce8f5 !important;
-  background: rgba(23, 58, 99, .28) !important;
+  background: rgba(23,58,99,.24) !important;
 }
 
-/* Keep titles minimal and avoid large repeated headings. */
+/* Keep long duplicate titles hidden as previously approved. */
 .premium-shell .section-bar h2,
 .premium-shell .table-title h3,
 .premium-shell .panel-toolbar h3,
 .premium-shell .stock-titlebar h2,
 .premium-shell .page-head .title h2,
 .premium-shell .hero h2,
-.premium-shell .upload-hero h2 {
-  display: none !important;
-}
+.premium-shell .upload-hero h2 { display: none !important; }
 
-@media (max-width: 760px) {
+@media (max-width:760px) {
   .premium-shell .summary-kpis .metric:nth-child(n),
   .premium-shell .manager-kpis .metric:nth-child(n),
   .premium-shell .metric {
