@@ -12,6 +12,7 @@ import './executive-command.css'
 import './executive-unified.css'
 import './executive-blackout.css'
 import './glass-stable.css'
+import './sidebar-material.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
