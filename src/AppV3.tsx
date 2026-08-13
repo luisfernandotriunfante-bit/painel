@@ -438,7 +438,6 @@ function AppV3() {
 }
 
 function Resumo({ state }: { state: AppState }) {
-  const [mode, setMode] = useState<'chart' | 'table'>('chart')
   const detailed = state.dailyMovement.some(item => item.billed !== 0 || item.toInvoice !== 0 || item.positives !== 0)
   return <>
     <section className="metrics enhanced-metrics four summary-kpis">
@@ -448,8 +447,11 @@ function Resumo({ state }: { state: AppState }) {
       <Metric label="POSITIVAÇÃO" value={state.uploads.sales ? integer.format(state.potentialPositives) : '—'} />
     </section>
     <section className="panel section-block movement-panel">
-      <div className="section-bar"><div><span>MOVIMENTO DIÁRIO</span><h2>Faturado, a faturar e positivação</h2></div><div className="segmented"><button className={mode === 'chart' ? 'active' : ''} onClick={() => setMode('chart')}>Gráfico</button><button className={mode === 'table' ? 'active' : ''} onClick={() => setMode('table')}>Tabela</button></div></div>
-      {!state.uploads.sales ? <Empty>Carregue o 8022.</Empty> : mode === 'chart' ? <MovementChart data={state.dailyMovement} periodYear={state.periodYear} periodMonth={state.periodMonth} detailed={detailed} /> : <MovementTable data={state.dailyMovement} />}
+      <div className="section-bar"><div><span>MOVIMENTO DIÁRIO</span><h2>Faturado, a faturar e positivação</h2></div></div>
+      {!state.uploads.sales ? <Empty>Carregue o 8022.</Empty> : <div className="movement-dashboard">
+        <MovementChart data={state.dailyMovement} periodYear={state.periodYear} periodMonth={state.periodMonth} detailed={detailed} />
+        <MovementTable data={state.dailyMovement} />
+      </div>}
     </section>
   </>
 }
