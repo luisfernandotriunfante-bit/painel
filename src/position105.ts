@@ -7,6 +7,7 @@ export type Position105Result = {
   totalSale: number
   totalUnits: number
   rows: number
+  priceRows: number
   headers: string[]
   warnings: string[]
 }
@@ -108,6 +109,7 @@ export async function parsePosition105Totals(file: File): Promise<Position105Res
   let totalSale = 0
   let totalUnits = 0
   let used = 0
+  let priceRows = 0
 
   for (let r = match.index + 1; r < match.rows.length; r += 1) {
     const row = match.rows[r] ?? []
@@ -119,22 +121,27 @@ export async function parsePosition105Totals(file: File): Promise<Position105Res
     const code = match.codeCol >= 0 ? cleanId(row[match.codeCol]) : ''
     const description = match.descriptionCol >= 0 ? String(row[match.descriptionCol] ?? '').trim() : ''
 
-    // Linhas de cabeçalho repetidas ou espaços entre blocos não entram no cálculo.
     if (!units && !cost && !sale && !code && !description) continue
     if (normalizeText(row[match.qtyCol]) === 'QT EST' || normalizeText(row[match.costCol]) === 'REAL') continue
 
-    // Sem quantidade não existe posição financeira a valorizar.
-    if (units === 0) continue
+    // O 105 lista preços unitários também para produtos com disponível zero.
+    // Esses preços precisam ser preservados para valorizar o Físico do relatório 286.
+    if (code && (cost !== 0 || sale !== 0)) {
+      financeByCode[code] = { cost, sale }
+      priceRows += 1
+    }
 
+    // Os totais diretos abaixo continuam representando o Qt.Est. do próprio 105,
+    // que no arquivo atual está configurado como “Disponível”.
+    if (units === 0) continue
     totalUnits += units
     totalCost += units * cost
     totalSale += units * sale
-    if (code) financeByCode[code] = { cost, sale }
     used += 1
   }
 
-  if (!used) {
-    throw new Error(`O 105 foi reconhecido na aba “${match.sheetName}”, mas nenhuma linha com quantidade de estoque foi encontrada.`)
+  if (!priceRows) {
+    throw new Error(`O 105 foi reconhecido na aba “${match.sheetName}”, mas nenhuma linha com preço unitário foi encontrada.`)
   }
 
   return {
@@ -143,12 +150,12 @@ export async function parsePosition105Totals(file: File): Promise<Position105Res
     totalSale,
     totalUnits,
     rows: used,
+    priceRows,
     headers: match.headers.map(value => String(value ?? '')).filter(Boolean),
     warnings: [
-      'Regra financeira definida: Estoque ao custo = Qt.Est. × Real.',
-      'Estoque a preço de venda = Qt.Est. × P. Venda.',
-      `Posição financeira calculada diretamente no relatório 105, aba ${match.sheetName}.`,
-      'O 8013 permanece como apoio físico e para o detalhamento por linha; ele não substitui o valor financeiro do 105.',
+      'O 105 fornece os preços unitários: Real para custo e P. Venda para preço de venda.',
+      'O Qt.Est. do 105 atual está configurado como Disponível e não é usado como estoque físico quando o 286 estiver carregado.',
+      `Preços unitários processados na aba ${match.sheetName}.`,
     ],
   }
 }
