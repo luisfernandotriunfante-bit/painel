@@ -48,6 +48,18 @@ html body #root .premium-shell > .shell-content {
   z-index: 2 !important;
 }
 
+/* The backdrop lives behind the interface. These wrappers must stay transparent;
+   otherwise the old blackout background paints an opaque layer over the animation. */
+html body #root .premium-shell > .shell-content,
+html body #root .premium-shell > .shell-content .v3-app,
+html body #root .premium-shell > .shell-content .enhanced-app,
+html body #root .premium-shell > .shell-content .app,
+html body #root .premium-shell > .shell-content .v3-main,
+html body #root .premium-shell > .shell-content .compact-main {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
 /* O controle do Excel acompanha exatamente a abertura do menu lateral. */
 html body #root .excel-export-fixed {
   transform: translateX(-100%);
