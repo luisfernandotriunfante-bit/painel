@@ -237,23 +237,26 @@
 
 .premium-shell .movement-seven-table thead th {
   height: 38px;
-  padding: 10px 14px !important;
+  padding: 10px 10px !important;
   color: #8295ad !important;
   background: rgba(255,255,255,.025) !important;
   border-bottom: 1px solid rgba(255,255,255,.07) !important;
-  font-size: 8px !important;
-  letter-spacing: .13em !important;
+  font-size: 7.5px !important;
+  letter-spacing: .11em !important;
+  white-space: nowrap;
 }
 
-.premium-shell .movement-seven-table thead th:first-child { width: 58px; }
-.premium-shell .movement-seven-table thead th:last-child { width: 62px; text-align: center; }
+.premium-shell .movement-seven-table thead th:nth-child(1) { width: 52px; }
+.premium-shell .movement-seven-table thead th:nth-child(2) { width: 31%; }
+.premium-shell .movement-seven-table thead th:nth-child(3) { width: 31%; }
+.premium-shell .movement-seven-table thead th:nth-child(4) { width: 76px; text-align: center; }
 
 .premium-shell .movement-seven-table tbody tr {
   height: 41px;
 }
 
 .premium-shell .movement-seven-table tbody td {
-  padding: 7px 14px !important;
+  padding: 7px 10px !important;
   border-bottom: 1px solid rgba(255,255,255,.055) !important;
   background: transparent !important;
   vertical-align: middle;
@@ -282,34 +285,18 @@
   letter-spacing: .08em;
 }
 
-.premium-shell .movement-seven-table td:nth-child(2) strong {
+.premium-shell .movement-seven-table td:nth-child(2) strong,
+.premium-shell .movement-seven-table td:nth-child(3) strong {
   display: block;
   color: #f5f8fc !important;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 760;
-}
-
-.premium-shell .movement-seven-table td:nth-child(2) span {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  margin-top: 3px;
-  color: #7f91a8;
-  font-size: 7.5px;
   white-space: nowrap;
 }
 
-.premium-shell .mini-billed,
-.premium-shell .mini-pending {
-  width: 5px;
-  height: 5px;
-  display: inline-block;
-  border-radius: 50%;
-  flex: 0 0 auto;
+.premium-shell .movement-seven-table .movement-billed-value {
+  color: #8eb9e4 !important;
 }
-
-.premium-shell .mini-billed { background: #477eba; }
-.premium-shell .mini-pending { background: #ef3346; margin-left: 3px; }
 
 .premium-shell .movement-seven-table td:last-child {
   text-align: center;
