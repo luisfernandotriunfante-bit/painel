@@ -1,0 +1,120 @@
+/* Hide the two former Sell Out sub-tabs without mutating React-managed DOM. */
+.tabs button:nth-child(3),
+.tabs button:nth-child(4) {
+  display: none !important;
+}
+
+/* When Stock is opened as a lateral module, hide Sell Out's horizontal sub-navigation. */
+html[data-dashboard-page="estoque"] .tabs {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* De-emphasize Sell Out in the sidebar while Stock is the active module. */
+.module-nav:has(.safe-stock-module.active) > .module-item:not(.safe-stock-module) {
+  background: transparent !important;
+  box-shadow: none !important;
+  border-color: transparent !important;
+}
+
+.safe-stock-module {
+  margin-top: 10px;
+}
+
+.safe-stock-module .module-number {
+  opacity: .42;
+}
+
+.safe-stock-module.active .module-number {
+  opacity: .9;
+}
+
+.safe-product-lines,
+.safe-stock-summary,
+.safe-team-block {
+  margin-top: 28px;
+}
+
+.safe-titlebar {
+  align-items: center;
+}
+
+.safe-five-metrics {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 18px;
+  padding: 24px 26px 16px;
+}
+
+.safe-five-metrics .metric,
+.safe-stock-kpis .metric,
+.safe-team-kpis .metric {
+  min-width: 0;
+}
+
+.safe-five-metrics .metric strong {
+  font-size: clamp(1.2rem, 1.7vw, 2rem);
+  white-space: nowrap;
+}
+
+.safe-five-metrics .metric small {
+  display: block;
+  margin-top: 8px;
+  color: rgba(214, 225, 239, .62);
+  font-size: .68rem;
+  letter-spacing: .04em;
+}
+
+.safe-note {
+  margin: 0 26px 24px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, .08);
+  border-radius: 12px;
+  background: rgba(6, 12, 22, .22);
+  color: rgba(218, 228, 240, .66);
+  font-size: .74rem;
+  line-height: 1.55;
+}
+
+.safe-stock-kpis,
+.safe-team-kpis {
+  padding: 24px 26px 26px;
+}
+
+.safe-team-panel {
+  margin-top: 22px;
+}
+
+/* Team targets now live with the managerial team block. Hide only the old
+   third section of the Metas page, identified structurally after its control grid. */
+.v3-main > .target-control-grid + .panel + .panel {
+  display: none !important;
+}
+
+@media (max-width: 1320px) {
+  .safe-five-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .safe-five-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 18px;
+  }
+
+  .safe-stock-kpis,
+  .safe-team-kpis {
+    padding: 18px;
+  }
+
+  .safe-note {
+    margin: 0 18px 18px;
+  }
+}
+
+@media (max-width: 620px) {
+  .safe-five-metrics {
+    grid-template-columns: 1fr;
+  }
+}
