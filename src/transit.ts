@@ -1,5 +1,6 @@
 import * as XLSX from 'xlsx'
 import { cleanId, normalizeText } from './data'
+import { saveTransitProductDetail, TransitProductDetail } from './transitDescriptionBridge'
 import { TRANSIT_DETAIL_KEY, TRANSIT_DIAGNOSTIC_KEY } from './transitValuation'
 
 export type TransitResult = {
@@ -55,6 +56,17 @@ function findMaterialColumn(headers: unknown[]) {
   })
 }
 
+function findDescriptionColumn(headers: unknown[]) {
+  const normalized = headers.map(normalizeText)
+  const exactAliases = [
+    'DESCRIPTION', 'DESCRICAO', 'DESCRIÇÃO', 'MATERIAL DESCRIPTION', 'PRODUCT DESCRIPTION',
+    'DESC MATERIAL', 'DESCRICAO MATERIAL', 'DESCRIÇÃO MATERIAL', 'DESC PRODUTO', 'DESCRICAO PRODUTO',
+  ].map(normalizeText)
+  const exact = normalized.findIndex(header => exactAliases.includes(header))
+  if (exact >= 0) return exact
+  return normalized.findIndex(header => header.includes('DESCRIPTION') || header.includes('DESCRI'))
+}
+
 function candidateHeader(rows: Matrix) {
   let bestIndex = -1
   let bestScore = -1
@@ -66,7 +78,7 @@ function candidateHeader(rows: Matrix) {
     if (normalized.some(h => ['NET VALUE ZINV', 'VALOR ITEM', 'VALOR TOTAL ITEM', 'VLR ITEM', 'TOTAL ITEM'].includes(h))) score += 4
     if (normalized.some(h => ['VALOR PEDIDO', 'TOTAL PEDIDO', 'VLR PEDIDO'].includes(h))) score += 3
     if (findMaterialColumn(headers) >= 0) score += 2
-    if (normalized.some(h => h === 'DESCRIPTION' || h.includes('DESCRI'))) score += 1
+    if (findDescriptionColumn(headers) >= 0) score += 1
     if (normalized.some(h => ['ORDER QTY', 'QTD PEDIDO', 'QTDE PEDIDO'].includes(h))) score += 1
     if (score > bestScore) {
       bestScore = score
@@ -105,6 +117,7 @@ export async function parseTransitPortfolio(file: File): Promise<TransitResult> 
   const headers = rows[best.header] ?? []
   const orderCol = findExact(headers, ['ORDER NUMBER', 'PEDIDO', 'N PEDIDO', 'NUM PEDIDO', 'NUMERO PEDIDO'])
   const materialCol = findMaterialColumn(headers)
+  const descriptionCol = findDescriptionColumn(headers)
   const itemValueCol = findExact(headers, ['NET VALUE ( ZINV )', 'NET VALUE ZINV', 'VALOR ITEM', 'VALOR TOTAL ITEM', 'VLR ITEM', 'TOTAL ITEM', 'VALOR LIQUIDO ITEM'])
   const orderValueCol = findExact(headers, ['VALOR PEDIDO', 'TOTAL PEDIDO', 'VLR PEDIDO', 'VALOR LIQUIDO PEDIDO'])
 
@@ -112,6 +125,7 @@ export async function parseTransitPortfolio(file: File): Promise<TransitResult> 
   let usedRows = 0
   const orders = new Set<string>()
   const valueByCode: Record<string, number> = {}
+  const productDetail: TransitProductDetail = {}
   let rowsWithoutCode = 0
   let valueWithoutCode = 0
   let valueSource = ''
@@ -123,12 +137,18 @@ export async function parseTransitPortfolio(file: File): Promise<TransitResult> 
       const value = numberValue(row[itemValueCol])
       const order = orderCol >= 0 ? String(row[orderCol] ?? '').trim() : ''
       const code = materialCol >= 0 ? cleanId(row[materialCol]) : ''
+      const description = descriptionCol >= 0 ? String(row[descriptionCol] ?? '').trim() : ''
       if (!value && !order) continue
       if (value) {
         totalValue += value
         usedRows += 1
-        if (code) valueByCode[code] = (valueByCode[code] ?? 0) + value
-        else {
+        if (code) {
+          valueByCode[code] = (valueByCode[code] ?? 0) + value
+          const current = productDetail[code] ?? { value: 0, description }
+          current.value += value
+          if (!current.description && description) current.description = description
+          productDetail[code] = current
+        } else {
           rowsWithoutCode += 1
           valueWithoutCode += value
         }
@@ -170,6 +190,7 @@ export async function parseTransitPortfolio(file: File): Promise<TransitResult> 
   try {
     localStorage.setItem(TRANSIT_DETAIL_KEY, JSON.stringify(valueByCode))
     localStorage.setItem(TRANSIT_DIAGNOSTIC_KEY, JSON.stringify(diagnostic))
+    saveTransitProductDetail(productDetail)
   } catch { /* detalhe opcional para valoração */ }
 
   const warnings = [
@@ -177,6 +198,7 @@ export async function parseTransitPortfolio(file: File): Promise<TransitResult> 
     'Regra validada para CARTEIRA 08.08: somar Net Value ( ZINV ) linha a linha.',
     `Carteira: coluna de material identificada como “${diagnostic.materialHeader}”.`,
   ]
+  if (descriptionCol >= 0) warnings.push(`Carteira: descrição identificada na coluna “${String(headers[descriptionCol] ?? '')}” para contingência de cruzamento com o 105.`)
   if (codedValue > 0) warnings.push(`Carteira: ${Object.keys(valueByCode).length} SKUs identificados para cruzamento com Real/P. Venda do 105.`)
   else warnings.push('Carteira: nenhum SKU foi preservado. Revise a coluna de material identificada na auditoria.')
   if (rowsWithoutCode) warnings.push(`Carteira: ${rowsWithoutCode} linhas (${valueWithoutCode.toFixed(2)}) ficaram sem código de material e não poderão ser valoradas a preço de venda pelo 105.`)
