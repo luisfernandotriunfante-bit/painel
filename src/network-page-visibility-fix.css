@@ -1,0 +1,10 @@
+/* Restore the Redes data view after the Top Varejistas overlay replaced the old safe network page.
+   The validated backdrop/glass/animation styles remain untouched. */
+html[data-dashboard-page="equipe"] main.v3-main > .top-network-data-page {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative;
+  z-index: 2;
+  width: 100%;
+}
