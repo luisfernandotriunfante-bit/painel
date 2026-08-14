@@ -9,5 +9,6 @@ export function weekdays(y:number,m:number,through:number){let c=0;for(let d=1;d
 export function throughDay(y:number,m:number){const t=new Date(),last=new Date(y,m,0).getDate();if(y<t.getFullYear()||(y===t.getFullYear()&&m<t.getMonth()+1))return last;if(y===t.getFullYear()&&m===t.getMonth()+1)return Math.min(t.getDate(),last);return 0}
 function shift(y:number,m:number,o:number){const d=new Date(y,m-1+o,1);return[d.getFullYear(),d.getMonth()+1] as const}
 export function sumMonth(s:State,y:number,m:number){return Object.values(s.historyByMonth?.[monthKey(y,m)]??{}).reduce((a:any,v:any)=>a+n(v),0) as number}
-export function avg3(s:State){const a=[-1,-2,-3].map(o=>{const[y,m]=shift(s.periodYear,s.periodMonth,o);return sumMonth(s,y,m)}).filter(Boolean);return a.length?a.reduce((x,y)=>x+y,0)/a.length:0}
-export function avg3Pos(s:State){const a=[-1,-2,-3].map(o=>{const[y,m]=shift(s.periodYear,s.periodMonth,o);return n(s.historyMonthCounts?.[monthKey(y,m)])}).filter(Boolean);return a.length?a.reduce((x,y)=>x+y,0)/a.length:0}
+export function avg3(s:State){const a:number[]=[-1,-2,-3].map(o=>{const[y,m]=shift(s.periodYear,s.periodMonth,o);return sumMonth(s,y,m)}).filter(Boolean);return a.length?a.reduce((x:number,y:number)=>x+y,0)/a.length:0}
+function positiveMonthCount(s:State,y:number,m:number){const values:unknown[]=Object.values(s.historyByMonth?.[monthKey(y,m)]??{});return values.reduce<number>((count:number,value:unknown)=>count+(n(value)>0?1:0),0)}
+export function avg3Pos(s:State){const a:number[]=[-1,-2,-3].map(o=>{const[y,m]=shift(s.periodYear,s.periodMonth,o);return positiveMonthCount(s,y,m)}).filter(Boolean);return a.length?a.reduce((x:number,y:number)=>x+y,0)/a.length:0}

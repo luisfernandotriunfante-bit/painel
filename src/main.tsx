@@ -8,6 +8,7 @@ import NetworkMetaConfigOverlay from './NetworkMetaConfigOverlay'
 import TopRetailerIntegration from './TopRetailerIntegration'
 import SellOutPositiveTargetOverlay from './SellOutPositiveTargetOverlay'
 import ProductLineMappingOverlay from './ProductLineMappingOverlay'
+import PositivityAuditOverlay from './PositivityAuditOverlay'
 import { reconcileStoredState, ValueReconciliationWatcher } from './value-reconciliation'
 import './styles.css'
 import './real-data.css'
@@ -31,6 +32,7 @@ import './network-meta-config.css'
 import './top-retailer.css'
 import './network-page-visibility-fix.css'
 import './network-logo-layer-fix.css'
+import './positivity-audit.css'
 
 reconcileStoredState()
 
@@ -43,6 +45,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <TopRetailerIntegration />
     <SellOutPositiveTargetOverlay />
     <ProductLineMappingOverlay />
+    <PositivityAuditOverlay />
     <ValueReconciliationWatcher />
     <div className="excel-export-fixed">
       <ExportExcelButton />

@@ -6,6 +6,7 @@ const RETURN_PAGE_KEY = 'painel-sell-out-milenio:return-page'
 
 type StoredState = {
   sellOutPositiveTarget?: number
+  billedPositives?: number
   potentialPositives?: number
 }
 
@@ -57,7 +58,10 @@ export default function SellOutPositiveTargetOverlay() {
   if (!visible || !targetGrid) return null
 
   const state = readState()
-  const attainment = value > 0 ? (Number(state.potentialPositives) || 0) / value : 0
+  const effective = Number(state.billedPositives) || 0
+  const potential = Number(state.potentialPositives) || 0
+  const pendingOnly = Math.max(0, potential - effective)
+  const attainment = value > 0 ? effective / value : 0
 
   return createPortal(
     <article className="target-control primary sellout-positive-target-control">
@@ -75,7 +79,9 @@ export default function SellOutPositiveTargetOverlay() {
         />
         <button type="button" className="lock-button" onClick={save}>Salvar</button>
       </div>
-      <small>{value > 0 ? `${integer.format(value)} clientes • ${percent.format(attainment)} atingido` : 'Definição manual e independente da Bússola'}</small>
+      <small>{value > 0
+        ? `${integer.format(effective)} faturados • +${integer.format(pendingOnly)} a faturar • ${percent.format(attainment)} atingido`
+        : 'Definição manual e independente da Bússola'}</small>
     </article>,
     targetGrid,
   )
