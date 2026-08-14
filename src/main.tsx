@@ -2,6 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './AppShellAnimatedExact'
 import ExportExcelButton from './ExportExcelButton'
+import MovementModernOverlay from './MovementModernOverlay'
 import './styles.css'
 import './real-data.css'
 import './enhanced.css'
@@ -18,10 +19,12 @@ import './frosted-everywhere.css'
 import './final-polish.css'
 import './panel-interaction-fixes.css'
 import './visual-standardization.css'
+import './movement-modern.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <App />
+    <MovementModernOverlay />
     <div className="excel-export-fixed">
       <ExportExcelButton />
     </div>
