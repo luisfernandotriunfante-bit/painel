@@ -5,7 +5,9 @@ const FALLBACK_SPRITE = `data:image/webp;base64,${fallbackSpriteBase64.replace(/
 const PIXELS_PER_LOOP = 720
 const FALLBACK_FRAME_COUNT = 6
 const FALLBACK_COLUMNS = 3
-const SCROLL_STOP_DELAY = 135
+const SCROLL_STOP_DELAY = 520
+const ROTATION_PER_PIXEL = 0.58
+const MOTION_EASING = 0.22
 
 const HQ_CANDIDATES = [
   ['triunfante-hq-v2/part00.txt', 'triunfante-hq-v2/part01.txt'],
@@ -111,13 +113,52 @@ export default function ScrollTriunfanteBackdropExact() {
 
     let cancelled = false
     let pauseTimer = 0
-    let lastScrollTop = Math.max(0, document.scrollingElement?.scrollTop ?? window.scrollY)
+    let motionRaf = 0
+    let currentAngle = 0
+    let targetAngle = 0
     let activeUrl = ''
     let hqReady = false
     const candidateUrls: string[] = []
+    const lastScrollByElement = new WeakMap<Element, number>()
+    let lastDocumentScroll = Math.max(0, document.scrollingElement?.scrollTop ?? window.scrollY)
 
     const modulo = (value: number, divisor: number) =>
       ((value % divisor) + divisor) % divisor
+
+    const setMotionTransform = (angle: number) => {
+      const transform = `perspective(1500px) rotateX(-3deg) rotateY(${angle.toFixed(3)}deg) translateZ(0)`
+
+      ;[video, fallback].forEach((element) => {
+        // These properties are set with !important because the final theme has
+        // older safety rules that otherwise force translateZ(0) over the motion.
+        element.style.setProperty('transform', transform, 'important')
+        element.style.setProperty('transform-origin', '50% 50%', 'important')
+        element.style.setProperty('backface-visibility', 'visible', 'important')
+        element.style.setProperty('-webkit-backface-visibility', 'visible', 'important')
+        element.style.setProperty('will-change', 'transform', 'important')
+      })
+    }
+
+    const animateMotion = () => {
+      motionRaf = 0
+      if (cancelled) return
+
+      const distance = targetAngle - currentAngle
+      currentAngle += distance * MOTION_EASING
+
+      if (Math.abs(distance) < 0.02) currentAngle = targetAngle
+      setMotionTransform(currentAngle)
+
+      if (Math.abs(targetAngle - currentAngle) > 0.02) {
+        motionRaf = window.requestAnimationFrame(animateMotion)
+      }
+    }
+
+    const addRotation = (scrollDelta: number) => {
+      if (!Number.isFinite(scrollDelta) || Math.abs(scrollDelta) < 0.05) return
+      targetAngle += scrollDelta * ROTATION_PER_PIXEL
+      if (!motionRaf) motionRaf = window.requestAnimationFrame(animateMotion)
+    }
 
     const paintFallback = () => {
       const scrollTop = Math.max(0, document.scrollingElement?.scrollTop ?? window.scrollY)
@@ -142,35 +183,53 @@ export default function ScrollTriunfanteBackdropExact() {
         return
       }
 
-      // Let the browser decode the animation naturally. This is much more reliable
-      // in Chrome than repeatedly seeking a paused VP9/WebM while the page scrolls.
-      video.playbackRate = Math.min(2.15, Math.max(0.8, intensity))
+      video.playbackRate = Math.min(2.3, Math.max(0.9, intensity))
       const playPromise = video.play()
-      if (playPromise) {
-        playPromise.catch(() => {
-          // Muted playback is normally allowed; if Chrome delays it, the next
-          // scroll/wheel event retries without hiding the HQ frame.
-        })
-      }
+      if (playPromise) playPromise.catch(() => undefined)
       stopPlaybackSoon()
     }
 
-    const onScroll = () => {
+    const onAnyScroll = (event: Event) => {
       paintFallback()
-      const scrollTop = Math.max(0, document.scrollingElement?.scrollTop ?? window.scrollY)
-      const delta = scrollTop - lastScrollTop
-      lastScrollTop = scrollTop
 
-      if (delta > 0.25) {
-        startPlayback(0.95 + Math.min(1.15, delta / 22))
+      const target = event.target
+      let delta = 0
+
+      if (target instanceof Element) {
+        const current = target.scrollTop
+        const previous = lastScrollByElement.get(target) ?? current
+        delta = current - previous
+        lastScrollByElement.set(target, current)
+      } else {
+        const current = Math.max(0, document.scrollingElement?.scrollTop ?? window.scrollY)
+        delta = current - lastDocumentScroll
+        lastDocumentScroll = current
+      }
+
+      if (Math.abs(delta) > 0.05) {
+        addRotation(delta)
+        if (delta > 0) startPlayback(1 + Math.min(1.2, Math.abs(delta) / 26))
+      }
+    }
+
+    const onWindowScroll = () => {
+      paintFallback()
+      const current = Math.max(0, document.scrollingElement?.scrollTop ?? window.scrollY)
+      const delta = current - lastDocumentScroll
+      lastDocumentScroll = current
+      if (Math.abs(delta) > 0.05) {
+        addRotation(delta)
+        if (delta > 0) startPlayback(1 + Math.min(1.2, Math.abs(delta) / 26))
       }
     }
 
     const onWheel = (event: WheelEvent) => {
-      // Wheel/trackpad is also observed directly so the animation still reacts
-      // when a browser or wrapper changes which element owns the actual scroll.
-      if (event.deltaY > 0.25) {
-        startPlayback(0.95 + Math.min(1.15, Math.abs(event.deltaY) / 120))
+      // Some layouts consume wheel input in an internal scroller. The captured
+      // scroll listener normally supplies the real delta; this small kick makes
+      // the logo react immediately even before that scroll event is dispatched.
+      if (Math.abs(event.deltaY) > 0.05) {
+        addRotation(event.deltaY * 0.16)
+        if (event.deltaY > 0) startPlayback(1 + Math.min(1.2, Math.abs(event.deltaY) / 140))
       }
     }
 
@@ -188,13 +247,17 @@ export default function ScrollTriunfanteBackdropExact() {
       video.pause()
       video.style.opacity = '1'
       fallback.style.opacity = '0'
+      setMotionTransform(currentAngle)
     }
 
     fallback.style.opacity = '1'
     video.style.opacity = '0'
+    setMotionTransform(0)
     paintFallback()
 
-    window.addEventListener('scroll', onScroll, { passive: true })
+    // Capture phase catches scrolling inside tables/panels as well as the page.
+    document.addEventListener('scroll', onAnyScroll, true)
+    window.addEventListener('scroll', onWindowScroll, { passive: true })
     window.addEventListener('wheel', onWheel, { passive: true })
     window.addEventListener('resize', paintFallback, { passive: true })
 
@@ -208,8 +271,6 @@ export default function ScrollTriunfanteBackdropExact() {
       const valid = results.filter((candidate): candidate is VideoCandidate => Boolean(candidate))
       candidateUrls.push(...valid.map((candidate) => candidate.url))
 
-      // Keep exactly the quality behavior that produced the approved sharp frame:
-      // largest decoded source first, encoded payload only as the tie breaker.
       valid.sort((a, b) => {
         const pixelDifference = b.width * b.height - a.width * a.height
         return pixelDifference || b.bytes - a.bytes
@@ -261,7 +322,7 @@ export default function ScrollTriunfanteBackdropExact() {
 
       revealVideo()
       console.info(
-        `Triunfante HQ pronto para playback por scroll: ${video.videoWidth}x${video.videoHeight}, ${best.label}`,
+        `Triunfante HQ + rotação garantida por scroll: ${video.videoWidth}x${video.videoHeight}, ${best.label}`,
       )
     })().catch((error) => {
       console.warn('Falha ao iniciar Triunfante HQ:', error)
@@ -270,10 +331,12 @@ export default function ScrollTriunfanteBackdropExact() {
 
     return () => {
       cancelled = true
-      window.removeEventListener('scroll', onScroll)
+      document.removeEventListener('scroll', onAnyScroll, true)
+      window.removeEventListener('scroll', onWindowScroll)
       window.removeEventListener('wheel', onWheel)
       window.removeEventListener('resize', paintFallback)
       if (pauseTimer) window.clearTimeout(pauseTimer)
+      if (motionRaf) window.cancelAnimationFrame(motionRaf)
       video.pause()
       video.removeAttribute('src')
       candidateUrls.forEach((url) => URL.revokeObjectURL(url))
