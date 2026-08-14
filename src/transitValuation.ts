@@ -1,6 +1,4 @@
 import { readProductCodeBridge } from './productCodeBridge'
-import { readPositionSupplierBridge } from './positionSupplierBridge'
-import { normalizeProductDescription, readTransitProductDetail } from './transitDescriptionBridge'
 
 export const TRANSIT_DETAIL_KEY = 'painel-sell-out-milenio:transit-value-by-code:v1'
 export const TRANSIT_DIAGNOSTIC_KEY = 'painel-sell-out-milenio:transit-diagnostic:v1'
@@ -24,6 +22,7 @@ export type TransitSaleValuation = {
   unmappedCost: number
   mappedSkus: number
   unmappedSkus: string[]
+  /** Campos legados mantidos para compatibilidade; o motor oficial não usa esses métodos. */
   directSkus: number
   supplierSkus: number
   bridgedSkus: number
@@ -63,99 +62,47 @@ function financePair(finance?: Finance) {
 export function valueTransitAtSale(
   valueByCode: Record<string, number>,
   financeByCode: Record<string, Finance>,
-  positionItems: PositionItem[] = [],
+  _positionItems: PositionItem[] = [],
 ): TransitSaleValuation {
   let saleValue = 0
   let mappedCost = 0
   let unmappedCost = 0
   let mappedSkus = 0
-  let directSkus = 0
-  let supplierSkus = 0
   let bridgedSkus = 0
-  let descriptionSkus = 0
   let missingIn286Cost = 0
   let mappedIn286MissingFinanceCost = 0
-  let directMissingFinanceCost = 0
   const unmappedSkus: string[] = []
   const missingIn286Skus: string[] = []
   const mappedIn286MissingFinanceSkus: string[] = []
-  const directMissingFinanceSkus: string[] = []
   const bridge = readProductCodeBridge()
-  const supplierBridge = readPositionSupplierBridge()
-  const transitDetail = readTransitProductDetail()
 
-  const descriptionIndex = new Map<string, PositionItem[]>()
-  for (const item of positionItems ?? []) {
-    const key = normalizeProductDescription(item.description)
-    if (!key) continue
-    const bucket = descriptionIndex.get(key) ?? []
-    bucket.push(item)
-    descriptionIndex.set(key, bucket)
-  }
-
-  for (const [code, rawValue] of Object.entries(valueByCode ?? {})) {
+  for (const [material, rawValue] of Object.entries(valueByCode ?? {})) {
     const value = Number(rawValue) || 0
     if (!value) continue
 
-    const directFinance = financeByCode?.[code]
-    const bridgeCanonical = bridge[code] || ''
-    let pair = financePair(directFinance)
-    let method: 'direct' | 'bridge' | 'supplier' | 'description' | '' = pair ? 'direct' : ''
-
-    // Fonte principal validada: Carteira.Material (código indústria)
-    // -> Cadastro 286.Fábrica -> código interno Winthor -> 105 Real/P. Venda.
-    if (!pair && bridgeCanonical) {
-      pair = financePair(financeByCode?.[bridgeCanonical])
-      if (pair) method = 'bridge'
-    }
-
-    // Contingência: caso alguma versão futura do 105 passe a trazer Código Fornecedor.
-    if (!pair) {
-      const canonical = supplierBridge[code]
-      if (canonical) {
-        pair = financePair(financeByCode?.[canonical])
-        if (pair) method = 'supplier'
-      }
-    }
-
-    // Última contingência segura: descrição exatamente normalizada e única.
-    if (!pair) {
-      const description = normalizeProductDescription(transitDetail[code]?.description)
-      const matches = description ? (descriptionIndex.get(description) ?? []) : []
-      if (matches.length === 1) {
-        const item = matches[0]
-        pair = financePair({
-          cost: Number(item.costUnit) || Number(financeByCode?.[String(item.code ?? '')]?.cost) || 0,
-          sale: Number(item.saleUnit) || Number(financeByCode?.[String(item.code ?? '')]?.sale) || 0,
-        })
-        if (pair) method = 'description'
-      }
-    }
+    // Regra oficial validada:
+    // Carteira.Material é código da indústria e NUNCA é comparado diretamente
+    // com 105.Código. O vínculo obrigatório é:
+    // Carteira.Material -> 286.Fábrica -> 286.Código interno -> 105.Código.
+    const internalCode = bridge[material] || ''
+    const pair = internalCode ? financePair(financeByCode?.[internalCode]) : null
 
     if (pair) {
       saleValue += value * (pair.sale / pair.cost)
       mappedCost += value
       mappedSkus += 1
-      if (method === 'direct') directSkus += 1
-      if (method === 'bridge') bridgedSkus += 1
-      if (method === 'supplier') supplierSkus += 1
-      if (method === 'description') descriptionSkus += 1
+      bridgedSkus += 1
       continue
     }
 
     unmappedCost += value
-    unmappedSkus.push(code)
+    unmappedSkus.push(material)
 
-    // A causa principal fica explícita. Isso permite saber se trocar o 286
-    // ou o 105 é que pode resolver o SKU, sem pedir recargas às cegas.
-    if (bridgeCanonical) {
-      mappedIn286MissingFinanceSkus.push(code)
+    if (internalCode) {
+      mappedIn286MissingFinanceSkus.push(material)
       mappedIn286MissingFinanceCost += value
-    } else if (directFinance) {
-      directMissingFinanceSkus.push(code)
-      directMissingFinanceCost += value
     } else {
-      missingIn286Skus.push(code)
+      missingIn286Skus.push(material)
       missingIn286Cost += value
     }
   }
@@ -166,15 +113,15 @@ export function valueTransitAtSale(
     unmappedCost,
     mappedSkus,
     unmappedSkus,
-    directSkus,
-    supplierSkus,
+    directSkus: 0,
+    supplierSkus: 0,
     bridgedSkus,
-    descriptionSkus,
+    descriptionSkus: 0,
     missingIn286Skus,
     missingIn286Cost,
     mappedIn286MissingFinanceSkus,
     mappedIn286MissingFinanceCost,
-    directMissingFinanceSkus,
-    directMissingFinanceCost,
+    directMissingFinanceSkus: [],
+    directMissingFinanceCost: 0,
   }
 }
