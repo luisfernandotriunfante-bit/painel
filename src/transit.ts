@@ -1,7 +1,6 @@
 import * as XLSX from 'xlsx'
 import { cleanId, normalizeText } from './data'
-
-export const TRANSIT_DETAIL_KEY = 'painel-sell-out-milenio:transit-value-by-code:v1'
+import { TRANSIT_DETAIL_KEY } from './transitValuation'
 
 export type TransitResult = {
   totalValue: number
