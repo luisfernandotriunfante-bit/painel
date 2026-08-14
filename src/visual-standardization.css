@@ -3,12 +3,12 @@
    legacy fills that made Team/Stock KPIs look like different components. */
 
 :root {
-  --std-glass-bg: rgba(5, 11, 19, .42);
+  /* Same transparent material family as the validated sidebar/glass layer. */
+  --std-glass-bg: rgba(5, 11, 19, .26);
   --std-glass-border: rgba(255, 255, 255, .10);
   --std-glass-border-soft: rgba(255, 255, 255, .07);
   --std-glass-blur: 18px;
   --std-glass-sat: 116%;
-  --std-glass-brightness: 55%;
 }
 
 /* Four-column KPI strips must always use equal columns. */
@@ -23,9 +23,9 @@ html body #root .premium-shell .v3-app :is(
 }
 
 /* One KPI material everywhere.
-   brightness() only affects what is behind the glass, so the white portions of
-   the animated logo can never blow a card out to white while the blur remains
-   visible. */
+   Important: no brightness() here. The previous pass darkened the backdrop
+   and made the cards look almost opaque. The animated logo now remains clearly
+   visible through the same 18px frosted-glass blur used elsewhere. */
 html body #root .premium-shell .v3-app :is(
   .metrics,
   .enhanced-metrics,
@@ -41,12 +41,10 @@ html body #root .premium-shell .v3-app .metric.green {
   border: 1px solid var(--std-glass-border) !important;
   -webkit-backdrop-filter:
     blur(var(--std-glass-blur))
-    saturate(var(--std-glass-sat))
-    brightness(var(--std-glass-brightness)) !important;
+    saturate(var(--std-glass-sat)) !important;
   backdrop-filter:
     blur(var(--std-glass-blur))
-    saturate(var(--std-glass-sat))
-    brightness(var(--std-glass-brightness)) !important;
+    saturate(var(--std-glass-sat)) !important;
   box-shadow: none !important;
 }
 
