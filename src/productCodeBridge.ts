@@ -1,5 +1,3 @@
-import { cleanId, normalizeText } from './data'
-
 export const PRODUCT_CODE_BRIDGE_KEY = 'painel-sell-out-milenio:product-code-bridge:v1'
 export const PRODUCT_CODE_BRIDGE_DIAG_KEY = 'painel-sell-out-milenio:product-code-bridge-diag:v1'
 
@@ -12,6 +10,21 @@ export type ProductCodeBridgeDiagnostics = {
   canonicalColumn: string
   aliases: number
   examples: string[]
+}
+
+function normalizeText(value: unknown) {
+  return String(value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, ' ')
+    .trim()
+}
+
+export function codeKey(value: unknown) {
+  const digits = String(value ?? '').replace(/\D/g, '')
+  if (!digits) return ''
+  return digits.replace(/^0+/, '') || '0'
 }
 
 export function readProductCodeBridge(): ProductCodeBridge {
@@ -30,10 +43,6 @@ export function readProductCodeBridgeDiagnostics(): ProductCodeBridgeDiagnostics
   } catch {
     return null
   }
-}
-
-export function codeKey(value: unknown) {
-  return cleanId(value)
 }
 
 export function isLikelyProductCodeHeader(value: unknown) {
