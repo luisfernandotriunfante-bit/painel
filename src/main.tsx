@@ -28,6 +28,7 @@ import './safe-layout-redistribution.css'
 import './network-meta-config.css'
 import './top-retailer.css'
 import './network-page-visibility-fix.css'
+import './network-logo-layer-fix.css'
 
 reconcileStoredState()
 
