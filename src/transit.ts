@@ -1,6 +1,8 @@
 import * as XLSX from 'xlsx'
 import { cleanId, normalizeText } from './data'
 
+export const TRANSIT_DETAIL_KEY = 'painel-sell-out-milenio:transit-value-by-code:v1'
+
 export type TransitResult = {
   totalValue: number
   valueByCode: Record<string, number>
@@ -133,6 +135,8 @@ export async function parseTransitPortfolio(file: File): Promise<TransitResult> 
   }
 
   if (!Number.isFinite(totalValue) || totalValue <= 0) throw new Error('A Carteira foi reconhecida, mas o valor em trânsito calculado ficou zerado.')
+
+  try { localStorage.setItem(TRANSIT_DETAIL_KEY, JSON.stringify(valueByCode)) } catch { /* detalhe opcional para valoração */ }
 
   const codedValue = Object.values(valueByCode).reduce((sum, value) => sum + value, 0)
   const warnings = [
