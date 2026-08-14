@@ -6,7 +6,7 @@ export function loadState(){
   const raw=localStorage.getItem(STORAGE_KEY)
   if(!raw)throw new Error('Carregue e processe as bases do painel antes de gerar o Excel.')
   const state=JSON.parse(raw)
-  const valuation=valueTransitAtSale(readTransitValueByCode(),state.positionFinanceByCode??{})
+  const valuation=valueTransitAtSale(readTransitValueByCode(),state.positionFinanceByCode??{},state.positionItems??[])
   return {
     ...state,
     stockTransitSale:valuation.saleValue,
