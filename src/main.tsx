@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import App from './AppShellAnimatedExact'
 import ExportExcelButton from './ExportExcelButton'
 import MovementModernOverlay from './MovementModernOverlay'
+import SafeLayoutRedistribution from './SafeLayoutRedistribution'
 import { reconcileStoredState, ValueReconciliationWatcher } from './value-reconciliation'
 import './styles.css'
 import './real-data.css'
@@ -21,6 +22,7 @@ import './final-polish.css'
 import './panel-interaction-fixes.css'
 import './visual-standardization.css'
 import './movement-modern.css'
+import './safe-layout-redistribution.css'
 
 reconcileStoredState()
 
@@ -28,6 +30,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <App />
     <MovementModernOverlay />
+    <SafeLayoutRedistribution />
     <ValueReconciliationWatcher />
     <div className="excel-export-fixed">
       <ExportExcelButton />
