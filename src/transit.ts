@@ -1,8 +1,10 @@
 import * as XLSX from 'xlsx'
-import { normalizeText } from './data'
+import { cleanId, normalizeText } from './data'
+import { TRANSIT_DETAIL_KEY } from './transitValuation'
 
 export type TransitResult = {
   totalValue: number
+  valueByCode: Record<string, number>
   rows: number
   orders: number
   valueSource: string
@@ -41,7 +43,7 @@ function candidateHeader(rows: Matrix) {
     if (headers.some(h => ['PEDIDO', 'NUM PEDIDO', 'NUMERO PEDIDO', 'N PEDIDO', 'ORDER NUMBER'].includes(h))) score += 2
     if (headers.some(h => ['NET VALUE ZINV', 'VALOR ITEM', 'VALOR TOTAL ITEM', 'VLR ITEM', 'TOTAL ITEM'].includes(h))) score += 4
     if (headers.some(h => ['VALOR PEDIDO', 'TOTAL PEDIDO', 'VLR PEDIDO'].includes(h))) score += 3
-    if (headers.some(h => ['MATERIAL', 'PRODUTO', 'COD PRODUTO'].includes(h))) score += 1
+    if (headers.some(h => ['MATERIAL', 'PRODUTO', 'COD PRODUTO', 'CODIGO PRODUTO'].includes(h))) score += 2
     if (headers.some(h => h === 'DESCRIPTION' || h.includes('DESCRI'))) score += 1
     if (headers.some(h => ['ORDER QTY', 'QTD PEDIDO', 'QTDE PEDIDO'].includes(h))) score += 1
     if (score > bestScore) {
@@ -80,12 +82,16 @@ export async function parseTransitPortfolio(file: File): Promise<TransitResult> 
   const rows = best.rows
   const headers = rows[best.header] ?? []
   const orderCol = findExact(headers, ['ORDER NUMBER', 'PEDIDO', 'N PEDIDO', 'NUM PEDIDO', 'NUMERO PEDIDO'])
+  const materialCol = findExact(headers, ['MATERIAL', 'PRODUTO', 'COD PRODUTO', 'CODIGO PRODUTO', 'COD. PRODUTO'])
   const itemValueCol = findExact(headers, ['NET VALUE ( ZINV )', 'NET VALUE ZINV', 'VALOR ITEM', 'VALOR TOTAL ITEM', 'VLR ITEM', 'TOTAL ITEM', 'VALOR LIQUIDO ITEM'])
   const orderValueCol = findExact(headers, ['VALOR PEDIDO', 'TOTAL PEDIDO', 'VLR PEDIDO', 'VALOR LIQUIDO PEDIDO'])
 
   let totalValue = 0
   let usedRows = 0
   const orders = new Set<string>()
+  const valueByCode: Record<string, number> = {}
+  let rowsWithoutCode = 0
+  let valueWithoutCode = 0
   let valueSource = ''
 
   if (itemValueCol >= 0) {
@@ -94,10 +100,16 @@ export async function parseTransitPortfolio(file: File): Promise<TransitResult> 
       const row = rows[r] ?? []
       const value = numberValue(row[itemValueCol])
       const order = orderCol >= 0 ? String(row[orderCol] ?? '').trim() : ''
+      const code = materialCol >= 0 ? cleanId(row[materialCol]) : ''
       if (!value && !order) continue
       if (value) {
         totalValue += value
         usedRows += 1
+        if (code) valueByCode[code] = (valueByCode[code] ?? 0) + value
+        else {
+          rowsWithoutCode += 1
+          valueWithoutCode += value
+        }
       }
       if (order) orders.add(order)
     }
@@ -123,15 +135,23 @@ export async function parseTransitPortfolio(file: File): Promise<TransitResult> 
 
   if (!Number.isFinite(totalValue) || totalValue <= 0) throw new Error('A Carteira foi reconhecida, mas o valor em trânsito calculado ficou zerado.')
 
+  try { localStorage.setItem(TRANSIT_DETAIL_KEY, JSON.stringify(valueByCode)) } catch { /* detalhe opcional para valoração */ }
+
+  const codedValue = Object.values(valueByCode).reduce((sum, value) => sum + value, 0)
+  const warnings = [
+    `Carteira Colgate: ${valueSource} usada como valor do abastecimento em trânsito no bloco de custo.`,
+    'Regra validada para CARTEIRA 08.08: somar Net Value ( ZINV ) linha a linha.',
+  ]
+  if (codedValue > 0) warnings.push(`Carteira: ${Object.keys(valueByCode).length} SKUs identificados para cruzamento com Real/P. Venda do 105.`)
+  else warnings.push('Carteira: não foi possível preservar valor por SKU; trânsito a preço de venda dependerá de uma Carteira com Material + Net Value (ZINV).')
+  if (rowsWithoutCode) warnings.push(`Carteira: ${rowsWithoutCode} linhas (${valueWithoutCode.toFixed(2)}) ficaram sem código de material e não poderão ser valoradas a preço de venda pelo 105.`)
+
   return {
     totalValue,
+    valueByCode,
     rows: usedRows,
     orders: orders.size,
     valueSource,
-    warnings: [
-      `Carteira Colgate: ${valueSource} usada como valor do abastecimento em trânsito no bloco de custo.`,
-      'Regra validada para CARTEIRA 08.08: somar Net Value ( ZINV ) linha a linha.',
-      'A Carteira não é convertida por proporção para preço de venda. O estoque a preço de venda continua vindo somente do relatório 105 até existir uma fonte oficial para o trânsito a venda.',
-    ],
+    warnings,
   }
 }
