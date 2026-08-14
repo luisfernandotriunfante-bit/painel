@@ -86,35 +86,75 @@ function brl(value: number) {
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
+function mergedLookup(uploaded: Record<string, RcaEntry>) {
+  return { ...FALLBACK_RCA_MAP, ...uploaded }
+}
+
 function resolveCurrent(codeValue: unknown, uploaded: Record<string, RcaEntry>) {
   const code = cleanId(codeValue)
   if (!code) return ''
-  const merged = { ...FALLBACK_RCA_MAP, ...uploaded }
-  const direct = merged[code]
+  const map = mergedLookup(uploaded)
+  const direct = map[code]
   if (direct?.currentCode) return cleanId(direct.currentCode) || code
-  const identity = Object.values(merged).find(entry => cleanId(entry.currentCode) === code)
+  const identity = Object.values(map).find(entry => cleanId(entry.currentCode) === code)
   return identity ? code : ''
+}
+
+function mapRecognizesCode(map: Record<string, RcaEntry>, codeValue: unknown) {
+  const code = cleanId(codeValue)
+  if (!code) return false
+  if (map[code]) return true
+  return Object.values(map).some(entry => cleanId(entry.currentCode) === code)
 }
 
 function normalizeSellerCodes(values: SellerValue[], uploaded: Record<string, RcaEntry>) {
   let changed = false
-  const unresolved = new Set<string>()
+  const provisional = new Set<string>()
+
   const next = values.map(item => {
     const original = cleanId(item.code)
     if (!original) return item
     const resolved = resolveCurrent(original, uploaded)
+
     if (!resolved) {
-      if ((Number(item.sellOut) || Number(item.target) || Number(item.positiveTarget)) !== 0) unresolved.add(original)
-      return item
+      if ((Number(item.sellOut) || Number(item.target) || Number(item.positiveTarget)) !== 0) provisional.add(original)
+      return { ...item, code: original }
     }
+
     if (resolved === original) return item
     changed = true
     return { ...item, code: resolved }
   })
-  return { next, changed, unresolved }
+
+  return { next, changed, provisional }
 }
 
-function buildAuditWarnings(state: StoredState, unresolved: Set<string>) {
+function ensureVisibleSellerCodes(
+  map: Record<string, RcaEntry>,
+  values: SellerValue[],
+  provisional: Set<string>,
+) {
+  let changed = false
+  const next = { ...map }
+
+  for (const item of values) {
+    const code = cleanId(item.code)
+    if (!code || mapRecognizesCode(next, code)) continue
+
+    next[code] = {
+      currentCode: code,
+      name: item.name ?? '',
+      coordinatorCode: '',
+      coordinatorName: '',
+    }
+    provisional.add(code)
+    changed = true
+  }
+
+  return { next, changed }
+}
+
+function buildAuditWarnings(state: StoredState, provisional: Set<string>) {
   const warnings: string[] = []
   const sellOut = Number(state.sellOut) || 0
   const billed = Number(state.billed) || 0
@@ -135,9 +175,10 @@ function buildAuditWarnings(state: StoredState, unresolved: Set<string>) {
   if (!closeEnough(customerTotal, sellOut)) {
     warnings.push(`${AUDIT_PREFIX}${brl(sellOut - customerTotal)} do Sell Out não estão atribuídos a cliente/CNPJ; essa parcela não entra em redes nem positivação.`)
   }
-  if (unresolved.size) {
-    warnings.push(`${AUDIT_PREFIX}setores sem de/para RCA: ${[...unresolved].sort().join(', ')}. Eles continuam na base bruta, mas precisam ser incluídos em NOVOS RCAS para aparecer corretamente na Equipe.`)
+  if (provisional.size) {
+    warnings.push(`${AUDIT_PREFIX}setores sem de/para formal mantidos pelo código original: ${[...provisional].sort().join(', ')}. Os valores entram na Equipe para não desaparecerem, mas revise NOVOS RCAS.`)
   }
+
   return warnings
 }
 
@@ -145,26 +186,48 @@ export function reconcileStoredState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return false
+
     const state = JSON.parse(raw) as StoredState
     const uploaded = state.rcaByOldCode ?? {}
 
     const actuals = normalizeSellerCodes(Array.isArray(state.salesSellerActuals) ? state.salesSellerActuals : [], uploaded)
     const targets = normalizeSellerCodes(Array.isArray(state.sellerTargets) ? state.sellerTargets : [], uploaded)
-    const unresolved = new Set<string>([...actuals.unresolved, ...targets.unresolved])
+    const provisional = new Set<string>([...actuals.provisional, ...targets.provisional])
 
-    const previousWarnings = Array.isArray(state.warnings) ? state.warnings.filter(item => !String(item).startsWith(AUDIT_PREFIX)) : []
-    const auditWarnings = buildAuditWarnings({ ...state, salesSellerActuals: actuals.next, sellerTargets: targets.next }, unresolved)
+    // AppV3's mergeSellers historically discarded any seller whose code was not
+    // present in the RCA map. Preserve every monetary/positive value by adding
+    // an identity entry only for codes that remain genuinely unmapped.
+    const coveredActuals = ensureVisibleSellerCodes(uploaded, actuals.next, provisional)
+    const coveredTargets = ensureVisibleSellerCodes(coveredActuals.next, targets.next, provisional)
+    const effectiveMap = coveredTargets.next
+
+    const previousWarnings = Array.isArray(state.warnings)
+      ? state.warnings.filter(item => !String(item).startsWith(AUDIT_PREFIX))
+      : []
+    const auditWarnings = buildAuditWarnings(
+      {
+        ...state,
+        salesSellerActuals: actuals.next,
+        sellerTargets: targets.next,
+        rcaByOldCode: effectiveMap,
+      },
+      provisional,
+    )
     const nextWarnings = [...previousWarnings, ...auditWarnings]
 
     const warningsChanged = JSON.stringify(nextWarnings) !== JSON.stringify(state.warnings ?? [])
-    if (!actuals.changed && !targets.changed && !warningsChanged) return false
+    const mapChanged = JSON.stringify(effectiveMap) !== JSON.stringify(uploaded)
+
+    if (!actuals.changed && !targets.changed && !mapChanged && !warningsChanged) return false
 
     const nextState: StoredState = {
       ...state,
       salesSellerActuals: actuals.next,
       sellerTargets: targets.next,
+      rcaByOldCode: effectiveMap,
       warnings: nextWarnings,
     }
+
     localStorage.setItem(STORAGE_KEY, JSON.stringify(nextState))
     return true
   } catch (error) {
