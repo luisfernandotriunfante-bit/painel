@@ -1,6 +1,6 @@
 import * as XLSX from 'xlsx'
 import { cleanId, normalizeText } from './data'
-import { TRANSIT_DETAIL_KEY } from './transitValuation'
+import { TRANSIT_DETAIL_KEY, TRANSIT_DIAGNOSTIC_KEY } from './transitValuation'
 
 export type TransitResult = {
   totalValue: number
@@ -34,18 +34,40 @@ function findExact(headers: unknown[], aliases: string[]) {
   return normalized.findIndex(header => wanted.includes(header))
 }
 
+function findMaterialColumn(headers: unknown[]) {
+  const normalized = headers.map(normalizeText)
+  const exactAliases = [
+    'MATERIAL', 'MATERIAL NUMBER', 'MATERIAL NO', 'MATERIAL CODE',
+    'PRODUTO', 'COD PRODUTO', 'CODIGO PRODUTO', 'COD. PRODUTO',
+    'COD MATERIAL', 'CODIGO MATERIAL', 'SKU', 'COD SKU', 'ITEM CODE',
+  ].map(normalizeText)
+  const exact = normalized.findIndex(header => exactAliases.includes(header))
+  if (exact >= 0) return exact
+
+  return normalized.findIndex(header => {
+    if (!header) return false
+    if (header.includes('DESCR') || header.includes('DESCRIPTION')) return false
+    if (header === 'ITEM') return true
+    if (header.includes('SKU')) return true
+    if (header.includes('MATERIAL') && (header.includes('COD') || header.includes('CODE') || header.includes('NUMBER') || header.includes('NO'))) return true
+    if (header.includes('PRODUTO') && (header.includes('COD') || header.includes('CODE') || header.includes('NUMBER'))) return true
+    return false
+  })
+}
+
 function candidateHeader(rows: Matrix) {
   let bestIndex = -1
   let bestScore = -1
   for (let r = 0; r < Math.min(rows.length, 100); r += 1) {
-    const headers = (rows[r] ?? []).map(normalizeText)
+    const headers = rows[r] ?? []
+    const normalized = headers.map(normalizeText)
     let score = 0
-    if (headers.some(h => ['PEDIDO', 'NUM PEDIDO', 'NUMERO PEDIDO', 'N PEDIDO', 'ORDER NUMBER'].includes(h))) score += 2
-    if (headers.some(h => ['NET VALUE ZINV', 'VALOR ITEM', 'VALOR TOTAL ITEM', 'VLR ITEM', 'TOTAL ITEM'].includes(h))) score += 4
-    if (headers.some(h => ['VALOR PEDIDO', 'TOTAL PEDIDO', 'VLR PEDIDO'].includes(h))) score += 3
-    if (headers.some(h => ['MATERIAL', 'PRODUTO', 'COD PRODUTO', 'CODIGO PRODUTO'].includes(h))) score += 2
-    if (headers.some(h => h === 'DESCRIPTION' || h.includes('DESCRI'))) score += 1
-    if (headers.some(h => ['ORDER QTY', 'QTD PEDIDO', 'QTDE PEDIDO'].includes(h))) score += 1
+    if (normalized.some(h => ['PEDIDO', 'NUM PEDIDO', 'NUMERO PEDIDO', 'N PEDIDO', 'ORDER NUMBER'].includes(h))) score += 2
+    if (normalized.some(h => ['NET VALUE ZINV', 'VALOR ITEM', 'VALOR TOTAL ITEM', 'VLR ITEM', 'TOTAL ITEM'].includes(h))) score += 4
+    if (normalized.some(h => ['VALOR PEDIDO', 'TOTAL PEDIDO', 'VLR PEDIDO'].includes(h))) score += 3
+    if (findMaterialColumn(headers) >= 0) score += 2
+    if (normalized.some(h => h === 'DESCRIPTION' || h.includes('DESCRI'))) score += 1
+    if (normalized.some(h => ['ORDER QTY', 'QTD PEDIDO', 'QTDE PEDIDO'].includes(h))) score += 1
     if (score > bestScore) {
       bestScore = score
       bestIndex = r
@@ -82,7 +104,7 @@ export async function parseTransitPortfolio(file: File): Promise<TransitResult> 
   const rows = best.rows
   const headers = rows[best.header] ?? []
   const orderCol = findExact(headers, ['ORDER NUMBER', 'PEDIDO', 'N PEDIDO', 'NUM PEDIDO', 'NUMERO PEDIDO'])
-  const materialCol = findExact(headers, ['MATERIAL', 'PRODUTO', 'COD PRODUTO', 'CODIGO PRODUTO', 'COD. PRODUTO'])
+  const materialCol = findMaterialColumn(headers)
   const itemValueCol = findExact(headers, ['NET VALUE ( ZINV )', 'NET VALUE ZINV', 'VALOR ITEM', 'VALOR TOTAL ITEM', 'VLR ITEM', 'TOTAL ITEM', 'VALOR LIQUIDO ITEM'])
   const orderValueCol = findExact(headers, ['VALOR PEDIDO', 'TOTAL PEDIDO', 'VLR PEDIDO', 'VALOR LIQUIDO PEDIDO'])
 
@@ -135,15 +157,28 @@ export async function parseTransitPortfolio(file: File): Promise<TransitResult> 
 
   if (!Number.isFinite(totalValue) || totalValue <= 0) throw new Error('A Carteira foi reconhecida, mas o valor em trânsito calculado ficou zerado.')
 
-  try { localStorage.setItem(TRANSIT_DETAIL_KEY, JSON.stringify(valueByCode)) } catch { /* detalhe opcional para valoração */ }
-
   const codedValue = Object.values(valueByCode).reduce((sum, value) => sum + value, 0)
+  const diagnostic = {
+    materialHeader: materialCol >= 0 ? String(headers[materialCol] ?? '') : 'NÃO IDENTIFICADA',
+    valueHeader: itemValueCol >= 0 ? String(headers[itemValueCol] ?? '') : valueSource,
+    identifiedSkus: Object.keys(valueByCode).length,
+    codedValue,
+    rowsWithoutCode,
+    valueWithoutCode,
+    sampleTransitCodes: Object.keys(valueByCode).slice(0, 8),
+  }
+  try {
+    localStorage.setItem(TRANSIT_DETAIL_KEY, JSON.stringify(valueByCode))
+    localStorage.setItem(TRANSIT_DIAGNOSTIC_KEY, JSON.stringify(diagnostic))
+  } catch { /* detalhe opcional para valoração */ }
+
   const warnings = [
     `Carteira Colgate: ${valueSource} usada como valor do abastecimento em trânsito no bloco de custo.`,
     'Regra validada para CARTEIRA 08.08: somar Net Value ( ZINV ) linha a linha.',
+    `Carteira: coluna de material identificada como “${diagnostic.materialHeader}”.`,
   ]
   if (codedValue > 0) warnings.push(`Carteira: ${Object.keys(valueByCode).length} SKUs identificados para cruzamento com Real/P. Venda do 105.`)
-  else warnings.push('Carteira: não foi possível preservar valor por SKU; trânsito a preço de venda dependerá de uma Carteira com Material + Net Value (ZINV).')
+  else warnings.push('Carteira: nenhum SKU foi preservado. Revise a coluna de material identificada na auditoria.')
   if (rowsWithoutCode) warnings.push(`Carteira: ${rowsWithoutCode} linhas (${valueWithoutCode.toFixed(2)}) ficaram sem código de material e não poderão ser valoradas a preço de venda pelo 105.`)
 
   return {

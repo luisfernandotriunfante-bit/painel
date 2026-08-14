@@ -52,6 +52,35 @@
   border-color: rgba(96, 165, 250, .26);
 }
 
+.stock-transit-diagnostic {
+  margin: 0 16px 12px;
+  padding: 14px 16px;
+  border: 1px solid rgba(251, 191, 36, .24);
+  border-radius: 14px;
+  background: rgba(120, 77, 8, .10);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px 18px;
+  font-size: 12px;
+}
+
+.stock-transit-diagnostic > strong {
+  grid-column: 1 / -1;
+  color: #f6c56b;
+  letter-spacing: .1em;
+  font-size: 10px;
+}
+
+.stock-transit-diagnostic span {
+  opacity: .78;
+  overflow-wrap: anywhere;
+}
+
+.stock-transit-diagnostic b {
+  opacity: 1;
+  color: #fff;
+}
+
 .stock-transit-audit-note {
   margin: 0 16px 16px;
   padding: 12px 14px;
@@ -61,13 +90,15 @@
 }
 
 @media (max-width: 1000px) {
-  .stock-transit-audit-grid {
+  .stock-transit-audit-grid,
+  .stock-transit-diagnostic {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 760px) {
-  .stock-transit-audit-grid {
+  .stock-transit-audit-grid,
+  .stock-transit-diagnostic {
     grid-template-columns: 1fr;
   }
 }

@@ -1,6 +1,17 @@
 export const TRANSIT_DETAIL_KEY = 'painel-sell-out-milenio:transit-value-by-code:v1'
+export const TRANSIT_DIAGNOSTIC_KEY = 'painel-sell-out-milenio:transit-diagnostic:v1'
 
 type Finance = { cost?: number; sale?: number }
+
+export type TransitDiagnostic = {
+  materialHeader: string
+  valueHeader: string
+  identifiedSkus: number
+  codedValue: number
+  rowsWithoutCode: number
+  valueWithoutCode: number
+  sampleTransitCodes: string[]
+}
 
 export type TransitSaleValuation = {
   saleValue: number
@@ -16,6 +27,15 @@ export function readTransitValueByCode(): Record<string, number> {
     return raw ? JSON.parse(raw) : {}
   } catch {
     return {}
+  }
+}
+
+export function readTransitDiagnostic(): TransitDiagnostic | null {
+  try {
+    const raw = localStorage.getItem(TRANSIT_DIAGNOSTIC_KEY)
+    return raw ? JSON.parse(raw) : null
+  } catch {
+    return null
   }
 }
 
