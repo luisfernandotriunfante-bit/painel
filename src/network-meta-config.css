@@ -1,0 +1,203 @@
+/* Network goal configuration belongs exclusively to Configurações > Metas. */
+
+.network-meta-config-panel {
+  margin-top: 28px;
+}
+
+.network-meta-heading {
+  align-items: center;
+}
+
+.network-meta-save {
+  min-width: 154px;
+  height: 42px;
+  padding: 0 18px;
+  border: 1px solid rgba(255, 88, 110, .34);
+  border-radius: 13px;
+  background: rgba(190, 20, 49, .76);
+  color: #fff;
+  font: inherit;
+  font-size: .7rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.network-meta-save:disabled {
+  border-color: rgba(177, 198, 224, .12);
+  background: rgba(8, 16, 29, .34);
+  color: rgba(202, 216, 234, .48);
+  cursor: default;
+}
+
+.network-meta-pool-row {
+  display: grid;
+  grid-template-columns: minmax(250px, .8fr) minmax(230px, .65fr) minmax(390px, 1.2fr);
+  gap: 16px;
+  padding: 22px 24px;
+  border-bottom: 1px solid rgba(177, 198, 224, .10);
+  background: rgba(6, 12, 22, .14);
+}
+
+.network-meta-pool-row > div {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid rgba(177, 198, 224, .11);
+  border-radius: 16px;
+  background: rgba(5, 12, 22, .20);
+}
+
+.network-meta-pool-row span {
+  display: block;
+  margin-bottom: 10px;
+  color: rgba(184, 204, 229, .7);
+  font-size: .62rem;
+  font-weight: 800;
+  letter-spacing: .16em;
+}
+
+.network-meta-pool-row small {
+  display: block;
+  margin-top: 8px;
+  color: rgba(195, 210, 229, .53);
+  font-size: .66rem;
+  line-height: 1.4;
+}
+
+.network-meta-total strong {
+  display: block;
+  color: #f7f9fd;
+  font-size: 1.25rem;
+}
+
+.network-meta-total small.ok { color: rgba(68, 212, 164, .78); }
+.network-meta-total small.warn { color: rgba(255, 174, 94, .85); }
+
+.network-meta-add > div {
+  display: flex;
+  gap: 10px;
+}
+
+.network-meta-add select,
+.network-meta-select {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid rgba(177, 198, 224, .16);
+  border-radius: 12px;
+  background: rgba(17, 26, 40, .72);
+  color: rgba(242, 247, 255, .9);
+  font: inherit;
+  font-size: .72rem;
+}
+
+.network-meta-add button {
+  min-width: 92px;
+  border: 1px solid rgba(59, 139, 201, .28);
+  border-radius: 12px;
+  background: rgba(31, 92, 143, .42);
+  color: #eaf4ff;
+  font: inherit;
+  font-size: .68rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.network-meta-add button:disabled {
+  opacity: .42;
+  cursor: default;
+}
+
+.network-meta-table th,
+.network-meta-table td {
+  white-space: nowrap;
+}
+
+.network-meta-table td:first-child {
+  min-width: 250px;
+}
+
+.network-meta-target {
+  min-width: 190px;
+}
+
+.network-meta-currency {
+  width: 100%;
+  min-width: 150px;
+}
+
+.network-meta-remove {
+  padding: 8px 11px;
+  border: 1px solid rgba(255, 100, 118, .17);
+  border-radius: 10px;
+  background: rgba(90, 21, 33, .18);
+  color: rgba(255, 166, 178, .82);
+  font: inherit;
+  font-size: .64rem;
+  cursor: pointer;
+}
+
+.network-meta-remove:hover {
+  border-color: rgba(255, 100, 118, .36);
+  background: rgba(126, 25, 42, .30);
+}
+
+.network-meta-note {
+  margin: 0 24px 24px;
+  padding: 13px 15px;
+  border: 1px solid rgba(177, 198, 224, .09);
+  border-radius: 13px;
+  background: rgba(6, 12, 22, .20);
+  color: rgba(199, 213, 230, .60);
+  font-size: .69rem;
+  line-height: 1.5;
+}
+
+/* Redes is now a pure monitoring page: no editing controls there. */
+.safe-networks-page .safe-save-network,
+.safe-networks-page .safe-network-pool,
+.safe-networks-page .safe-network-table th:last-child,
+.safe-networks-page .safe-network-table td:last-child {
+  display: none !important;
+}
+
+.safe-networks-page .safe-network-target-cell .currency-input {
+  pointer-events: none !important;
+  border-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  color: rgba(244, 248, 255, .92) !important;
+}
+
+.safe-networks-page .safe-network-target-cell {
+  min-width: 150px !important;
+}
+
+/* The native network-total card stays hidden because the complete network
+   configuration is now grouped in the panel below. */
+html[data-dashboard-page="metas"] .target-control-grid-v3 > article:nth-child(2) {
+  display: none !important;
+}
+
+@media (max-width: 1200px) {
+  .network-meta-pool-row {
+    grid-template-columns: 1fr 1fr;
+  }
+  .network-meta-add {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 760px) {
+  .network-meta-pool-row {
+    grid-template-columns: 1fr;
+    padding: 18px;
+  }
+  .network-meta-add {
+    grid-column: auto;
+  }
+  .network-meta-note {
+    margin: 0 18px 18px;
+  }
+}
