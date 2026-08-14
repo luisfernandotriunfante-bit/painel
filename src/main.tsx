@@ -20,6 +20,7 @@ import './final-polish.css'
 import './panel-interaction-fixes.css'
 import './visual-standardization.css'
 import './movement-modern.css'
+import './movement-table-positives-fix.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
