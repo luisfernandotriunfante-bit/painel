@@ -3,7 +3,6 @@ export type ProductLineName = typeof PRODUCT_LINE_NAMES[number]
 export type ProductLineChoice = ProductLineName | 'Outros'
 
 export type UnclassifiedProduct = {
-  key: string
   code: string
   description: string
   value: number
@@ -17,17 +16,6 @@ export function normalizeProductCode(value: unknown) {
   if (!raw) return ''
   const digits = raw.replace(/\D/g, '')
   return digits || raw.toUpperCase().replace(/\s+/g, ' ')
-}
-
-export function productLineMappingKey(code: string, description: string) {
-  if (code) return code
-  const normalized = String(description ?? '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toUpperCase()
-    .replace(/[^A-Z0-9]+/g, ' ')
-    .trim()
-  return normalized ? `DESC:${normalized}` : ''
 }
 
 export function readProductLineMap(): Record<string, ProductLineChoice> {
