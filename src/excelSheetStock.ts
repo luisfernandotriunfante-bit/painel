@@ -5,27 +5,37 @@ export function fillStock(document: XMLDocument, state: State, worked: number, t
   const average = avg3(state)
   const dailyBase = average > 0 ? average / 30 : 0
 
-  // Regra oficial do painel: a Carteira (Net Value / ZINV) entra no bloco de custo.
-  // Não existe hoje uma fonte oficial para converter a carteira para preço de venda,
-  // portanto nenhuma estimativa proporcional é criada no Excel.
   const transitCost = n(state.stockTransit)
+  const transitSale = n(state.stockTransitSale)
+  const mappedTransitCost = n(state.stockTransitSaleMappedCost)
+  const unmappedTransitCost = n(state.stockTransitSaleUnmappedCost)
   const physicalSale = n(state.positionSale)
   const physicalCost = n(state.positionCost)
   const saleCoverage = dailyBase ? physicalSale / dailyBase : 0
   const costCoverage = dailyBase ? physicalCost / dailyBase : 0
   const costWithTransit = physicalCost + transitCost
   const costWithTransitCoverage = dailyBase ? costWithTransit / dailyBase : 0
+  const transitSaleComplete = transitCost > 0 && unmappedTransitCost <= 0.01 && mappedTransitCost >= transitCost - 0.01
+  const saleWithTransit = physicalSale + (transitSaleComplete ? transitSale : 0)
+  const saleWithTransitCoverage = dailyBase ? saleWithTransit / dailyBase : 0
 
-  // Estoque a preço de venda: somente posição física do 105.
+  // O 105 fornece Real e P. Venda por SKU. A Carteira/ZINV é convertida para
+  // preço de venda somente quando 100% do valor em trânsito encontra o SKU no 105.
   setNumber(document, 'L19', physicalSale)
   setNumber(document, 'L20', saleCoverage)
   setNumber(document, 'M20', 60)
   setNumber(document, 'N20', 60 - saleCoverage)
-  clearCell(document, 'L21')
-  setNumber(document, 'L22', physicalSale)
-  setNumber(document, 'L23', saleCoverage)
+  if (transitSaleComplete) {
+    setNumber(document, 'L21', transitSale)
+    setNumber(document, 'L22', saleWithTransit)
+    setNumber(document, 'L23', saleWithTransitCoverage)
+  } else {
+    clearCell(document, 'L21')
+    setNumber(document, 'L22', physicalSale)
+    setNumber(document, 'L23', saleCoverage)
+  }
 
-  // Estoque ao custo: posição física + Carteira/ZINV.
+  // Bloco ao custo: posição física do 105 + Net Value (ZINV) da Carteira.
   setNumber(document, 'L26', physicalCost)
   setNumber(document, 'L27', costCoverage)
   setNumber(document, 'M27', 60)
@@ -35,8 +45,6 @@ export function fillStock(document: XMLDocument, state: State, worked: number, t
   setNumber(document, 'L30', costWithTransitCoverage)
 
   const positiveTarget = n(state.sellOutPositiveTarget)
-  // A meta geral de positivação do Sell Out mede clientes efetivamente faturados.
-  // Clientes somente "a faturar" continuam como potencial e não entram no realizado deste bloco.
   const positives = n(state.billedPositives ?? state.potentialPositives)
   const positiveTrend = trend(positives, worked, targetDays)
   const positiveAverage = avg3Pos(state)
