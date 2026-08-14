@@ -1,0 +1,68 @@
+/* Keep all four daily movement columns visible at desktop widths.
+   Scoped only to the validated 7-day movement dashboard. */
+
+@media (min-width: 1181px) {
+  .premium-shell .movement-modern-grid {
+    grid-template-columns: minmax(0, 1.25fr) minmax(500px, 1fr) !important;
+  }
+}
+
+.premium-shell .movement-modern-table-card {
+  min-width: 0 !important;
+}
+
+.premium-shell .movement-seven-table {
+  width: 100% !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+.premium-shell .movement-seven-table table {
+  width: 100% !important;
+  min-width: 0 !important;
+  table-layout: fixed !important;
+}
+
+.premium-shell .movement-seven-table thead th:nth-child(1),
+.premium-shell .movement-seven-table tbody td:nth-child(1) {
+  width: 14% !important;
+}
+
+.premium-shell .movement-seven-table thead th:nth-child(2),
+.premium-shell .movement-seven-table tbody td:nth-child(2) {
+  width: 31% !important;
+}
+
+.premium-shell .movement-seven-table thead th:nth-child(3),
+.premium-shell .movement-seven-table tbody td:nth-child(3) {
+  width: 31% !important;
+}
+
+.premium-shell .movement-seven-table thead th:nth-child(4),
+.premium-shell .movement-seven-table tbody td:nth-child(4) {
+  width: 24% !important;
+  text-align: center !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.premium-shell .movement-seven-table thead th:nth-child(4) {
+  color: #64d6b2 !important;
+}
+
+.premium-shell .movement-seven-table .movement-positive-number {
+  display: inline-block !important;
+  min-width: 24px;
+  color: #64d6b2 !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  font-variant-numeric: tabular-nums;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+@media (max-width: 1180px) {
+  .premium-shell .movement-modern-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
