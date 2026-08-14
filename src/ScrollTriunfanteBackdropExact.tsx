@@ -1,40 +1,14 @@
 import { useEffect, useRef } from 'react'
 import fallbackSpriteBase64 from './triunfante-user/sprite6-full.txt?raw'
-import hq00 from './triunfante-hq-video/part00.txt?raw'
-import hq01 from './triunfante-hq-video/part01.txt?raw'
-import hq02 from './triunfante-hq-video/part02.txt?raw'
-import hq03 from './triunfante-hq-video/part03.txt?raw'
-import hq04 from './triunfante-hq-video/part04.txt?raw'
-import hq05 from './triunfante-hq-video/part05.txt?raw'
-import hq06 from './triunfante-hq-video/part06.txt?raw'
-import hq07 from './triunfante-hq-video/part07.txt?raw'
+import hqVideoBase64 from './triunfante-hq18/chunk00'
 
-const HQ_PARTS = [hq00, hq01, hq02, hq03, hq04, hq05, hq06, hq07]
+const HQ_VIDEO = `data:video/webm;base64,${hqVideoBase64.trim()}`
 const FALLBACK_SPRITE = `data:image/webp;base64,${fallbackSpriteBase64.replace(/\s+/g, '')}`
 const PIXELS_PER_LOOP = 720
 const FALLBACK_FRAME_COUNT = 6
 const FALLBACK_COLUMNS = 3
 const FALLBACK_ROWS = 2
 const EASING = 0.19
-
-function normalizeWebmBase64() {
-  const joined = HQ_PARTS.join('').replace(/\s+/g, '')
-
-  // The original HQ stream was split while being uploaded and its EBML/WebM
-  // header ended up in the middle of the concatenated text. Rotate the stream
-  // back to the real WebM start before decoding it.
-  const headerIndex = joined.indexOf('GkXf')
-  if (headerIndex < 0) return joined
-  return joined.slice(headerIndex) + joined.slice(0, headerIndex)
-}
-
-function makeVideoUrl() {
-  const base64 = normalizeWebmBase64()
-  const binary = window.atob(base64)
-  const bytes = new Uint8Array(binary.length)
-  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i)
-  return URL.createObjectURL(new Blob([bytes], { type: 'video/webm' }))
-}
 
 export default function ScrollTriunfanteBackdropExact() {
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -51,7 +25,6 @@ export default function ScrollTriunfanteBackdropExact() {
     let targetVirtual = 0
     let currentVirtual = 0
     let lastApplied = -1
-    let videoUrl = ''
     let hqReady = false
 
     const modulo = (value: number, divisor: number) =>
@@ -65,18 +38,18 @@ export default function ScrollTriunfanteBackdropExact() {
       fallback.style.backgroundPosition = `${column * 50}% ${row * 100}%`
     }
 
-    const revealVideo = () => {
-      if (cancelled || !duration || !Number.isFinite(duration)) return
-      hqReady = true
-      video.style.opacity = '1'
-      fallback.style.opacity = '0'
-    }
-
     const keepFallback = () => {
       if (cancelled || hqReady) return
       video.style.opacity = '0'
       fallback.style.opacity = '1'
       paintFallback()
+    }
+
+    const revealVideo = () => {
+      if (cancelled || !duration || !Number.isFinite(duration)) return
+      hqReady = true
+      video.style.opacity = '1'
+      fallback.style.opacity = '0'
     }
 
     const applyFrame = () => {
@@ -91,12 +64,12 @@ export default function ScrollTriunfanteBackdropExact() {
       if (Math.abs(distance) < 0.0005) currentVirtual = targetVirtual
 
       const nextTime = modulo(currentVirtual, duration)
-      if (Math.abs(nextTime - lastApplied) > 0.006 || lastApplied < 0) {
+      if (Math.abs(nextTime - lastApplied) > 0.003 || lastApplied < 0) {
         try {
           video.currentTime = Math.min(nextTime, Math.max(0, duration - 0.001))
           lastApplied = nextTime
         } catch {
-          // The browser can briefly reject a seek before metadata is ready.
+          // Chrome can reject a seek for a few milliseconds while decoding.
         }
       }
 
@@ -118,15 +91,18 @@ export default function ScrollTriunfanteBackdropExact() {
         keepFallback()
         return
       }
+
       targetVirtual = (Math.max(0, window.scrollY) / PIXELS_PER_LOOP) * duration
       currentVirtual = targetVirtual
       lastApplied = -1
       video.pause()
+
       try {
         video.currentTime = modulo(currentVirtual, duration)
       } catch {
-        // A first seek will be retried on the next animation frame.
+        // Retried in requestAnimationFrame below.
       }
+
       window.requestAnimationFrame(() => {
         revealVideo()
         queueFrame()
@@ -139,23 +115,15 @@ export default function ScrollTriunfanteBackdropExact() {
 
     const onVideoError = () => keepFallback()
 
-    // The fallback is intentionally visible from the very first paint. HQ only
-    // replaces it after the browser proves the reconstructed video is usable.
     fallback.style.opacity = '1'
     video.style.opacity = '0'
     paintFallback()
 
-    try {
-      videoUrl = makeVideoUrl()
-      video.src = videoUrl
-      video.preload = 'auto'
-      video.muted = true
-      video.playsInline = true
-      video.load()
-    } catch (error) {
-      console.error('Falha ao montar a animação HQ da Triunfante:', error)
-      keepFallback()
-    }
+    video.src = HQ_VIDEO
+    video.preload = 'auto'
+    video.muted = true
+    video.playsInline = true
+    video.load()
 
     video.addEventListener('loadedmetadata', onLoadedMetadata)
     video.addEventListener('canplay', onCanPlay)
@@ -172,9 +140,6 @@ export default function ScrollTriunfanteBackdropExact() {
       window.removeEventListener('resize', queueFrame)
       if (raf) window.cancelAnimationFrame(raf)
       video.pause()
-      video.removeAttribute('src')
-      video.load()
-      if (videoUrl) URL.revokeObjectURL(videoUrl)
     }
   }, [])
 
