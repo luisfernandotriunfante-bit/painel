@@ -34,6 +34,10 @@ function normalizeText(value: unknown) {
 }
 
 export function codeKey(value: unknown) {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    const integer = Math.trunc(value)
+    return integer > 0 ? String(integer) : ''
+  }
   const digits = String(value ?? '').replace(/\D/g, '')
   if (!digits) return ''
   const key = digits.replace(/^0+/, '') || '0'
@@ -84,41 +88,80 @@ export function isLikelyProductCodeHeader(value: unknown) {
   return headerMatches(value, [...CANONICAL_HEADERS, ...ALIAS_HEADERS])
 }
 
-function numericRatio(rows: Matrix, start: number, col: number) {
-  let seen = 0
-  let numeric = 0
-  for (let r = start; r < Math.min(rows.length, start + 80); r += 1) {
-    const value = rows[r]?.[col]
-    if (value == null || value === '') continue
-    seen += 1
-    if (codeKey(value)) numeric += 1
+function looksLikeDescription(value: unknown) {
+  const text = normalizeText(value)
+  if (text.length < 5) return false
+  const letters = (text.match(/[A-Z]/g) ?? []).length
+  return letters >= 3
+}
+
+function columnLetter(index: number) {
+  let n = index + 1
+  let out = ''
+  while (n > 0) {
+    const rem = (n - 1) % 26
+    out = String.fromCharCode(65 + rem) + out
+    n = Math.floor((n - 1) / 26)
   }
-  return seen ? numeric / seen : 0
+  return out
+}
+
+function inferProductCodeColumn(rows: Matrix, startRow: number, factoryCol: number) {
+  let best: { col: number; score: number; pairs: number; unique: number } | null = null
+  const maxCol = Math.min(factoryCol, 12)
+
+  for (let col = 0; col < maxCol; col += 1) {
+    let factoryRows = 0
+    let pairs = 0
+    const uniqueCodes = new Set<string>()
+
+    for (let r = startRow; r < Math.min(rows.length, startRow + 260); r += 1) {
+      const row = rows[r] ?? []
+      const factory = codeKey(row[factoryCol])
+      if (!factory) continue
+      factoryRows += 1
+
+      const code = codeKey(row[col])
+      if (!code) continue
+      uniqueCodes.add(code)
+      if (looksLikeDescription(row[col + 1])) pairs += 1
+    }
+
+    if (factoryRows < 10 || pairs < 10) continue
+    const pairRatio = pairs / factoryRows
+    const uniqueRatio = uniqueCodes.size / factoryRows
+    const score = pairRatio * 10 + uniqueRatio * 3
+    if (pairRatio < 0.45 || uniqueRatio < 0.2) continue
+
+    if (!best || score > best.score) best = { col, score, pairs, unique: uniqueCodes.size }
+  }
+
+  return best?.col ?? -1
 }
 
 function find286Layout(rows: Matrix): BridgeLayout | null {
   let best: { layout: BridgeLayout; score: number } | null = null
 
-  for (let r = 0; r < Math.min(rows.length, 120); r += 1) {
+  for (let r = 0; r < Math.min(rows.length, 160); r += 1) {
     const row = rows[r] ?? []
     const normalized = row.map(normalizeText)
     const factoryCol = normalized.findIndex(header => header === 'FABRICA')
-    const descCol = normalized.findIndex(header => header.startsWith('DESCRI'))
-    if (factoryCol < 0 || descCol <= 0) continue
+    if (factoryCol < 0) continue
 
-    // No relatório 286 validado em 14/08/2026, o código interno do produto
-    // fica imediatamente antes da descrição, embora o cabeçalho visual seja
-    // montado em duas linhas. Essa regra evita confundir o código da filial.
-    const canonicalCol = descCol - 1
-    const ratio = numericRatio(rows, r + 1, canonicalCol)
-    if (ratio < 0.5) continue
+    // O 286 impresso possui cabeçalho em duas linhas e não alinha visualmente
+    // “Descrição” com a coluna real dos dados. Por isso o código do produto é
+    // inferido pelos próprios registros: coluna numérica seguida de descrição textual.
+    // No arquivo validado em 14/08/2026 isso identifica a coluna B (índice 1),
+    // enquanto a coluna A contém a filial 11.
+    const canonicalCol = inferProductCodeColumn(rows, r + 1, factoryCol)
+    if (canonicalCol < 0) continue
 
-    const score = 10 + ratio * 5
+    const score = 20
     const layout: BridgeLayout = {
       header: r,
       canonicalCol,
       aliasCols: [{ index: factoryCol, header: String(row[factoryCol] ?? 'Fábrica').trim() || 'Fábrica' }],
-      canonicalLabel: 'Código produto (coluna anterior à Descrição)',
+      canonicalLabel: `Código produto interno (coluna ${columnLetter(canonicalCol)})`,
     }
     if (!best || score > best.score) best = { layout, score }
   }
