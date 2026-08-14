@@ -19,21 +19,23 @@ html body #root .premium-shell > .module-sidebar::after {
 html body #root .premium-shell > .shell-content {
   margin-left: 0 !important;
   width: 100% !important;
+  z-index: auto !important;
 }
 
+/* The logo must sit above every full-page wrapper/background, but below the
+   actual glass surfaces. This avoids opaque legacy wrappers hiding it. */
 html body #root .triunfante-scroll-backdrop {
-  opacity: .62 !important;
-  z-index: 1 !important;
+  opacity: .72 !important;
+  z-index: 8 !important;
   filter: none !important;
   -webkit-filter: none !important;
 }
 
+html body #root .triunfante-hq-video,
+html body #root .triunfante-hq-fallback,
 html body #root .triunfante-hq-canvas {
-  position: absolute !important;
-  inset: 0 !important;
   display: block !important;
-  width: 100% !important;
-  height: 100% !important;
+  visibility: visible !important;
   max-width: none !important;
   max-height: none !important;
   pointer-events: none !important;
@@ -44,20 +46,47 @@ html body #root .triunfante-hq-canvas {
   backface-visibility: hidden !important;
 }
 
-html body #root .premium-shell > .shell-content {
-  z-index: 2 !important;
-}
-
-/* The backdrop lives behind the interface. These wrappers must stay transparent;
-   otherwise the old blackout background paints an opaque layer over the animation. */
+/* Wrappers never paint over the fixed logo. */
 html body #root .premium-shell > .shell-content,
 html body #root .premium-shell > .shell-content .v3-app,
 html body #root .premium-shell > .shell-content .enhanced-app,
 html body #root .premium-shell > .shell-content .app,
 html body #root .premium-shell > .shell-content .v3-main,
-html body #root .premium-shell > .shell-content .compact-main {
+html body #root .premium-shell > .shell-content .compact-main,
+html body #root .premium-shell > .shell-content .metrics,
+html body #root .premium-shell > .shell-content .enhanced-metrics,
+html body #root .premium-shell > .shell-content .movement-dashboard {
   background: transparent !important;
   background-color: transparent !important;
+  z-index: auto !important;
+}
+
+/* Real interface surfaces stay above the logo. Their backdrop-filter now sees
+   the logo immediately behind them, producing the intended frosted-glass blur. */
+html body #root .premium-shell :is(
+  .tabs,
+  .metric,
+  .panel,
+  .section-block,
+  .movement-wrap,
+  .movement-table,
+  .table-scroll,
+  .stock-table-viewport,
+  .manager-info-grid,
+  .info-card,
+  .target-control,
+  .upload-card,
+  .storage,
+  .stock-result,
+  .inline-alert,
+  .empty-state
+) {
+  position: relative !important;
+  z-index: 10 !important;
+}
+
+html body #root .premium-shell .tabs {
+  z-index: 30 !important;
 }
 
 /* O controle do Excel acompanha exatamente a abertura do menu lateral. */
