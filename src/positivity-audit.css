@@ -1,0 +1,82 @@
+.positivity-audit-panel {
+  margin-top: 18px;
+}
+
+.positivity-audit-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  padding: 16px;
+}
+
+.positivity-audit-grid article {
+  min-height: 118px;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, .18);
+  background: rgba(255, 255, 255, .055);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 7px;
+}
+
+.positivity-audit-grid article > span {
+  font-size: 10px;
+  letter-spacing: .11em;
+  font-weight: 800;
+  opacity: .66;
+}
+
+.positivity-audit-grid article > strong {
+  font-size: clamp(22px, 2vw, 32px);
+  line-height: 1;
+}
+
+.positivity-audit-grid article > small,
+.positivity-note {
+  opacity: .66;
+  line-height: 1.45;
+}
+
+.positivity-audit-grid article.ok {
+  border-color: rgba(52, 211, 153, .30);
+}
+
+.positivity-audit-grid article.warn {
+  border-color: rgba(251, 191, 36, .38);
+}
+
+.positivity-team-panel .positivity-table th,
+.positivity-team-panel .positivity-table td {
+  white-space: nowrap;
+}
+
+.positivity-team-panel .positivity-table td:nth-child(2) {
+  min-width: 170px;
+  white-space: normal;
+}
+
+.positivity-note {
+  padding: 10px 16px 16px;
+  font-size: 12px;
+}
+
+.movement-seven-table td small {
+  display: block;
+  margin-top: 3px;
+  font-size: 9px;
+  opacity: .58;
+}
+
+@media (max-width: 1100px) {
+  .positivity-audit-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .positivity-audit-grid {
+    grid-template-columns: 1fr;
+  }
+}
