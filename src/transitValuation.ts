@@ -68,8 +68,8 @@ export function valueTransitAtSale(
   let bridgedSkus = 0
   let descriptionSkus = 0
   const unmappedSkus: string[] = []
-  const supplierBridge = readPositionSupplierBridge()
   const bridge = readProductCodeBridge()
+  const supplierBridge = readPositionSupplierBridge()
   const transitDetail = readTransitProductDetail()
 
   const descriptionIndex = new Map<string, PositionItem[]>()
@@ -86,21 +86,24 @@ export function valueTransitAtSale(
     if (!value) continue
 
     let pair = financePair(financeByCode?.[code])
-    let method: 'direct' | 'supplier' | 'bridge' | 'description' | '' = pair ? 'direct' : ''
+    let method: 'direct' | 'bridge' | 'supplier' | 'description' | '' = pair ? 'direct' : ''
 
-    if (!pair) {
-      const canonical = supplierBridge[code]
-      if (canonical) {
-        pair = financePair(financeByCode?.[canonical])
-        if (pair) method = 'supplier'
-      }
-    }
-
+    // Fonte principal validada: Carteira.Material (código indústria)
+    // -> Cadastro 286.Fábrica -> código interno Winthor -> 105 Real/P. Venda.
     if (!pair) {
       const canonical = bridge[code]
       if (canonical) {
         pair = financePair(financeByCode?.[canonical])
         if (pair) method = 'bridge'
+      }
+    }
+
+    // Contingência: caso alguma versão futura do 105 passe a trazer Código Fornecedor.
+    if (!pair) {
+      const canonical = supplierBridge[code]
+      if (canonical) {
+        pair = financePair(financeByCode?.[canonical])
+        if (pair) method = 'supplier'
       }
     }
 
@@ -122,8 +125,8 @@ export function valueTransitAtSale(
       mappedCost += value
       mappedSkus += 1
       if (method === 'direct') directSkus += 1
-      if (method === 'supplier') supplierSkus += 1
       if (method === 'bridge') bridgedSkus += 1
+      if (method === 'supplier') supplierSkus += 1
       if (method === 'description') descriptionSkus += 1
     } else {
       unmappedCost += value
