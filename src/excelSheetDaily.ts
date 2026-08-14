@@ -24,12 +24,14 @@ export function fillDaily(document: XMLDocument, state: State) {
     setText(document, `D${row}`, new Date(state.periodYear, state.periodMonth - 1, day).toLocaleDateString('pt-BR', { weekday: 'long' }).replace(/^./, (letter: string) => letter.toUpperCase()))
     setNumber(document, `E${row}`, n(movement.sellOut))
     setNumber(document, `F${row}`, n(movement.billed))
-    setNumber(document, `G${row}`, n(movement.positives))
+    // O modelo da indústria trata esta coluna como positivação efetivamente faturada.
+    // "Somente a faturar" permanece disponível no painel/equipe, mas não infla o realizado diário.
+    setNumber(document, `G${row}`, n(movement.billedPositives ?? movement.positives))
   }
 
   setNumber(document, 'E39', n(state.sellOut))
   setNumber(document, 'F39', n(state.billed))
-  setNumber(document, 'G39', n(state.potentialPositives))
+  setNumber(document, 'G39', n(state.billedPositives ?? state.potentialPositives))
   setNumber(document, 'E41', n(state.toInvoice))
   setNumber(document, 'F41', 0)
   setNumber(document, 'G41', 0)
