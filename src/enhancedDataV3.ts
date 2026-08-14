@@ -2,6 +2,28 @@ import * as XLSX from 'xlsx'
 import { cleanId, normalizeText, SellerSales, CustomerSales } from './data'
 import type { DailyMovement } from './enhancedData'
 
+const LINE_NAMES = ['Creme Dental', 'Esc + Enx + Fio', 'Sabonetes', 'Hair', 'Limpeza'] as const
+type LineName = typeof LINE_NAMES[number]
+type LineSales = Record<LineName, number>
+
+type DetailedSellerSales = SellerSales & {
+  billed: number
+  toInvoice: number
+  billedPositives: number
+  toInvoicePositives: number
+  lineSales: LineSales
+}
+
+type DetailedCustomerSales = CustomerSales & {
+  billed: number
+  toInvoice: number
+}
+
+type DetailedDailyMovement = DailyMovement & {
+  billedPositives: number
+  toInvoicePositives: number
+}
+
 export type SalesV3Result = {
   periodYear: number
   periodMonth: number
@@ -12,14 +34,32 @@ export type SalesV3Result = {
   billedPositives: number
   potentialPositives: number
   daily: number[]
-  dailyMovement: DailyMovement[]
-  sellers: SellerSales[]
-  customers: CustomerSales[]
+  dailyMovement: DetailedDailyMovement[]
+  sellers: DetailedSellerSales[]
+  customers: DetailedCustomerSales[]
   rows: number
   warnings: string[]
 }
 
 type Matrix = unknown[][]
+type SplitValue = { billed: number; toInvoice: number }
+type SellerAccumulator = {
+  name: string
+  billed: number
+  toInvoice: number
+  customers: Map<string, SplitValue>
+  lineSales: LineSales
+}
+
+function emptyLines(): LineSales {
+  return {
+    'Creme Dental': 0,
+    'Esc + Enx + Fio': 0,
+    'Sabonetes': 0,
+    Hair: 0,
+    Limpeza: 0,
+  }
+}
 
 function numberValue(value: unknown) {
   if (typeof value === 'number') return Number.isFinite(value) ? value : 0
@@ -95,6 +135,57 @@ function inferStatusColumn(rows: Matrix, startRow: number) {
   return winnerScore > 0 ? winner : -1
 }
 
+function addSplit(map: Map<string, SplitValue>, key: string, kind: 'billed' | 'toInvoice', value: number) {
+  const current = map.get(key) ?? { billed: 0, toInvoice: 0 }
+  current[kind] += value
+  map.set(key, current)
+}
+
+function positiveCounts(values: Iterable<SplitValue>) {
+  let billed = 0
+  let toInvoice = 0
+  let total = 0
+  for (const value of values) {
+    const sum = value.billed + value.toInvoice
+    if (value.billed > 0) billed += 1
+    if (sum > 0) {
+      total += 1
+      if (value.billed <= 0 && value.toInvoice > 0) toInvoice += 1
+    }
+  }
+  return { billed, toInvoice, total }
+}
+
+function classifyByGrouping(value: unknown): LineName | 'Outros' | '' {
+  const code = Math.trunc(numberValue(value))
+  if ([1, 9, 14, 21].includes(code)) return 'Creme Dental'
+  if ([2, 3, 17].includes(code)) return 'Esc + Enx + Fio'
+  if ([4, 15, 20].includes(code)) return 'Sabonetes'
+  if ([5, 8, 18].includes(code)) return 'Hair'
+  if ([6, 10, 16].includes(code)) return 'Limpeza'
+  if ([7, 19].includes(code)) return 'Outros'
+  return ''
+}
+
+function classifyByDescription(description: unknown): LineName | '' {
+  const d = normalizeText(description)
+  if (!d) return ''
+  if (/^CD\b/.test(d) || d.includes('CREME DENTAL') || d.includes('DENTIFRICIO')) return 'Creme Dental'
+  if (/^SAB\b/.test(d) || d.includes('SABONETE BARRA')) return 'Sabonetes'
+  if (/^(SH|COND|CR PENT|KIT SH)\b/.test(d) || d.includes('SHAMPOO') || d.includes('CONDICIONADOR')) return 'Hair'
+  if (/^(ED|ENX|ENXAG|FITA DENT|FIO|GD)\b/.test(d) || d.includes('ESCOVA DENTAL') || d.includes('ENXAGUANTE') || d.includes('FIO DENTAL')) return 'Esc + Enx + Fio'
+  if (/^(PINHO SOL|LIMP|LAVA ROUPA|AJAX|DESINF|DESENG)\b/.test(d) || d.includes('LIMPADOR') || d.includes('DESINFETANTE')) return 'Limpeza'
+  return ''
+}
+
+function money(value: number) {
+  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+}
+
+function closeEnough(a: number, b: number) {
+  return Math.abs(a - b) < 0.01
+}
+
 export async function parseSalesV3(file: File): Promise<SalesV3Result> {
   const buffer = await file.arrayBuffer()
   const workbook = XLSX.read(buffer, { type: 'array', cellDates: true, dense: true })
@@ -111,6 +202,8 @@ export async function parseSalesV3(file: File): Promise<SalesV3Result> {
   const valueCol = findColumn(headers, ['VALOR R$ NF', 'VALOR R NF', 'VALOR NF', 'VALOR'])
   const cnpjCol = findColumn(headers, ['CNPJ/CPF CLIENTE', 'CNPJ CPF CLIENTE', 'CNPJ CLIENTE', 'CPF CNPJ'])
   const clientCodeCol = findColumn(headers, ['COD CLIENTE', 'COD. CLIENTE'])
+  const groupingCol = findColumn(headers, ['AGRUP', 'AGRUPAMENTO', 'COD AGRUP', 'COD. AGRUP', 'GRUPO PRODUTO'])
+  const productDescriptionCol = findColumn(headers, ['DESCRICAO PRODUTO', 'DESCRIÇÃO PRODUTO', 'NOME PRODUTO', 'DESCRICAO ITEM', 'DESCRIÇÃO ITEM', 'NOME ITEM'])
   let statusCol = findColumn(headers, ['STATUS PEDIDO', 'STATUS'])
   if (statusCol < 0) statusCol = inferStatusColumn(rows, match.index + 1)
   if (dataCol < 0 || valueCol < 0) throw new Error('O 8022 precisa conter data e valor da NF.')
@@ -127,17 +220,19 @@ export async function parseSalesV3(file: File): Promise<SalesV3Result> {
   const year = maxDate.getFullYear()
   const month = maxDate.getMonth() + 1
   const days = new Date(year, month, 0).getDate()
-  const dailyMovement: DailyMovement[] = Array.from({ length: days }, (_, index) => ({ day: index + 1, billed: 0, toInvoice: 0, sellOut: 0, positives: 0 }))
-  const dailyCustomers = Array.from({ length: days }, () => new Set<string>())
-  const sellerMap = new Map<string, { name: string; sellOut: number; customers: Set<string> }>()
-  const customerMap = new Map<string, number>()
-  const billedCustomers = new Set<string>()
-  const potentialCustomers = new Set<string>()
+  const dailyMovement: DetailedDailyMovement[] = Array.from({ length: days }, (_, index) => ({ day: index + 1, billed: 0, toInvoice: 0, sellOut: 0, positives: 0, billedPositives: 0, toInvoicePositives: 0 }))
+  const dailyCustomerValues = Array.from({ length: days }, () => new Map<string, SplitValue>())
+  const sellerMap = new Map<string, SellerAccumulator>()
+  const customerMap = new Map<string, SplitValue>()
   const warnings: string[] = []
   let billed = 0
   let toInvoice = 0
   let usedRows = 0
   let recognizedStatusRows = 0
+  let rowsWithoutCustomer = 0
+  let valueWithoutCustomer = 0
+  let unclassifiedValue = 0
+  let outsideFiveLinesValue = 0
 
   for (const item of datedRows) {
     if (item.date.getFullYear() !== year || item.date.getMonth() + 1 !== month) continue
@@ -165,26 +260,74 @@ export async function parseSalesV3(file: File): Promise<SalesV3Result> {
     const sellerCode = cleanId(row[sellerCodeCol]) || normalizeText(row[sellerNameCol]) || 'SEM SETOR'
     const sellerName = String(row[sellerNameCol] ?? '').trim() || `Setor ${sellerCode}`
     const cnpj = cleanId(row[cnpjCol]) || cleanId(row[clientCodeCol])
-    const seller = sellerMap.get(sellerCode) ?? { name: sellerName, sellOut: 0, customers: new Set<string>() }
-    seller.sellOut += value
-    if (cnpj && value > 0) {
-      seller.customers.add(cnpj)
-      potentialCustomers.add(cnpj)
-      if (kind === 'billed') billedCustomers.add(cnpj)
-      dailyCustomers[dayIndex].add(cnpj)
-      customerMap.set(cnpj, (customerMap.get(cnpj) ?? 0) + value)
+    const seller = sellerMap.get(sellerCode) ?? { name: sellerName, billed: 0, toInvoice: 0, customers: new Map<string, SplitValue>(), lineSales: emptyLines() }
+    seller[kind] += value
+
+    const groupingLine = groupingCol >= 0 ? classifyByGrouping(row[groupingCol]) : ''
+    const line = groupingLine || classifyByDescription(productDescriptionCol >= 0 ? row[productDescriptionCol] : '')
+    if (LINE_NAMES.includes(line as LineName)) seller.lineSales[line as LineName] += value
+    else if (groupingLine === 'Outros') outsideFiveLinesValue += value
+    else unclassifiedValue += value
+
+    if (cnpj) {
+      addSplit(customerMap, cnpj, kind, value)
+      addSplit(seller.customers, cnpj, kind, value)
+      addSplit(dailyCustomerValues[dayIndex], cnpj, kind, value)
+    } else {
+      rowsWithoutCustomer += 1
+      valueWithoutCustomer += value
     }
     sellerMap.set(sellerCode, seller)
   }
 
-  dailyMovement.forEach((item, index) => { item.positives = dailyCustomers[index].size })
+  dailyMovement.forEach((movement, index) => {
+    const counts = positiveCounts(dailyCustomerValues[index].values())
+    movement.billedPositives = counts.billed
+    movement.toInvoicePositives = counts.toInvoice
+    movement.positives = counts.total
+  })
+
+  const globalPositiveCounts = positiveCounts(customerMap.values())
+  const sellers: DetailedSellerSales[] = [...sellerMap.entries()]
+    .map(([code, value]) => {
+      const counts = positiveCounts(value.customers.values())
+      return {
+        code,
+        name: value.name,
+        sellOut: value.billed + value.toInvoice,
+        billed: value.billed,
+        toInvoice: value.toInvoice,
+        positives: counts.total,
+        billedPositives: counts.billed,
+        toInvoicePositives: counts.toInvoice,
+        lineSales: value.lineSales,
+      }
+    })
+    .sort((a, b) => b.sellOut - a.sellOut)
+
+  const customers: DetailedCustomerSales[] = [...customerMap.entries()].map(([cnpj, value]) => ({
+    cnpj,
+    billed: value.billed,
+    toInvoice: value.toInvoice,
+    value: value.billed + value.toInvoice,
+  }))
+
+  const sellOut = billed + toInvoice
+  const dailyTotal = dailyMovement.reduce((sum, item) => sum + item.sellOut, 0)
+  const sellerTotal = sellers.reduce((sum, item) => sum + item.sellOut, 0)
+  const customerTotal = customers.reduce((sum, item) => sum + item.value, 0)
+
   if (statusCol >= 0 && recognizedStatusRows === 0) warnings.push('Nenhum status VENDA/A FATURAR foi reconhecido no 8022.')
   if (cnpjCol < 0) warnings.push('O 8022 não apresentou CNPJ; COD. CLIENTE foi usado como contingência.')
+  if (groupingCol < 0 && productDescriptionCol < 0) warnings.push('O 8022 não apresentou agrupamento nem descrição de produto; as cinco linhas de produto ainda não podem ser apuradas.')
+  if (unclassifiedValue !== 0) warnings.push(`8022: ${money(unclassifiedValue)} do Sell Out ficaram sem classificação nas cinco linhas de produto.`)
+  if (outsideFiveLinesValue !== 0) warnings.push(`8022: ${money(outsideFiveLinesValue)} pertencem a agrupamentos fora das cinco linhas do painel (ex.: 7/19).`)
+  if (rowsWithoutCustomer) warnings.push(`8022: ${rowsWithoutCustomer} linhas (${money(valueWithoutCustomer)}) não possuem cliente identificável; elas entram no Sell Out, mas não podem ser atribuídas a rede/positivação.`)
+  if (!closeEnough(sellOut, billed + toInvoice)) warnings.push('CONFERÊNCIA 8022: Sell Out não fecha com Faturado + A Faturar.')
+  if (!closeEnough(dailyTotal, sellOut)) warnings.push(`CONFERÊNCIA 8022: soma diária difere do Sell Out em ${money(dailyTotal - sellOut)}.`)
+  if (!closeEnough(sellerTotal, sellOut)) warnings.push(`CONFERÊNCIA 8022: soma por vendedor difere do Sell Out em ${money(sellerTotal - sellOut)}.`)
+  if (rowsWithoutCustomer === 0 && !closeEnough(customerTotal, sellOut)) warnings.push(`CONFERÊNCIA 8022: soma por cliente difere do Sell Out em ${money(customerTotal - sellOut)}.`)
 
-  const sellers = [...sellerMap.entries()]
-    .map(([code, value]) => ({ code, name: value.name, sellOut: value.sellOut, positives: value.customers.size }))
-    .sort((a, b) => b.sellOut - a.sellOut)
-  const customers = [...customerMap.entries()].map(([cnpj, value]) => ({ cnpj, value }))
   const periodLabel = new Date(year, month - 1, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
 
   return {
@@ -193,9 +336,9 @@ export async function parseSalesV3(file: File): Promise<SalesV3Result> {
     periodLabel,
     billed,
     toInvoice,
-    sellOut: billed + toInvoice,
-    billedPositives: billedCustomers.size,
-    potentialPositives: potentialCustomers.size,
+    sellOut,
+    billedPositives: globalPositiveCounts.billed,
+    potentialPositives: globalPositiveCounts.total,
     daily: dailyMovement.map(item => item.sellOut),
     dailyMovement,
     sellers,

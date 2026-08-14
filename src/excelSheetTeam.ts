@@ -8,19 +8,19 @@ function currentCode(code: string, map: any) {
 }
 
 export function fillTeam(document: XMLDocument, state: State, worked: number, targetDays: number) {
-  const globalShare = state.sellOut ? n(state.billed) / n(state.sellOut) : 1
   const actual = new Map<string, any>()
   for (const item of state.salesSellerActuals ?? []) {
     const key = currentCode(String(item.code), state.rcaByOldCode)
     const row = actual.get(key) ?? { billed: 0, pending: 0, total: 0, billedPos: 0, pendingPos: 0, totalPos: 0 }
-    const total = n(item.sellOut)
-    const billed = item.billed == null ? total * globalShare : n(item.billed)
+    const billed = item.billed == null ? 0 : n(item.billed)
+    const pending = item.toInvoice == null ? 0 : n(item.toInvoice)
+    const billedPos = item.billedPositives == null ? 0 : n(item.billedPositives)
+    const pendingPos = item.toInvoicePositives == null ? 0 : n(item.toInvoicePositives)
     row.billed += billed
-    row.pending += item.toInvoice == null ? total - billed : n(item.toInvoice)
-    row.total += total
-    const billedPos = item.billedPositives == null ? Math.round(n(item.positives) * globalShare) : n(item.billedPositives)
+    row.pending += pending
+    row.total += billed + pending
     row.billedPos += billedPos
-    row.pendingPos += item.toInvoicePositives == null ? Math.max(0, n(item.positives) - billedPos) : n(item.toInvoicePositives)
+    row.pendingPos += pendingPos
     row.totalPos += n(item.positives)
     actual.set(key, row)
   }

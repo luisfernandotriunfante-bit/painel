@@ -4,13 +4,12 @@ import { clearCell, setNumber, setText } from './excelXmlCore'
 export function fillNetworks(document: XMLDocument, state: State, worked: number, targetDays: number) {
   const names = (state.strategicNetworks ?? []).slice(0, 5)
   const buckets = new Map(names.map((name: string) => [name, { billed: 0, total: 0, previous: 0 }]))
-  const fallbackShare = state.sellOut > 0 ? state.billed / state.sellOut : 1
   for (const customer of state.salesCustomers ?? []) {
     const id = customer['c' + 'npj']
     const bucket: any = buckets.get(state.networkByCnpj?.[id])
     if (!bucket) continue
     bucket.total += n(customer.value)
-    bucket.billed += customer.billed == null ? n(customer.value) * fallbackShare : n(customer.billed)
+    if (customer.billed != null) bucket.billed += n(customer.billed)
   }
   const oldMonth = state.historyByMonth?.[monthKey(state.periodYear - 1, state.periodMonth)] ?? {}
   for (const [id, value] of Object.entries(oldMonth)) {
