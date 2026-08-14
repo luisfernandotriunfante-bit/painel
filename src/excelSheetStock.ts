@@ -25,7 +25,9 @@ export function fillStock(document: XMLDocument, state: State, worked: number, t
   setNumber(document, 'L30', dailyBase ? (n(state.positionCost) + transitCost) / dailyBase : 0)
 
   const positiveTarget = n(state.sellOutPositiveTarget)
-  const positives = n(state.potentialPositives)
+  // A meta geral de positivação do Sell Out mede clientes efetivamente faturados.
+  // Clientes somente "a faturar" continuam como potencial e não entram no realizado deste bloco.
+  const positives = n(state.billedPositives ?? state.potentialPositives)
   const positiveTrend = trend(positives, worked, targetDays)
   const positiveAverage = avg3Pos(state)
 
