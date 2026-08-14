@@ -1,0 +1,381 @@
+/* Modern 7-day movement dashboard. Loaded last and scoped to movement only. */
+
+.premium-shell .movement-dashboard.movement-modernized {
+  padding: 18px 20px 22px !important;
+  background: transparent !important;
+}
+
+.premium-shell .movement-dashboard.movement-modernized > .movement-wrap,
+.premium-shell .movement-dashboard.movement-modernized > .movement-table {
+  display: none !important;
+}
+
+.premium-shell .movement-modern-shell {
+  display: block;
+  width: 100%;
+}
+
+.premium-shell .movement-modern-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 0 0 14px;
+  padding: 0 2px;
+}
+
+.premium-shell .movement-modern-toolbar > div:first-child span,
+.premium-shell .movement-card-heading > div:first-child span {
+  display: block;
+  color: #d76a7e;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .16em;
+}
+
+.premium-shell .movement-modern-toolbar > div:first-child strong {
+  display: block;
+  margin-top: 4px;
+  color: #f5f8fc;
+  font-size: 13px;
+  font-weight: 760;
+  letter-spacing: .02em;
+}
+
+.premium-shell .movement-window-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  border: 1px solid rgba(255,255,255,.09);
+  border-radius: 12px;
+  background: rgba(5,11,19,.26);
+  -webkit-backdrop-filter: blur(18px) saturate(116%);
+  backdrop-filter: blur(18px) saturate(116%);
+}
+
+.premium-shell .movement-window-controls button {
+  min-width: 32px;
+  height: 30px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 8px;
+  color: #c8d5e5;
+  background: transparent;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.premium-shell .movement-window-controls button:hover:not(:disabled) {
+  color: #fff;
+  background: rgba(255,255,255,.06);
+}
+
+.premium-shell .movement-window-controls button:disabled {
+  opacity: .26;
+  cursor: default;
+}
+
+.premium-shell .movement-window-controls .movement-today {
+  min-width: 54px;
+  font-size: 9px;
+  font-weight: 780;
+  letter-spacing: .06em;
+}
+
+.premium-shell .movement-modern-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(360px, .85fr);
+  gap: 16px;
+  align-items: stretch;
+}
+
+.premium-shell .movement-modern-chart-card,
+.premium-shell .movement-modern-table-card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 20px;
+  background: rgba(5,11,19,.26);
+  -webkit-backdrop-filter: blur(18px) saturate(116%);
+  backdrop-filter: blur(18px) saturate(116%);
+  box-shadow: none;
+}
+
+.premium-shell .movement-card-heading {
+  min-height: 68px;
+  padding: 16px 20px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid rgba(255,255,255,.07);
+  background: rgba(255,255,255,.018);
+}
+
+.premium-shell .movement-card-heading > div:first-child strong {
+  display: block;
+  margin-top: 5px;
+  color: #f5f8fc;
+  font-size: 14px;
+  font-weight: 720;
+  letter-spacing: -.015em;
+}
+
+.premium-shell .movement-modern-legend {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  color: #9eb0c7;
+  font-size: 8.5px;
+  font-weight: 700;
+}
+
+.premium-shell .movement-modern-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.premium-shell .legend-line {
+  width: 18px;
+  height: 2px;
+  display: inline-block;
+  border-radius: 999px;
+}
+
+.premium-shell .legend-line.billed { background: #477eBA; }
+.premium-shell .legend-line.pending { background: #ef3346; }
+.premium-shell .legend-line.positives {
+  background: #27c895;
+  box-shadow: 7px 0 0 -0.5px #27c895;
+}
+
+.premium-shell .movement-svg-wrap {
+  width: 100%;
+  min-height: 330px;
+  padding: 8px 12px 3px;
+}
+
+.premium-shell .movement-svg-wrap svg {
+  width: 100%;
+  height: 330px;
+  display: block;
+  overflow: visible;
+}
+
+.premium-shell .movement-grid-line {
+  stroke: rgba(174,196,220,.095);
+  stroke-width: 1;
+}
+
+.premium-shell .movement-axis-label,
+.premium-shell .movement-day-label {
+  fill: #73869e;
+  font-size: 10px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.premium-shell .movement-axis-label.positive-axis {
+  fill: #4fbf9d;
+}
+
+.premium-shell .movement-day-label {
+  fill: #9cadc0;
+  font-size: 11px;
+}
+
+.premium-shell .movement-series {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.premium-shell .movement-series.billed {
+  stroke: #477eba;
+  stroke-width: 3;
+}
+
+.premium-shell .movement-series.pending {
+  stroke: #ef3346;
+  stroke-width: 3;
+}
+
+.premium-shell .movement-series.positives {
+  stroke: #27c895;
+  stroke-width: 2;
+  stroke-dasharray: 5 7;
+  opacity: .92;
+}
+
+.premium-shell .movement-modern-table-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.premium-shell .movement-card-heading.table-heading {
+  justify-content: flex-start;
+}
+
+.premium-shell .movement-seven-table {
+  flex: 1;
+  min-height: 330px;
+  overflow: hidden;
+}
+
+.premium-shell .movement-seven-table table {
+  width: 100%;
+  height: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  background: transparent !important;
+}
+
+.premium-shell .movement-seven-table thead th {
+  height: 38px;
+  padding: 10px 14px !important;
+  color: #8295ad !important;
+  background: rgba(255,255,255,.025) !important;
+  border-bottom: 1px solid rgba(255,255,255,.07) !important;
+  font-size: 8px !important;
+  letter-spacing: .13em !important;
+}
+
+.premium-shell .movement-seven-table thead th:first-child { width: 58px; }
+.premium-shell .movement-seven-table thead th:last-child { width: 62px; text-align: center; }
+
+.premium-shell .movement-seven-table tbody tr {
+  height: 41px;
+}
+
+.premium-shell .movement-seven-table tbody td {
+  padding: 7px 14px !important;
+  border-bottom: 1px solid rgba(255,255,255,.055) !important;
+  background: transparent !important;
+  vertical-align: middle;
+}
+
+.premium-shell .movement-seven-table tbody tr:last-child td {
+  border-bottom: 0 !important;
+}
+
+.premium-shell .movement-seven-table tbody tr:hover td {
+  background: rgba(255,255,255,.025) !important;
+}
+
+.premium-shell .movement-seven-table td:first-child b {
+  display: block;
+  color: #f5f8fc !important;
+  font-size: 12px;
+  font-weight: 780;
+}
+
+.premium-shell .movement-seven-table td:first-child small {
+  display: block;
+  margin-top: 1px;
+  color: #62758d;
+  font-size: 7px;
+  letter-spacing: .08em;
+}
+
+.premium-shell .movement-seven-table td:nth-child(2) strong {
+  display: block;
+  color: #f5f8fc !important;
+  font-size: 11px;
+  font-weight: 760;
+}
+
+.premium-shell .movement-seven-table td:nth-child(2) span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 3px;
+  color: #7f91a8;
+  font-size: 7.5px;
+  white-space: nowrap;
+}
+
+.premium-shell .mini-billed,
+.premium-shell .mini-pending {
+  width: 5px;
+  height: 5px;
+  display: inline-block;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.premium-shell .mini-billed { background: #477eba; }
+.premium-shell .mini-pending { background: #ef3346; margin-left: 3px; }
+
+.premium-shell .movement-seven-table td:last-child {
+  text-align: center;
+}
+
+.premium-shell .movement-positive-number {
+  color: #64d6b2 !important;
+  font-size: 12px;
+  font-weight: 780;
+}
+
+.premium-shell .movement-range {
+  width: calc(100% - 8px);
+  height: 3px;
+  margin: 15px 4px 0;
+  appearance: none;
+  border: 0 !important;
+  border-radius: 999px;
+  background: rgba(255,255,255,.08) !important;
+  box-shadow: none !important;
+  cursor: ew-resize;
+}
+
+.premium-shell .movement-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 18px;
+  height: 6px;
+  border: 0;
+  border-radius: 999px;
+  background: #b51d3a;
+  box-shadow: 0 0 0 3px rgba(181,29,58,.10);
+}
+
+.premium-shell .movement-range::-moz-range-thumb {
+  width: 18px;
+  height: 6px;
+  border: 0;
+  border-radius: 999px;
+  background: #b51d3a;
+}
+
+@media (max-width: 1180px) {
+  .premium-shell .movement-modern-grid {
+    grid-template-columns: 1fr;
+  }
+  .premium-shell .movement-modern-table-card {
+    min-height: 0;
+  }
+}
+
+@media (max-width: 760px) {
+  .premium-shell .movement-dashboard.movement-modernized {
+    padding: 12px 10px 16px !important;
+  }
+  .premium-shell .movement-modern-toolbar,
+  .premium-shell .movement-card-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .premium-shell .movement-modern-legend {
+    justify-content: flex-start;
+  }
+  .premium-shell .movement-svg-wrap {
+    overflow-x: auto;
+  }
+  .premium-shell .movement-svg-wrap svg {
+    min-width: 620px;
+  }
+}
