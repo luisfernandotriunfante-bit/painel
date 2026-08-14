@@ -1,0 +1,82 @@
+/* Top Varejistas monthly integration. Keeps the validated glass baseline. */
+html[data-dashboard-page="equipe"] .safe-networks-page { display: none !important; }
+
+.top-network-data-page,
+.top-meta-reference,
+.top-retailer-upload { margin-top: 28px; }
+
+.top-network-kpis { padding: 0 !important; }
+.top-network-panel { margin-top: 22px; }
+.top-network-summary-strip,
+.top-meta-reference-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  padding: 18px 24px;
+  border-bottom: 1px solid rgba(177,198,224,.10);
+}
+.top-network-summary-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.top-network-summary-strip > div,
+.top-meta-reference-kpis > div {
+  padding: 14px 16px;
+  border: 1px solid rgba(177,198,224,.11);
+  border-radius: 15px;
+  background: rgba(5,12,22,.20);
+  backdrop-filter: blur(18px) saturate(118%);
+  -webkit-backdrop-filter: blur(18px) saturate(118%);
+}
+.top-network-summary-strip span,
+.top-meta-reference-kpis span {
+  display: block;
+  margin-bottom: 7px;
+  color: rgba(177,198,224,.64);
+  font-size: .6rem;
+  font-weight: 800;
+  letter-spacing: .16em;
+}
+.top-network-summary-strip strong,
+.top-meta-reference-kpis strong { color: #f4f7fb; font-size: 1rem; }
+.top-network-table th,
+.top-network-table td { white-space: nowrap; }
+.top-network-table td:first-child { min-width: 160px; }
+.top-network-out {
+  display: block;
+  margin-top: 4px;
+  color: rgba(196,207,222,.48);
+  font-size: .58rem;
+  font-weight: 600;
+}
+.top-match-ok { color: #4ed5ad; font-weight: 800; }
+.top-match-off { color: rgba(196,207,222,.52); font-weight: 700; }
+
+.top-retailer-upload-card {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin: 22px 24px 24px;
+  padding: 22px;
+  border: 1px solid rgba(255,95,117,.20);
+  border-radius: 18px;
+  background: rgba(6,12,22,.24);
+  backdrop-filter: blur(18px) saturate(118%);
+  -webkit-backdrop-filter: blur(18px) saturate(118%);
+  cursor: pointer;
+}
+.top-retailer-upload-card input { display: none; }
+.top-retailer-upload-card > span {
+  color: #ff6076;
+  font-size: .64rem;
+  font-weight: 900;
+  letter-spacing: .16em;
+}
+.top-retailer-upload-card strong { color: #f5f8fc; font-size: .95rem; }
+.top-retailer-upload-card small { color: rgba(199,212,229,.58); line-height: 1.45; }
+
+@media (max-width: 1000px) {
+  .top-network-summary-strip,
+  .top-meta-reference-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 620px) {
+  .top-network-summary-strip,
+  .top-meta-reference-kpis { grid-template-columns: 1fr; }
+}
