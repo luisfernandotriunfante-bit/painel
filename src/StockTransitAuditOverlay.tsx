@@ -7,12 +7,14 @@ const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL
 const percent = new Intl.NumberFormat('pt-BR', { style: 'percent', minimumFractionDigits: 1, maximumFractionDigits: 1 })
 
 type Finance = { cost?: number; sale?: number }
+type PositionItem = { code?: string; description?: string; costUnit?: number; saleUnit?: number }
 
 type StoredState = {
   positionCost?: number
   positionSale?: number
   stockTransit?: number
   positionFinanceByCode?: Record<string, Finance>
+  positionItems?: PositionItem[]
   uploads?: { position?: unknown; transit?: unknown }
 }
 
@@ -56,7 +58,7 @@ export default function StockTransitAuditOverlay() {
   const costWithTransit = physicalCost + transitCost
   const valueByCode = readTransitValueByCode()
   const diagnostic = readTransitDiagnostic()
-  const valuation = valueTransitAtSale(valueByCode, state.positionFinanceByCode ?? {})
+  const valuation = valueTransitAtSale(valueByCode, state.positionFinanceByCode ?? {}, state.positionItems ?? [])
   const mappedPct = transitCost > 0 ? Math.min(1, valuation.mappedCost / transitCost) : 0
   const complete = transitCost > 0 && valuation.mappedCost >= transitCost - 0.01 && valuation.unmappedCost <= 0.01
   const saleWithTransit = physicalSale + (complete ? valuation.saleValue : 0)
@@ -98,8 +100,14 @@ export default function StockTransitAuditOverlay() {
         <article className={complete ? 'ok' : 'neutral'}>
           <span>POSIÇÃO VENDA + TRÂNSITO</span>
           <strong>{complete ? money.format(saleWithTransit) : '—'}</strong>
-          <small>Estoque físico a P. Venda + Carteira valorada SKU a SKU</small>
+          <small>Estoque físico a P. Venda + Carteira valorada produto a produto</small>
         </article>
+      </div>
+      <div className="stock-transit-match-summary">
+        <span>Código direto: <b>{valuation.directSkus}</b></span>
+        <span>De/para de cadastro: <b>{valuation.bridgedSkus}</b></span>
+        <span>Descrição única: <b>{valuation.descriptionSkus}</b></span>
+        <span>Sem correspondência: <b>{valuation.unmappedSkus.length}</b></span>
       </div>
       {!complete && <div className="stock-transit-diagnostic">
         <strong>DIAGNÓSTICO DO CRUZAMENTO</strong>
@@ -110,8 +118,8 @@ export default function StockTransitAuditOverlay() {
         {sample105.length > 0 && <span>Exemplos 105: <b>{sample105.join(', ')}</b></span>}
       </div>}
       <div className="stock-transit-audit-note">
-        A valoração do trânsito não usa markup global. Para cada SKU da Carteira, o sistema aplica ao Net Value (ZINV) a relação Real → P. Venda do mesmo SKU no relatório 105. O Excel só recebe o trânsito a preço de venda quando 100% do valor da Carteira estiver cruzado.
-        {!complete && valuation.unmappedSkus.length > 0 ? ` SKUs sem preço completo no 105: ${valuation.unmappedSkus.slice(0, 12).join(', ')}${valuation.unmappedSkus.length > 12 ? '…' : ''}.` : ''}
+        O cruzamento tenta primeiro o código direto, depois um de/para de cadastro e, por último, descrição normalizada com correspondência única entre Carteira e 105. Nenhuma correspondência aproximada é aceita. O Excel só recebe o trânsito a preço de venda quando 100% do ZINV estiver cruzado.
+        {!complete && valuation.unmappedSkus.length > 0 ? ` SKUs ainda sem correspondência: ${valuation.unmappedSkus.slice(0, 12).join(', ')}${valuation.unmappedSkus.length > 12 ? '…' : ''}.` : ''}
       </div>
     </section>,
     target,
