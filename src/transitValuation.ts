@@ -28,6 +28,12 @@ export type TransitSaleValuation = {
   supplierSkus: number
   bridgedSkus: number
   descriptionSkus: number
+  missingIn286Skus: string[]
+  missingIn286Cost: number
+  mappedIn286MissingFinanceSkus: string[]
+  mappedIn286MissingFinanceCost: number
+  directMissingFinanceSkus: string[]
+  directMissingFinanceCost: number
 }
 
 export function readTransitValueByCode(): Record<string, number> {
@@ -67,7 +73,13 @@ export function valueTransitAtSale(
   let supplierSkus = 0
   let bridgedSkus = 0
   let descriptionSkus = 0
+  let missingIn286Cost = 0
+  let mappedIn286MissingFinanceCost = 0
+  let directMissingFinanceCost = 0
   const unmappedSkus: string[] = []
+  const missingIn286Skus: string[] = []
+  const mappedIn286MissingFinanceSkus: string[] = []
+  const directMissingFinanceSkus: string[] = []
   const bridge = readProductCodeBridge()
   const supplierBridge = readPositionSupplierBridge()
   const transitDetail = readTransitProductDetail()
@@ -85,17 +97,16 @@ export function valueTransitAtSale(
     const value = Number(rawValue) || 0
     if (!value) continue
 
-    let pair = financePair(financeByCode?.[code])
+    const directFinance = financeByCode?.[code]
+    const bridgeCanonical = bridge[code] || ''
+    let pair = financePair(directFinance)
     let method: 'direct' | 'bridge' | 'supplier' | 'description' | '' = pair ? 'direct' : ''
 
     // Fonte principal validada: Carteira.Material (código indústria)
     // -> Cadastro 286.Fábrica -> código interno Winthor -> 105 Real/P. Venda.
-    if (!pair) {
-      const canonical = bridge[code]
-      if (canonical) {
-        pair = financePair(financeByCode?.[canonical])
-        if (pair) method = 'bridge'
-      }
+    if (!pair && bridgeCanonical) {
+      pair = financePair(financeByCode?.[bridgeCanonical])
+      if (pair) method = 'bridge'
     }
 
     // Contingência: caso alguma versão futura do 105 passe a trazer Código Fornecedor.
@@ -107,6 +118,7 @@ export function valueTransitAtSale(
       }
     }
 
+    // Última contingência segura: descrição exatamente normalizada e única.
     if (!pair) {
       const description = normalizeProductDescription(transitDetail[code]?.description)
       const matches = description ? (descriptionIndex.get(description) ?? []) : []
@@ -128,11 +140,41 @@ export function valueTransitAtSale(
       if (method === 'bridge') bridgedSkus += 1
       if (method === 'supplier') supplierSkus += 1
       if (method === 'description') descriptionSkus += 1
+      continue
+    }
+
+    unmappedCost += value
+    unmappedSkus.push(code)
+
+    // A causa principal fica explícita. Isso permite saber se trocar o 286
+    // ou o 105 é que pode resolver o SKU, sem pedir recargas às cegas.
+    if (bridgeCanonical) {
+      mappedIn286MissingFinanceSkus.push(code)
+      mappedIn286MissingFinanceCost += value
+    } else if (directFinance) {
+      directMissingFinanceSkus.push(code)
+      directMissingFinanceCost += value
     } else {
-      unmappedCost += value
-      unmappedSkus.push(code)
+      missingIn286Skus.push(code)
+      missingIn286Cost += value
     }
   }
 
-  return { saleValue, mappedCost, unmappedCost, mappedSkus, unmappedSkus, directSkus, supplierSkus, bridgedSkus, descriptionSkus }
+  return {
+    saleValue,
+    mappedCost,
+    unmappedCost,
+    mappedSkus,
+    unmappedSkus,
+    directSkus,
+    supplierSkus,
+    bridgedSkus,
+    descriptionSkus,
+    missingIn286Skus,
+    missingIn286Cost,
+    mappedIn286MissingFinanceSkus,
+    mappedIn286MissingFinanceCost,
+    directMissingFinanceSkus,
+    directMissingFinanceCost,
+  }
 }

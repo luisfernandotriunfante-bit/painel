@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { buildProductCodeBridgeFromFile, readProductCodeBridgeDiagnostics } from './productCodeBridge'
-import { capturePositionSupplierBridge, readPositionSupplierDiagnostics } from './positionSupplierBridge'
 import { readTransitDiagnostic, readTransitValueByCode, valueTransitAtSale } from './transitValuation'
 
 const STORAGE_KEY = 'painel-sell-out-milenio:v3'
@@ -26,6 +25,11 @@ function readState(): StoredState {
   } catch {
     return {}
   }
+}
+
+function samples(values: string[]) {
+  if (!values.length) return '—'
+  return `${values.slice(0, 12).join(', ')}${values.length > 12 ? '…' : ''}`
 }
 
 export default function StockTransitAuditOverlay() {
@@ -61,14 +65,9 @@ export default function StockTransitAuditOverlay() {
       if (!file) return
       const nearbyText = input.closest('label, article, section, div')?.textContent ?? ''
       const looksLike286 = /286/.test(file.name) || /286/.test(nearbyText)
-      const looksLike105 = /105/.test(file.name) || /105/.test(nearbyText)
+      if (!looksLike286) return
 
-      const jobs: Promise<unknown>[] = []
-      if (looksLike286) jobs.push(buildProductCodeBridgeFromFile(file))
-      if (looksLike105) jobs.push(capturePositionSupplierBridge(file))
-      if (!jobs.length) return
-
-      void Promise.allSettled(jobs).then(() => {
+      void buildProductCodeBridgeFromFile(file).finally(() => {
         setBridgeVersion(version => version + 1)
         setState(readState())
       })
@@ -85,7 +84,6 @@ export default function StockTransitAuditOverlay() {
   const costWithTransit = physicalCost + transitCost
   const valueByCode = readTransitValueByCode()
   const diagnostic = readTransitDiagnostic()
-  const supplierDiagnostic = readPositionSupplierDiagnostics()
   const bridgeDiagnostic = readProductCodeBridgeDiagnostics()
   const valuation = valueTransitAtSale(valueByCode, state.positionFinanceByCode ?? {}, state.positionItems ?? [])
   const mappedPct = transitCost > 0 ? Math.min(1, valuation.mappedCost / transitCost) : 0
@@ -134,8 +132,7 @@ export default function StockTransitAuditOverlay() {
       </div>
       <div className="stock-transit-match-summary">
         <span>Código direto: <b>{valuation.directSkus}</b></span>
-        <span>Cód. Fornecedor 105: <b>{valuation.supplierSkus}</b></span>
-        <span>De/para de cadastro: <b>{valuation.bridgedSkus}</b></span>
+        <span>De/para 286: <b>{valuation.bridgedSkus}</b></span>
         <span>Descrição única: <b>{valuation.descriptionSkus}</b></span>
         <span>Sem correspondência: <b>{valuation.unmappedSkus.length}</b></span>
       </div>
@@ -148,26 +145,25 @@ export default function StockTransitAuditOverlay() {
         {sample105.length > 0 && <span>Exemplos 105: <b>{sample105.join(', ')}</b></span>}
       </div>}
       {!complete && <div className="stock-transit-diagnostic stock-transit-bridge-diagnostic">
-        <strong>CÓDIGO FORNECEDOR DO 105</strong>
-        <span>Arquivo lido: <b>{supplierDiagnostic?.source || 'recarregue o relatório 105'}</b></span>
-        <span>Código Winthor: <b>{supplierDiagnostic?.canonicalHeader || '—'}</b></span>
-        <span>Código fornecedor: <b>{supplierDiagnostic?.supplierHeader || '—'}</b></span>
-        <span>Vínculos únicos aproveitáveis: <b>{supplierDiagnostic?.aliases ?? 0}</b></span>
-        <span>Vínculos ambíguos descartados: <b>{supplierDiagnostic?.ambiguousAliases ?? 0}</b></span>
-        {(supplierDiagnostic?.examples?.length ?? 0) > 0 && <span>Exemplos: <b>{supplierDiagnostic!.examples.join(', ')}</b></span>}
+        <strong>CAUSA DOS SKUs AINDA NÃO CRUZADOS</strong>
+        <span>Não encontrados em 286.Fábrica: <b>{valuation.missingIn286Skus.length}</b> • {money.format(valuation.missingIn286Cost)}</span>
+        {valuation.missingIn286Skus.length > 0 && <span>Materiais: <b>{samples(valuation.missingIn286Skus)}</b></span>}
+        <span>Encontrados no 286, mas sem Real/P. Venda válido no 105: <b>{valuation.mappedIn286MissingFinanceSkus.length}</b> • {money.format(valuation.mappedIn286MissingFinanceCost)}</span>
+        {valuation.mappedIn286MissingFinanceSkus.length > 0 && <span>Materiais: <b>{samples(valuation.mappedIn286MissingFinanceSkus)}</b></span>}
+        {valuation.directMissingFinanceSkus.length > 0 && <span>Código já existe no 105, mas custo/preço está incompleto: <b>{valuation.directMissingFinanceSkus.length}</b> • {money.format(valuation.directMissingFinanceCost)} • {samples(valuation.directMissingFinanceSkus)}</span>}
       </div>}
       {!complete && <div className="stock-transit-diagnostic stock-transit-bridge-diagnostic">
-        <strong>DE/PARA DO CADASTRO 286</strong>
+        <strong>DE/PARA OFICIAL • CADASTRO 286</strong>
         <span>Arquivo lido: <b>{bridgeDiagnostic?.source || 'recarregue o cadastro 286'}</b></span>
-        <span>Código principal: <b>{bridgeDiagnostic?.canonicalColumn || '—'}</b></span>
-        <span>Colunas de código encontradas: <b>{bridgeDiagnostic?.codeColumns?.join(' • ') || '—'}</b></span>
-        <span>Aliases únicos aproveitáveis: <b>{bridgeDiagnostic?.aliases ?? 0}</b></span>
-        <span>Aliases ambíguos descartados: <b>{bridgeDiagnostic?.ambiguousAliases ?? 0}</b></span>
+        <span>Código interno: <b>{bridgeDiagnostic?.canonicalColumn || '—'}</b></span>
+        <span>Código indústria: <b>{bridgeDiagnostic?.codeColumns?.slice(1).join(' • ') || 'Fábrica'}</b></span>
+        <span>Vínculos únicos aproveitáveis: <b>{bridgeDiagnostic?.aliases ?? 0}</b></span>
+        <span>Vínculos ambíguos descartados: <b>{bridgeDiagnostic?.ambiguousAliases ?? 0}</b></span>
         {(bridgeDiagnostic?.examples?.length ?? 0) > 0 && <span>Exemplos de de/para: <b>{bridgeDiagnostic!.examples.join(', ')}</b></span>}
       </div>}
       <div className="stock-transit-audit-note">
-        O cruzamento tenta primeiro o código direto, depois Código Fornecedor do próprio 105, depois o de/para do cadastro 286 e, por último, descrição normalizada com correspondência única. Nenhuma correspondência aproximada é aceita. O Excel só recebe o trânsito a preço de venda quando 100% do ZINV estiver cruzado.
-        {!complete && valuation.unmappedSkus.length > 0 ? ` SKUs ainda sem correspondência: ${valuation.unmappedSkus.slice(0, 12).join(', ')}${valuation.unmappedSkus.length > 12 ? '…' : ''}.` : ''}
+        Fonte oficial do vínculo: Carteira.Material → 286.Fábrica → código interno do 286 → 105.Código → Real/P. Venda. A descrição é usada apenas como contingência quando houver correspondência exata e única. Nenhuma correspondência aproximada é aceita. O Excel só recebe o trânsito a preço de venda quando 100% do ZINV estiver cruzado.
+        {!complete && valuation.unmappedSkus.length > 0 ? ` SKUs ainda sem correspondência: ${samples(valuation.unmappedSkus)}.` : ''}
       </div>
     </section>,
     target,
