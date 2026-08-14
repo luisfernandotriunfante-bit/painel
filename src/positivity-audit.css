@@ -1,5 +1,13 @@
+.positivity-audit-conference-block {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+
 .positivity-audit-panel {
-  margin-top: 18px;
+  margin-top: 0;
+  min-width: 0;
 }
 
 .positivity-audit-grid {
@@ -47,6 +55,14 @@
   border-color: rgba(251, 191, 36, .38);
 }
 
+.positivity-team-panel .table-scroll {
+  padding: 0 16px 16px;
+}
+
+.positivity-team-panel .positivity-table {
+  width: 100%;
+}
+
 .positivity-team-panel .positivity-table th,
 .positivity-team-panel .positivity-table td {
   white-space: nowrap;
@@ -58,7 +74,7 @@
 }
 
 .positivity-note {
-  padding: 10px 16px 16px;
+  padding: 0 16px 16px;
   font-size: 12px;
 }
 
