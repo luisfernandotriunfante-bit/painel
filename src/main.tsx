@@ -5,6 +5,7 @@ import ExportExcelButton from './ExportExcelButton'
 import MovementModernOverlay from './MovementModernOverlay'
 import SafeLayoutRedistribution from './SafeLayoutRedistribution'
 import NetworkMetaConfigOverlay from './NetworkMetaConfigOverlay'
+import TopRetailerIntegration from './TopRetailerIntegration'
 import { reconcileStoredState, ValueReconciliationWatcher } from './value-reconciliation'
 import './styles.css'
 import './real-data.css'
@@ -25,6 +26,7 @@ import './visual-standardization.css'
 import './movement-modern.css'
 import './safe-layout-redistribution.css'
 import './network-meta-config.css'
+import './top-retailer.css'
 
 reconcileStoredState()
 
@@ -34,6 +36,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <MovementModernOverlay />
     <SafeLayoutRedistribution />
     <NetworkMetaConfigOverlay />
+    <TopRetailerIntegration />
     <ValueReconciliationWatcher />
     <div className="excel-export-fixed">
       <ExportExcelButton />
