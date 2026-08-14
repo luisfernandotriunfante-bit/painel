@@ -1,0 +1,161 @@
+/* Final visual standardization layer.
+   Keeps the validated glass/animation behavior, but removes page-specific
+   legacy fills that made Team/Stock KPIs look like different components. */
+
+:root {
+  --std-glass-bg: rgba(5, 11, 19, .42);
+  --std-glass-border: rgba(255, 255, 255, .10);
+  --std-glass-border-soft: rgba(255, 255, 255, .07);
+  --std-glass-blur: 18px;
+  --std-glass-sat: 116%;
+  --std-glass-brightness: 55%;
+}
+
+/* Four-column KPI strips must always use equal columns. */
+html body #root .premium-shell .v3-app :is(
+  .metrics.four,
+  .enhanced-metrics.four,
+  .summary-kpis,
+  .manager-kpis
+) {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 16px !important;
+}
+
+/* One KPI material everywhere.
+   brightness() only affects what is behind the glass, so the white portions of
+   the animated logo can never blow a card out to white while the blur remains
+   visible. */
+html body #root .premium-shell .v3-app :is(
+  .metrics,
+  .enhanced-metrics,
+  .summary-kpis,
+  .manager-kpis
+) > .metric,
+html body #root .premium-shell .v3-app .metric.red,
+html body #root .premium-shell .v3-app .metric.navy,
+html body #root .premium-shell .v3-app .metric.green {
+  color: #f5f8fc !important;
+  background-color: var(--std-glass-bg) !important;
+  background-image: none !important;
+  border: 1px solid var(--std-glass-border) !important;
+  -webkit-backdrop-filter:
+    blur(var(--std-glass-blur))
+    saturate(var(--std-glass-sat))
+    brightness(var(--std-glass-brightness)) !important;
+  backdrop-filter:
+    blur(var(--std-glass-blur))
+    saturate(var(--std-glass-sat))
+    brightness(var(--std-glass-brightness)) !important;
+  box-shadow: none !important;
+}
+
+/* No old theme pseudo-layer, radial light or color wash may return. */
+html body #root .premium-shell .v3-app :is(
+  .metrics,
+  .enhanced-metrics,
+  .summary-kpis,
+  .manager-kpis
+) > .metric::before,
+html body #root .premium-shell .v3-app :is(
+  .metrics,
+  .enhanced-metrics,
+  .summary-kpis,
+  .manager-kpis
+) > .metric::after {
+  content: none !important;
+  display: none !important;
+  background: none !important;
+  box-shadow: none !important;
+}
+
+/* Tone is semantic only: same card, small label accent. */
+html body #root .premium-shell .v3-app .metric > span {
+  color: #a8b8cc !important;
+}
+
+html body #root .premium-shell .v3-app .metric.red > span,
+html body #root .premium-shell .v3-app .summary-kpis > .metric:first-child > span,
+html body #root .premium-shell .v3-app .manager-kpis > .metric:first-child > span {
+  color: #d76a7e !important;
+}
+
+html body #root .premium-shell .v3-app .metric.navy > span {
+  color: #91a9c4 !important;
+}
+
+/* Tables share one neutral glass language, regardless of page. */
+html body #root .premium-shell .v3-app :is(.table-scroll, .stock-table-viewport) {
+  background-color: rgba(5, 11, 19, .30) !important;
+  background-image: none !important;
+  border-color: var(--std-glass-border) !important;
+}
+
+html body #root .premium-shell .v3-app table,
+html body #root .premium-shell .v3-app table tbody,
+html body #root .premium-shell .v3-app table tbody tr,
+html body #root .premium-shell .v3-app table tbody td {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+html body #root .premium-shell .v3-app table thead,
+html body #root .premium-shell .v3-app table thead tr,
+html body #root .premium-shell .v3-app table thead th,
+html body #root .premium-shell .v3-app .stock-table .stock-header-row th,
+html body #root .premium-shell .v3-app .stock-table .stock-filter-row th {
+  background-color: rgba(255, 255, 255, .035) !important;
+  background-image: none !important;
+  border-color: var(--std-glass-border-soft) !important;
+}
+
+/* Stock used a legacy white code badge while the Team table used plain codes.
+   Use the same plain bold treatment in both tables. */
+html body #root .premium-shell .v3-app .stock-table td:first-child b {
+  display: inline !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: #f5f8fc !important;
+  box-shadow: none !important;
+  font-size: inherit !important;
+  font-weight: 790 !important;
+}
+
+/* Keep filter controls in the same dark translucent material instead of the
+   old light spreadsheet style. */
+html body #root .premium-shell .v3-app .stock-filter-row input {
+  color: #f5f8fc !important;
+  background: rgba(255, 255, 255, .045) !important;
+  border: 1px solid var(--std-glass-border) !important;
+  box-shadow: none !important;
+}
+
+html body #root .premium-shell .v3-app .stock-filter-row input::placeholder {
+  color: #71849d !important;
+  opacity: 1 !important;
+}
+
+@media (max-width: 900px) {
+  html body #root .premium-shell .v3-app :is(
+    .metrics.four,
+    .enhanced-metrics.four,
+    .summary-kpis,
+    .manager-kpis
+  ) {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 650px) {
+  html body #root .premium-shell .v3-app :is(
+    .metrics.four,
+    .enhanced-metrics.four,
+    .summary-kpis,
+    .manager-kpis
+  ) {
+    grid-template-columns: 1fr !important;
+  }
+}
