@@ -1,4 +1,4 @@
-import { setNumber } from './excelXmlCore'
+import { clearCell, setNumber } from './excelXmlCore'
 import { avg3, avg3Pos, n, ratio, State, trend } from './excelMath'
 
 export function fillStock(document: XMLDocument, state: State, worked: number, targetDays: number) {
@@ -23,14 +23,25 @@ export function fillStock(document: XMLDocument, state: State, worked: number, t
   setNumber(document, 'L28', transitCost)
   setNumber(document, 'L29', n(state.positionCost) + transitCost)
   setNumber(document, 'L30', dailyBase ? (n(state.positionCost) + transitCost) / dailyBase : 0)
-  const positiveTarget = n(state.industryPositiveTarget)
+
+  const positiveTarget = n(state.sellOutPositiveTarget)
   const positives = n(state.potentialPositives)
   const positiveTrend = trend(positives, worked, targetDays)
-  setNumber(document, 'L33', positiveTarget)
+  const positiveAverage = avg3Pos(state)
+
+  if (positiveTarget > 0) {
+    setNumber(document, 'L33', positiveTarget)
+    setNumber(document, 'M34', ratio(positives, positiveTarget))
+    setNumber(document, 'M35', ratio(positiveTrend, positiveTarget))
+    setNumber(document, 'M36', ratio(positiveAverage, positiveTarget))
+  } else {
+    clearCell(document, 'L33')
+    clearCell(document, 'M34')
+    clearCell(document, 'M35')
+    clearCell(document, 'M36')
+  }
+
   setNumber(document, 'L34', positives)
-  setNumber(document, 'M34', ratio(positives, positiveTarget))
   setNumber(document, 'L35', positiveTrend)
-  setNumber(document, 'M35', ratio(positiveTrend, positiveTarget))
-  setNumber(document, 'L36', avg3Pos(state))
-  setNumber(document, 'M36', ratio(avg3Pos(state), positiveTarget))
+  setNumber(document, 'L36', positiveAverage)
 }
