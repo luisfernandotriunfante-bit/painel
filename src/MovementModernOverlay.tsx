@@ -179,10 +179,11 @@ function MovementModern({ state }: { state: StoredState }) {
         </div>
         <div className="movement-seven-table">
           <table>
-            <thead><tr><th>Dia</th><th>Sell Out</th><th>Pos.</th></tr></thead>
+            <thead><tr><th>Dia</th><th>Sell Out</th><th>Faturado</th><th>Positivação</th></tr></thead>
             <tbody>{visible.map(item => <tr key={item.day}>
               <td><b>{String(item.day).padStart(2, '0')}</b><small>{monthLabel}</small></td>
-              <td><strong>{money.format(item.sellOut)}</strong><span><i className="mini-billed" />{money.format(item.billed)} <i className="mini-pending" />{money.format(item.toInvoice)}</span></td>
+              <td><strong>{money.format(item.sellOut)}</strong></td>
+              <td><strong className="movement-billed-value">{money.format(item.billed)}</strong></td>
               <td><b className="movement-positive-number">{integer.format(item.positives)}</b></td>
             </tr>)}</tbody>
           </table>
