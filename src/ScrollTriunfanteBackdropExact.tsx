@@ -1,14 +1,94 @@
 import { useEffect, useRef } from 'react'
 import fallbackSpriteBase64 from './triunfante-user/sprite6-full.txt?raw'
-import hqVideoBase64 from './triunfante-hq18/chunk00'
 
-const HQ_VIDEO = `data:video/webm;base64,${hqVideoBase64.trim()}`
 const FALLBACK_SPRITE = `data:image/webp;base64,${fallbackSpriteBase64.replace(/\s+/g, '')}`
 const PIXELS_PER_LOOP = 720
 const FALLBACK_FRAME_COUNT = 6
 const FALLBACK_COLUMNS = 3
-const FALLBACK_ROWS = 2
 const EASING = 0.19
+
+const HQ_CANDIDATES = [
+  ['triunfante-hq-v2/part00.txt', 'triunfante-hq-v2/part01.txt'],
+  ['triunfante-hq-v4/part00.txt', 'triunfante-hq-v4/part01.txt'],
+]
+
+type VideoCandidate = {
+  url: string
+  width: number
+  height: number
+  duration: number
+  bytes: number
+  label: string
+}
+
+function base64ToObjectUrl(base64: string) {
+  const clean = base64.replace(/\s+/g, '')
+  const binary = window.atob(clean)
+  const bytes = new Uint8Array(binary.length)
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index)
+  }
+  return {
+    url: URL.createObjectURL(new Blob([bytes], { type: 'video/webm' })),
+    bytes: bytes.byteLength,
+  }
+}
+
+async function buildCandidate(parts: string[]): Promise<VideoCandidate | null> {
+  try {
+    const base = import.meta.env.BASE_URL || './'
+    const texts = await Promise.all(
+      parts.map(async (part) => {
+        const response = await fetch(`${base}${part}`, { cache: 'force-cache' })
+        if (!response.ok) throw new Error(`${part}: HTTP ${response.status}`)
+        return response.text()
+      }),
+    )
+
+    const { url, bytes } = base64ToObjectUrl(texts.join(''))
+    const probe = document.createElement('video')
+    probe.muted = true
+    probe.playsInline = true
+    probe.preload = 'metadata'
+
+    const metadata = await new Promise<{ width: number; height: number; duration: number }>((resolve, reject) => {
+      const timeout = window.setTimeout(() => reject(new Error('metadata timeout')), 5000)
+      const cleanup = () => window.clearTimeout(timeout)
+
+      probe.addEventListener('loadedmetadata', () => {
+        cleanup()
+        resolve({
+          width: probe.videoWidth,
+          height: probe.videoHeight,
+          duration: probe.duration,
+        })
+      }, { once: true })
+      probe.addEventListener('error', () => {
+        cleanup()
+        reject(new Error('video decode error'))
+      }, { once: true })
+      probe.src = url
+      probe.load()
+    })
+
+    if (!metadata.width || !metadata.height || !Number.isFinite(metadata.duration) || metadata.duration <= 0) {
+      URL.revokeObjectURL(url)
+      return null
+    }
+
+    return {
+      url,
+      width: metadata.width,
+      height: metadata.height,
+      duration: metadata.duration,
+      bytes,
+      label: parts.join(' + '),
+    }
+  } catch (error) {
+    console.warn('Fonte HQ Triunfante descartada:', parts, error)
+    return null
+  }
+}
 
 export default function ScrollTriunfanteBackdropExact() {
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -26,6 +106,8 @@ export default function ScrollTriunfanteBackdropExact() {
     let currentVirtual = 0
     let lastApplied = -1
     let hqReady = false
+    let activeUrl = ''
+    const candidateUrls: string[] = []
 
     const modulo = (value: number, divisor: number) =>
       ((value % divisor) + divisor) % divisor
@@ -55,7 +137,7 @@ export default function ScrollTriunfanteBackdropExact() {
       ) return false
 
       try {
-        const width = 96
+        const width = 128
         const height = Math.max(1, Math.round(width * video.videoHeight / video.videoWidth))
         const canvas = document.createElement('canvas')
         canvas.width = width
@@ -63,11 +145,10 @@ export default function ScrollTriunfanteBackdropExact() {
         const context = canvas.getContext('2d', { willReadFrequently: true })
         if (!context) return false
 
-        context.clearRect(0, 0, width, height)
         context.drawImage(video, 0, 0, width, height)
         const pixels = context.getImageData(0, 0, width, height).data
         let visiblePixels = 0
-        const minimumVisible = Math.max(18, Math.floor((pixels.length / 4) * 0.002))
+        const minimumVisible = Math.max(24, Math.floor((pixels.length / 4) * 0.002))
 
         for (let index = 0; index < pixels.length; index += 4) {
           const alpha = pixels[index + 3]
@@ -86,14 +167,7 @@ export default function ScrollTriunfanteBackdropExact() {
 
     const revealVideoIfVisible = () => {
       if (cancelled || !duration || !Number.isFinite(duration)) return
-
-      // loadedmetadata/canplay only prove that the container was parsed. They do
-      // not prove Chrome has painted a non-empty VP9 frame yet. Never hide the
-      // fallback until an actual decoded frame contains visible logo pixels.
-      if (!frameHasVisiblePixels()) {
-        keepFallback()
-        return
-      }
+      if (!frameHasVisiblePixels()) return
 
       hqReady = true
       video.style.opacity = '1'
@@ -119,7 +193,7 @@ export default function ScrollTriunfanteBackdropExact() {
           video.currentTime = Math.min(nextTime, Math.max(0, duration - 0.001))
           lastApplied = nextTime
         } catch {
-          // Chrome can reject a seek for a few milliseconds while decoding.
+          // A seek can briefly be rejected while Chrome is decoding a VP9 frame.
         }
       }
 
@@ -137,10 +211,7 @@ export default function ScrollTriunfanteBackdropExact() {
 
     const onLoadedMetadata = () => {
       duration = Number.isFinite(video.duration) && video.duration > 0 ? video.duration : 0
-      if (!duration) {
-        keepFallback()
-        return
-      }
+      if (!duration) return
 
       targetVirtual = (Math.max(0, window.scrollY) / PIXELS_PER_LOOP) * duration
       currentVirtual = targetVirtual
@@ -150,31 +221,17 @@ export default function ScrollTriunfanteBackdropExact() {
       try {
         video.currentTime = modulo(currentVirtual, duration)
       } catch {
-        // Retried in requestAnimationFrame below.
+        // Retried on the next animation frame.
       }
-
-      // Important: do not reveal here. Metadata is exactly where the previous
-      // implementation hid the working fallback before a frame existed.
       window.requestAnimationFrame(queueFrame)
     }
 
-    const onDecodedFrame = () => {
-      revealVideoIfVisible()
-    }
-
+    const onDecodedFrame = () => revealVideoIfVisible()
     const onVideoError = () => keepFallback()
 
-    // The fallback is the guaranteed visual source from the first paint onward.
-    // HQ is promoted only after a real frame passes the visibility check above.
     fallback.style.opacity = '1'
     video.style.opacity = '0'
     paintFallback()
-
-    video.src = HQ_VIDEO
-    video.preload = 'auto'
-    video.muted = true
-    video.playsInline = true
-    video.load()
 
     video.addEventListener('loadedmetadata', onLoadedMetadata)
     video.addEventListener('loadeddata', onDecodedFrame)
@@ -183,6 +240,38 @@ export default function ScrollTriunfanteBackdropExact() {
     video.addEventListener('error', onVideoError)
     window.addEventListener('scroll', queueFrame, { passive: true })
     window.addEventListener('resize', queueFrame, { passive: true })
+
+    ;(async () => {
+      const results = await Promise.all(HQ_CANDIDATES.map(buildCandidate))
+      if (cancelled) {
+        results.forEach((candidate) => candidate && URL.revokeObjectURL(candidate.url))
+        return
+      }
+
+      const valid = results.filter((candidate): candidate is VideoCandidate => Boolean(candidate))
+      candidateUrls.push(...valid.map((candidate) => candidate.url))
+
+      // Prefer actual pixel count first, then encoded payload size. This keeps us
+      // on the sharpest version that the browser can really decode.
+      valid.sort((a, b) => {
+        const pixelDifference = b.width * b.height - a.width * a.height
+        return pixelDifference || b.bytes - a.bytes
+      })
+
+      const best = valid[0]
+      if (!best) {
+        console.warn('Nenhuma fonte HQ Triunfante pôde ser decodificada; mantendo fallback.')
+        return
+      }
+
+      activeUrl = best.url
+      console.info(`Triunfante HQ selecionado: ${best.width}x${best.height}, ${best.bytes} bytes, ${best.label}`)
+      video.src = activeUrl
+      video.preload = 'auto'
+      video.muted = true
+      video.playsInline = true
+      video.load()
+    })()
 
     return () => {
       cancelled = true
@@ -195,6 +284,9 @@ export default function ScrollTriunfanteBackdropExact() {
       window.removeEventListener('resize', queueFrame)
       if (raf) window.cancelAnimationFrame(raf)
       video.pause()
+      video.removeAttribute('src')
+      candidateUrls.forEach((url) => URL.revokeObjectURL(url))
+      if (activeUrl && !candidateUrls.includes(activeUrl)) URL.revokeObjectURL(activeUrl)
     }
   }, [])
 
