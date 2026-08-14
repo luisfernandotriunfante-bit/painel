@@ -12,29 +12,53 @@ const shellStyles = `
   position: fixed !important;
   left: 50% !important;
   top: 50% !important;
-  width: clamp(320px, 30vw, 460px) !important;
-  aspect-ratio: 280 / 199 !important;
+  width: clamp(420px, 38vw, 620px) !important;
+  aspect-ratio: 1320 / 940 !important;
   transform: translate(-50%, -50%) !important;
   display: block !important;
   pointer-events: none !important;
   z-index: 0 !important;
-  opacity: .38 !important;
-  overflow: hidden !important;
+  opacity: .52 !important;
+  overflow: visible !important;
   background: none !important;
   perspective: none !important;
   filter: none !important;
 }
 
-.triunfante-frame-layer {
+.triunfante-hq-video,
+.triunfante-hq-fallback,
+.triunfante-frame-layer,
+.triunfante-hq-canvas {
   position: absolute !important;
   inset: 0 !important;
   width: 100% !important;
   height: 100% !important;
-  background-repeat: no-repeat !important;
+  display: block !important;
   pointer-events: none !important;
-  will-change: opacity, background-position !important;
   transform: translateZ(0) !important;
   backface-visibility: hidden !important;
+}
+
+.triunfante-hq-video {
+  object-fit: contain !important;
+  object-position: center !important;
+  opacity: 0;
+  transition: opacity 160ms ease !important;
+  background: transparent !important;
+  filter: none !important;
+}
+
+.triunfante-hq-fallback {
+  background-repeat: no-repeat !important;
+  background-position: 0 0 !important;
+  background-size: 300% 200% !important;
+  opacity: .22;
+  transition: opacity 160ms ease !important;
+}
+
+.triunfante-frame-layer {
+  background-repeat: no-repeat !important;
+  will-change: opacity, background-position !important;
 }
 
 .premium-shell > .shell-content {
@@ -89,8 +113,8 @@ const shellStyles = `
 
 @media (max-width: 760px) {
   .triunfante-scroll-backdrop {
-    width: min(76vw, 420px) !important;
-    opacity: .30 !important;
+    width: min(84vw, 520px) !important;
+    opacity: .38 !important;
   }
 }
 `
