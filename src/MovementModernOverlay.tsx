@@ -7,6 +7,8 @@ type DailyMovement = {
   toInvoice: number
   sellOut: number
   positives: number
+  billedPositives?: number
+  toInvoicePositives?: number
 }
 
 type StoredState = {
@@ -28,6 +30,15 @@ function readStoredState(): StoredState | null {
   } catch {
     return null
   }
+}
+
+function effectivePositives(item: DailyMovement) {
+  return item.billedPositives == null ? Number(item.positives) || 0 : Number(item.billedPositives) || 0
+}
+
+function pendingOnlyPositives(item: DailyMovement) {
+  if (item.toInvoicePositives != null) return Number(item.toInvoicePositives) || 0
+  return Math.max(0, (Number(item.positives) || 0) - effectivePositives(item))
 }
 
 function smoothPath(points: { x: number; y: number }[]) {
@@ -70,7 +81,7 @@ function MovementModern({ state }: { state: StoredState }) {
     const source = new Map((state.dailyMovement ?? []).map(item => [item.day, item]))
     return Array.from({ length: daysInMonth }, (_, index) => {
       const day = index + 1
-      return source.get(day) ?? { day, billed: 0, toInvoice: 0, sellOut: 0, positives: 0 }
+      return source.get(day) ?? { day, billed: 0, toInvoice: 0, sellOut: 0, positives: 0, billedPositives: 0, toInvoicePositives: 0 }
     })
   }, [state.dailyMovement, daysInMonth])
 
@@ -89,7 +100,7 @@ function MovementModern({ state }: { state: StoredState }) {
     const plotW = width - left - right
     const plotH = height - top - bottom
     const financialMax = Math.max(1, ...visible.map(item => Math.max(item.billed, item.toInvoice)))
-    const positivesMax = Math.max(1, ...visible.map(item => item.positives))
+    const positivesMax = Math.max(1, ...visible.map(item => effectivePositives(item)))
     const x = (index: number) => left + (visible.length <= 1 ? plotW / 2 : index * plotW / (visible.length - 1))
     const moneyY = (value: number) => top + plotH - value / financialMax * plotH
     const positiveY = (value: number) => top + plotH - value / positivesMax * plotH
@@ -97,7 +108,7 @@ function MovementModern({ state }: { state: StoredState }) {
       width, height, left, right, top, bottom, plotW, plotH, financialMax, positivesMax,
       billed: visible.map((item, index) => ({ x: x(index), y: moneyY(item.billed) })),
       pending: visible.map((item, index) => ({ x: x(index), y: moneyY(item.toInvoice) })),
-      positives: visible.map((item, index) => ({ x: x(index), y: positiveY(item.positives) })),
+      positives: visible.map((item, index) => ({ x: x(index), y: positiveY(effectivePositives(item)) })),
       x,
     }
   }, [visible])
@@ -128,7 +139,7 @@ function MovementModern({ state }: { state: StoredState }) {
           <div className="movement-modern-legend">
             <span><i className="legend-line billed" />Faturado</span>
             <span><i className="legend-line pending" />A faturar</span>
-            <span><i className="legend-line positives" />Positivações</span>
+            <span><i className="legend-line positives" />Pos. faturada</span>
           </div>
         </div>
 
@@ -166,7 +177,7 @@ function MovementModern({ state }: { state: StoredState }) {
             {visible.map((item, index) => <g key={item.day}>
               <text x={chart.x(index)} y={chart.height - 18} textAnchor="middle" className="movement-day-label">{item.day}</text>
               <rect x={chart.x(index) - 35} y={chart.top} width="70" height={chart.plotH} fill="transparent">
-                <title>{`${item.day}: Faturado ${money.format(item.billed)} • A faturar ${money.format(item.toInvoice)} • Sell Out ${money.format(item.sellOut)} • ${item.positives} positivações`}</title>
+                <title>{`${item.day}: Faturado ${money.format(item.billed)} • A faturar ${money.format(item.toInvoice)} • Sell Out ${money.format(item.sellOut)} • ${effectivePositives(item)} positivados faturados • +${pendingOnlyPositives(item)} somente a faturar`}</title>
               </rect>
             </g>)}
           </svg>
@@ -184,7 +195,7 @@ function MovementModern({ state }: { state: StoredState }) {
               <td><b>{String(item.day).padStart(2, '0')}</b><small>{monthLabel}</small></td>
               <td><strong>{money.format(item.sellOut)}</strong></td>
               <td><strong className="movement-billed-value">{money.format(item.billed)}</strong></td>
-              <td><b className="movement-positive-number">{integer.format(item.positives)}</b></td>
+              <td><b className="movement-positive-number">{integer.format(effectivePositives(item))}</b><small>{pendingOnlyPositives(item) ? `+${integer.format(pendingOnlyPositives(item))} a fat.` : 'faturada'}</small></td>
             </tr>)}</tbody>
           </table>
         </div>
