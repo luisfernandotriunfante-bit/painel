@@ -1,0 +1,21 @@
+/* Redes: keep the validated Triunfante animation behind the information layer.
+   This is page-specific so the already validated animation/transparency on the
+   other Sell Out views is not changed. */
+html[data-dashboard-page="equipe"] .triunfante-scroll-backdrop {
+  z-index: 0 !important;
+  opacity: .30 !important;
+}
+
+html[data-dashboard-page="equipe"] .premium-shell > .shell-content {
+  position: relative !important;
+  z-index: 3 !important;
+}
+
+html[data-dashboard-page="equipe"] main.v3-main > .top-network-data-page,
+html[data-dashboard-page="equipe"] .top-network-kpis,
+html[data-dashboard-page="equipe"] .top-network-panel,
+html[data-dashboard-page="equipe"] .top-network-summary-strip,
+html[data-dashboard-page="equipe"] .top-network-table {
+  position: relative !important;
+  z-index: 4 !important;
+}
