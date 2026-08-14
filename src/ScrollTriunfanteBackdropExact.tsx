@@ -39,17 +39,67 @@ export default function ScrollTriunfanteBackdropExact() {
     }
 
     const keepFallback = () => {
-      if (cancelled || hqReady) return
+      if (cancelled) return
+      hqReady = false
       video.style.opacity = '0'
       fallback.style.opacity = '1'
       paintFallback()
     }
 
-    const revealVideo = () => {
+    const frameHasVisiblePixels = () => {
+      if (
+        cancelled ||
+        video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA ||
+        video.videoWidth <= 0 ||
+        video.videoHeight <= 0
+      ) return false
+
+      try {
+        const width = 96
+        const height = Math.max(1, Math.round(width * video.videoHeight / video.videoWidth))
+        const canvas = document.createElement('canvas')
+        canvas.width = width
+        canvas.height = height
+        const context = canvas.getContext('2d', { willReadFrequently: true })
+        if (!context) return false
+
+        context.clearRect(0, 0, width, height)
+        context.drawImage(video, 0, 0, width, height)
+        const pixels = context.getImageData(0, 0, width, height).data
+        let visiblePixels = 0
+        const minimumVisible = Math.max(18, Math.floor((pixels.length / 4) * 0.002))
+
+        for (let index = 0; index < pixels.length; index += 4) {
+          const alpha = pixels[index + 3]
+          const brightness = Math.max(pixels[index], pixels[index + 1], pixels[index + 2])
+          if (alpha > 18 && brightness > 18) {
+            visiblePixels += 1
+            if (visiblePixels >= minimumVisible) return true
+          }
+        }
+      } catch {
+        return false
+      }
+
+      return false
+    }
+
+    const revealVideoIfVisible = () => {
       if (cancelled || !duration || !Number.isFinite(duration)) return
+
+      // loadedmetadata/canplay only prove that the container was parsed. They do
+      // not prove Chrome has painted a non-empty VP9 frame yet. Never hide the
+      // fallback until an actual decoded frame contains visible logo pixels.
+      if (!frameHasVisiblePixels()) {
+        keepFallback()
+        return
+      }
+
       hqReady = true
       video.style.opacity = '1'
-      fallback.style.opacity = '0'
+      window.requestAnimationFrame(() => {
+        if (!cancelled && hqReady) fallback.style.opacity = '0'
+      })
     }
 
     const applyFrame = () => {
@@ -103,18 +153,19 @@ export default function ScrollTriunfanteBackdropExact() {
         // Retried in requestAnimationFrame below.
       }
 
-      window.requestAnimationFrame(() => {
-        revealVideo()
-        queueFrame()
-      })
+      // Important: do not reveal here. Metadata is exactly where the previous
+      // implementation hid the working fallback before a frame existed.
+      window.requestAnimationFrame(queueFrame)
     }
 
-    const onCanPlay = () => {
-      if (duration) revealVideo()
+    const onDecodedFrame = () => {
+      revealVideoIfVisible()
     }
 
     const onVideoError = () => keepFallback()
 
+    // The fallback is the guaranteed visual source from the first paint onward.
+    // HQ is promoted only after a real frame passes the visibility check above.
     fallback.style.opacity = '1'
     video.style.opacity = '0'
     paintFallback()
@@ -126,7 +177,9 @@ export default function ScrollTriunfanteBackdropExact() {
     video.load()
 
     video.addEventListener('loadedmetadata', onLoadedMetadata)
-    video.addEventListener('canplay', onCanPlay)
+    video.addEventListener('loadeddata', onDecodedFrame)
+    video.addEventListener('canplay', onDecodedFrame)
+    video.addEventListener('seeked', onDecodedFrame)
     video.addEventListener('error', onVideoError)
     window.addEventListener('scroll', queueFrame, { passive: true })
     window.addEventListener('resize', queueFrame, { passive: true })
@@ -134,7 +187,9 @@ export default function ScrollTriunfanteBackdropExact() {
     return () => {
       cancelled = true
       video.removeEventListener('loadedmetadata', onLoadedMetadata)
-      video.removeEventListener('canplay', onCanPlay)
+      video.removeEventListener('loadeddata', onDecodedFrame)
+      video.removeEventListener('canplay', onDecodedFrame)
+      video.removeEventListener('seeked', onDecodedFrame)
       video.removeEventListener('error', onVideoError)
       window.removeEventListener('scroll', queueFrame)
       window.removeEventListener('resize', queueFrame)
