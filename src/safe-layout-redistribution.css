@@ -1,37 +1,107 @@
-/* Hide the two former Sell Out sub-tabs without mutating React-managed DOM. */
-.tabs button:nth-child(3),
-.tabs button:nth-child(4) {
+/* =========================================================
+   SAFE REDISTRIBUTION
+   This stylesheet only reorganizes already validated surfaces.
+   It does not touch the HQ backdrop, glass baseline or movement chart.
+   ========================================================= */
+
+/* Native Equipe and Estoque remain internal routing targets. Their visible
+   navigation is now Redes (horizontal) and Estoque (sidebar). */
+.tabs > button:nth-child(3),
+.tabs > button:nth-child(4) {
   display: none !important;
 }
 
-/* When Stock is opened as a lateral module, hide Sell Out's horizontal sub-navigation. */
-html[data-dashboard-page="estoque"] .tabs {
+/* Sell Out horizontal navigation: Resumo | Gerencial | Redes */
+html[data-dashboard-module="sellout"] .tabs > button:nth-child(5),
+html[data-dashboard-module="sellout"] .tabs > button:nth-child(6),
+html[data-dashboard-module="sellout"] .tabs > button:nth-child(7) {
+  display: none !important;
+}
+
+html[data-dashboard-module="sellout"] .safe-networks-tab {
+  display: inline-flex !important;
+}
+
+/* Configurações horizontal navigation: Metas | Conferência | Upload */
+html[data-dashboard-module="config"] .tabs > button:nth-child(1),
+html[data-dashboard-module="config"] .tabs > button:nth-child(2),
+html[data-dashboard-module="config"] .safe-networks-tab {
+  display: none !important;
+}
+
+html[data-dashboard-module="config"] .tabs > button:nth-child(5),
+html[data-dashboard-module="config"] .tabs > button:nth-child(6),
+html[data-dashboard-module="config"] .tabs > button:nth-child(7) {
+  display: inline-flex !important;
+}
+
+/* Estoque is a standalone lateral module. */
+html[data-dashboard-module="stock"] .tabs {
   visibility: hidden !important;
   pointer-events: none !important;
 }
 
-/* De-emphasize Sell Out in the sidebar while Stock is the active module. */
-.module-nav:has(.safe-stock-module.active) > .module-item:not(.safe-stock-module) {
+/* Deterministic order even though Redes is rendered through a safe portal. */
+.tabs > button:nth-child(1) { order: 1; }
+.tabs > button:nth-child(2) { order: 2; }
+.safe-networks-tab { order: 3; }
+.tabs > button:nth-child(5) { order: 1; }
+.tabs > button:nth-child(6) { order: 2; }
+.tabs > button:nth-child(7) { order: 3; }
+
+.safe-virtual-tab {
+  align-items: center;
+  justify-content: center;
+}
+
+/* Sidebar module states. */
+.safe-side-module {
+  margin-top: 10px;
+}
+
+.safe-side-module .module-number {
+  opacity: .42;
+}
+
+.safe-side-module.active .module-number {
+  opacity: .9;
+}
+
+html[data-dashboard-module="stock"] .module-nav > .module-item:not(.safe-stock-module),
+html[data-dashboard-module="config"] .module-nav > .module-item:not(.safe-config-module),
+html[data-dashboard-module="sellout"] .module-nav > .safe-side-module {
   background: transparent !important;
   box-shadow: none !important;
   border-color: transparent !important;
 }
 
-.safe-stock-module {
-  margin-top: 10px;
+html[data-dashboard-module="stock"] .module-nav > .safe-stock-module,
+html[data-dashboard-module="config"] .module-nav > .safe-config-module {
+  display: flex !important;
 }
 
-.safe-stock-module .module-number {
-  opacity: .42;
+/* Gerencial now contains team management only; networks moved to Redes. */
+html[data-dashboard-page="gerencial"] .manager-kpis,
+html[data-dashboard-page="gerencial"] .v3-main > section:has(.manager-table) {
+  display: none !important;
 }
 
-.safe-stock-module.active .module-number {
-  opacity: .9;
+/* The native Equipe page is only the internal route used by the virtual Redes tab. */
+html[data-dashboard-page="equipe"] .v3-main > :not(.safe-networks-page) {
+  display: none !important;
+}
+
+/* Metas das redes moved to Redes. Metas da equipe moved to Gerencial. */
+html[data-dashboard-page="metas"] .target-control-grid-v3 > article:nth-child(2),
+html[data-dashboard-page="metas"] .v3-main > .target-control-grid + .panel,
+html[data-dashboard-page="metas"] .v3-main > .target-control-grid + .panel + .panel {
+  display: none !important;
 }
 
 .safe-product-lines,
 .safe-stock-summary,
-.safe-team-block {
+.safe-team-block,
+.safe-networks-page {
   margin-top: 28px;
 }
 
@@ -48,7 +118,8 @@ html[data-dashboard-page="estoque"] .tabs {
 
 .safe-five-metrics .metric,
 .safe-stock-kpis .metric,
-.safe-team-kpis .metric {
+.safe-team-kpis .metric,
+.safe-network-kpis .metric {
   min-width: 0;
 }
 
@@ -77,7 +148,8 @@ html[data-dashboard-page="estoque"] .tabs {
 }
 
 .safe-stock-kpis,
-.safe-team-kpis {
+.safe-team-kpis,
+.safe-network-kpis {
   padding: 24px 26px 26px;
 }
 
@@ -85,15 +157,263 @@ html[data-dashboard-page="estoque"] .tabs {
   margin-top: 22px;
 }
 
-/* Team targets now live with the managerial team block. Hide only the old
-   third section of the Metas page, identified structurally after its control grid. */
-.v3-main > .target-control-grid + .panel + .panel {
-  display: none !important;
+/* ---------------- STOCK ANALYTICS ---------------- */
+.safe-stock-insights {
+  display: grid;
+  grid-template-columns: minmax(300px, .8fr) minmax(560px, 1.2fr);
+  gap: 20px;
+  padding: 0 26px 24px;
+}
+
+.safe-stock-chart-card,
+.safe-stock-top-card {
+  border: 1px solid rgba(177, 198, 224, .14);
+  border-radius: 22px;
+  background: rgba(5, 12, 22, .24);
+  backdrop-filter: blur(18px) saturate(118%);
+  -webkit-backdrop-filter: blur(18px) saturate(118%);
+  overflow: hidden;
+}
+
+.safe-stock-chart-card {
+  padding: 24px;
+}
+
+.safe-insight-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-bottom: 22px;
+}
+
+.safe-insight-heading span {
+  color: #ff5f75;
+  font-size: .65rem;
+  font-weight: 800;
+  letter-spacing: .22em;
+}
+
+.safe-insight-heading strong {
+  color: rgba(244, 248, 255, .94);
+  font-size: 1rem;
+}
+
+.safe-stock-total {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 18px;
+  color: #f7f9fd;
+  font-size: clamp(1.5rem, 2.3vw, 2.35rem);
+  font-weight: 800;
+}
+
+.safe-stock-total small {
+  color: rgba(197, 211, 229, .52);
+  font-size: .65rem;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.safe-stock-stack {
+  display: flex;
+  width: 100%;
+  height: 13px;
+  margin: 8px 0 22px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(255,255,255,.05);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
+}
+
+.safe-stock-stack > i {
+  display: block;
+  height: 100%;
+  transition: width .35s ease;
+}
+
+.safe-stock-stack > i.physical,
+.safe-stock-legend i.physical {
+  background: #3e79b9;
+}
+
+.safe-stock-stack > i.transit,
+.safe-stock-legend i.transit {
+  background: #ef3346;
+}
+
+.safe-stock-legend {
+  display: grid;
+  gap: 13px;
+}
+
+.safe-stock-legend > div {
+  display: grid;
+  grid-template-columns: 10px minmax(90px, 1fr) auto auto;
+  gap: 10px;
+  align-items: center;
+  color: rgba(223, 232, 244, .72);
+  font-size: .72rem;
+}
+
+.safe-stock-legend i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.safe-stock-legend strong {
+  color: rgba(247, 250, 255, .94);
+}
+
+.safe-stock-legend small {
+  color: rgba(197, 211, 229, .54);
+}
+
+.safe-stock-top-card .safe-insight-heading {
+  padding: 24px 24px 0;
+}
+
+.safe-stock-mini-table {
+  overflow: auto;
+}
+
+.safe-stock-mini-table table {
+  width: 100%;
+}
+
+.safe-stock-mini-table th,
+.safe-stock-mini-table td {
+  padding: 13px 16px;
+  white-space: nowrap;
+}
+
+.safe-stock-mini-table td:nth-child(2) {
+  max-width: 290px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.safe-stock-source-strip {
+  display: grid;
+  grid-template-columns: .7fr .7fr 1.6fr;
+  gap: 14px;
+  padding: 0 26px 26px;
+}
+
+.safe-stock-source-strip > div {
+  min-height: 82px;
+  padding: 16px 18px;
+  border: 1px solid rgba(177, 198, 224, .11);
+  border-radius: 16px;
+  background: rgba(5, 12, 22, .20);
+}
+
+.safe-stock-source-strip span {
+  display: block;
+  margin-bottom: 7px;
+  color: rgba(175, 197, 222, .65);
+  font-size: .6rem;
+  font-weight: 800;
+  letter-spacing: .16em;
+}
+
+.safe-stock-source-strip strong {
+  color: rgba(244, 248, 255, .9);
+  font-size: .78rem;
+}
+
+.safe-stock-source-strip small {
+  display: block;
+  margin-top: 6px;
+  color: rgba(194, 208, 226, .55);
+  font-size: .68rem;
+  line-height: 1.45;
+}
+
+.safe-arrival-note {
+  border-color: rgba(239, 51, 70, .16) !important;
+}
+
+/* ---------------- NETWORKS ---------------- */
+.safe-network-target-panel {
+  margin-top: 22px;
+}
+
+.safe-network-heading {
+  align-items: center;
+}
+
+.safe-save-network {
+  min-width: 126px;
+  height: 40px;
+  padding: 0 18px;
+  border: 1px solid rgba(255, 88, 110, .34);
+  border-radius: 13px;
+  background: rgba(190, 20, 49, .72);
+  color: #fff;
+  font: inherit;
+  font-size: .7rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.safe-save-network:hover {
+  background: rgba(206, 25, 55, .9);
+}
+
+.safe-network-pool {
+  display: grid;
+  grid-template-columns: 190px minmax(210px, 320px) minmax(280px, 1fr);
+  align-items: center;
+  gap: 16px;
+  padding: 18px 24px;
+  border-bottom: 1px solid rgba(177, 198, 224, .10);
+  background: rgba(6, 12, 22, .16);
+}
+
+.safe-network-pool > span {
+  color: #ff6076;
+  font-size: .64rem;
+  font-weight: 800;
+  letter-spacing: .15em;
+}
+
+.safe-network-pool > small {
+  color: rgba(198, 211, 228, .55);
+  font-size: .68rem;
+}
+
+.safe-network-currency {
+  width: 100%;
+  min-width: 150px;
+}
+
+.safe-network-table th,
+.safe-network-table td {
+  white-space: nowrap;
+}
+
+.safe-network-target-cell {
+  min-width: 190px;
 }
 
 @media (max-width: 1320px) {
   .safe-five-metrics {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .safe-stock-insights {
+    grid-template-columns: 1fr;
+  }
+
+  .safe-stock-source-strip {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .safe-arrival-note {
+    grid-column: 1 / -1;
   }
 }
 
@@ -104,12 +424,28 @@ html[data-dashboard-page="estoque"] .tabs {
   }
 
   .safe-stock-kpis,
-  .safe-team-kpis {
+  .safe-team-kpis,
+  .safe-network-kpis {
     padding: 18px;
   }
 
   .safe-note {
     margin: 0 18px 18px;
+  }
+
+  .safe-stock-insights,
+  .safe-stock-source-strip {
+    grid-template-columns: 1fr;
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .safe-arrival-note {
+    grid-column: auto;
+  }
+
+  .safe-network-pool {
+    grid-template-columns: 1fr;
   }
 }
 
