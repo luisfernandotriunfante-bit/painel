@@ -10,4 +10,5 @@ export function throughDay(y:number,m:number){const t=new Date(),last=new Date(y
 function shift(y:number,m:number,o:number){const d=new Date(y,m-1+o,1);return[d.getFullYear(),d.getMonth()+1] as const}
 export function sumMonth(s:State,y:number,m:number){return Object.values(s.historyByMonth?.[monthKey(y,m)]??{}).reduce((a:any,v:any)=>a+n(v),0) as number}
 export function avg3(s:State){const a=[-1,-2,-3].map(o=>{const[y,m]=shift(s.periodYear,s.periodMonth,o);return sumMonth(s,y,m)}).filter(Boolean);return a.length?a.reduce((x,y)=>x+y,0)/a.length:0}
-export function avg3Pos(s:State){const a=[-1,-2,-3].map(o=>{const[y,m]=shift(s.periodYear,s.periodMonth,o);return n(s.historyMonthCounts?.[monthKey(y,m)])}).filter(Boolean);return a.length?a.reduce((x,y)=>x+y,0)/a.length:0}
+function positiveMonthCount(s:State,y:number,m:number){const values=Object.values(s.historyByMonth?.[monthKey(y,m)]??{});return values.reduce((count,value)=>count+(n(value)>0?1:0),0)}
+export function avg3Pos(s:State){const a=[-1,-2,-3].map(o=>{const[y,m]=shift(s.periodYear,s.periodMonth,o);return positiveMonthCount(s,y,m)}).filter(Boolean);return a.length?a.reduce((x,y)=>x+y,0)/a.length:0}
