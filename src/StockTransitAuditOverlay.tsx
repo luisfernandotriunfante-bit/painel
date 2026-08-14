@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { buildProductCodeBridgeFromFile, readProductCodeBridgeDiagnostics } from './productCodeBridge'
 import { readTransitDiagnostic, readTransitValueByCode, valueTransitAtSale } from './transitValuation'
 
 const STORAGE_KEY = 'painel-sell-out-milenio:v3'
@@ -15,7 +16,7 @@ type StoredState = {
   stockTransit?: number
   positionFinanceByCode?: Record<string, Finance>
   positionItems?: PositionItem[]
-  uploads?: { position?: unknown; transit?: unknown }
+  uploads?: { position?: unknown; transit?: unknown; catalog?: unknown }
 }
 
 function readState(): StoredState {
@@ -29,6 +30,7 @@ function readState(): StoredState {
 export default function StockTransitAuditOverlay() {
   const [state, setState] = useState<StoredState>(() => readState())
   const [target, setTarget] = useState<HTMLElement | null>(null)
+  const [, setBridgeVersion] = useState(0)
 
   useEffect(() => {
     let lastRaw = localStorage.getItem(STORAGE_KEY) ?? ''
@@ -50,6 +52,26 @@ export default function StockTransitAuditOverlay() {
     }
   }, [])
 
+  useEffect(() => {
+    const handleFile = (event: Event) => {
+      const input = event.target as HTMLInputElement | null
+      if (!input || input.type !== 'file') return
+      const file = input.files?.[0]
+      if (!file) return
+      const nearbyText = input.closest('label, article, section, div')?.textContent ?? ''
+      const looksLike286 = /286/.test(file.name) || /286/.test(nearbyText)
+      if (!looksLike286) return
+      void buildProductCodeBridgeFromFile(file).then(() => {
+        setBridgeVersion(version => version + 1)
+        setState(readState())
+      }).catch(() => {
+        setBridgeVersion(version => version + 1)
+      })
+    }
+    document.addEventListener('change', handleFile, true)
+    return () => document.removeEventListener('change', handleFile, true)
+  }, [])
+
   if (!target || (!state.uploads?.position && !state.uploads?.transit)) return null
 
   const physicalCost = Math.max(0, Number(state.positionCost) || 0)
@@ -58,6 +80,7 @@ export default function StockTransitAuditOverlay() {
   const costWithTransit = physicalCost + transitCost
   const valueByCode = readTransitValueByCode()
   const diagnostic = readTransitDiagnostic()
+  const bridgeDiagnostic = readProductCodeBridgeDiagnostics()
   const valuation = valueTransitAtSale(valueByCode, state.positionFinanceByCode ?? {}, state.positionItems ?? [])
   const mappedPct = transitCost > 0 ? Math.min(1, valuation.mappedCost / transitCost) : 0
   const complete = transitCost > 0 && valuation.mappedCost >= transitCost - 0.01 && valuation.unmappedCost <= 0.01
@@ -116,6 +139,15 @@ export default function StockTransitAuditOverlay() {
         <span>Valor da Carteira com SKU identificado: <b>{money.format(diagnostic?.codedValue ?? Object.values(valueByCode).reduce((sum, value) => sum + Number(value || 0), 0))}</b></span>
         {(diagnostic?.sampleTransitCodes?.length ?? 0) > 0 && <span>Exemplos Carteira: <b>{diagnostic!.sampleTransitCodes.join(', ')}</b></span>}
         {sample105.length > 0 && <span>Exemplos 105: <b>{sample105.join(', ')}</b></span>}
+      </div>}
+      {!complete && <div className="stock-transit-diagnostic stock-transit-bridge-diagnostic">
+        <strong>DE/PARA DO CADASTRO 286</strong>
+        <span>Arquivo lido: <b>{bridgeDiagnostic?.source || 'recarregue o cadastro 286'}</b></span>
+        <span>Código principal: <b>{bridgeDiagnostic?.canonicalColumn || '—'}</b></span>
+        <span>Colunas de código encontradas: <b>{bridgeDiagnostic?.codeColumns?.join(' • ') || '—'}</b></span>
+        <span>Aliases únicos aproveitáveis: <b>{bridgeDiagnostic?.aliases ?? 0}</b></span>
+        <span>Aliases ambíguos descartados: <b>{bridgeDiagnostic?.ambiguousAliases ?? 0}</b></span>
+        {(bridgeDiagnostic?.examples?.length ?? 0) > 0 && <span>Exemplos de de/para: <b>{bridgeDiagnostic!.examples.join(', ')}</b></span>}
       </div>}
       <div className="stock-transit-audit-note">
         O cruzamento tenta primeiro o código direto, depois um de/para de cadastro e, por último, descrição normalizada com correspondência única entre Carteira e 105. Nenhuma correspondência aproximada é aceita. O Excel só recebe o trânsito a preço de venda quando 100% do ZINV estiver cruzado.
