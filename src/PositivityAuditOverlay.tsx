@@ -105,7 +105,7 @@ function buildSellerRows(state: StoredState): SellerRow[] {
   return [...rows.values()].sort((a, b) => b.total - a.total || Number(a.code) - Number(b.code))
 }
 
-function PositivityAudit({ state, page }: { state: StoredState; page: string }) {
+function PositivityAudit({ state }: { state: StoredState }) {
   const billed = Number(state.billedPositives) || 0
   const total = Number(state.potentialPositives) || 0
   const pending = Math.max(0, total - billed)
@@ -113,11 +113,24 @@ function PositivityAudit({ state, page }: { state: StoredState; page: string }) 
   const sellerRows = useMemo(() => buildSellerRows(state), [state])
   const sellerTotal = sellerRows.reduce((sum, row) => sum + row.total, 0)
 
-  if (page === 'equipe') {
-    return <section className="panel section-block positivity-audit-panel positivity-team-panel">
+  return <div className="positivity-audit-conference-block">
+    <section className="panel section-block positivity-audit-panel">
       <div className="section-bar">
-        <div><span>POSITIVAÇÃO POR RCA</span><h2>Faturada, a faturar e potencial</h2></div>
-        <div className="status-pill ok">{integer.format(total)} clientes únicos no mês</div>
+        <div><span>AUDITORIA DE POSITIVAÇÃO</span><h2>Fechamento do 8022</h2></div>
+        <div className={`status-pill ${closes ? 'ok' : 'warn'}`}>{closes ? 'Fechamento OK' : 'Revisar'}</div>
+      </div>
+      <div className="positivity-audit-grid">
+        <article><span>EFETIVA FATURADA</span><strong>{integer.format(billed)}</strong><small>Clientes com faturamento líquido positivo</small></article>
+        <article><span>SOMENTE A FATURAR</span><strong>+{integer.format(pending)}</strong><small>Ainda não entram no realizado efetivo</small></article>
+        <article><span>POTENCIAL TOTAL</span><strong>{integer.format(total)}</strong><small>CNPJ único, sem duplicar faturado + pendente</small></article>
+        <article className={closes ? 'ok' : 'warn'}><span>CONFERÊNCIA</span><strong>{integer.format(billed)} + {integer.format(pending)} = {integer.format(total)}</strong><small>{closes ? 'Regra fechada' : 'Existe divergência'}</small></article>
+      </div>
+    </section>
+
+    <section className="panel section-block positivity-audit-panel positivity-team-panel">
+      <div className="section-bar">
+        <div><span>POSITIVAÇÃO POR RCA</span><h2>Faturada, somente a faturar e potencial</h2></div>
+        <div className="status-pill ok">{integer.format(total)} clientes únicos globais</div>
       </div>
       <div className="table-scroll">
         <table className="positivity-table">
@@ -137,33 +150,18 @@ function PositivityAudit({ state, page }: { state: StoredState; page: string }) 
       </div>
       {sellerTotal !== total && <div className="positivity-note">A soma por RCA é {integer.format(sellerTotal)}. Ela pode ser maior que os {integer.format(total)} clientes únicos globais quando o mesmo CNPJ aparece em mais de um RCA no período.</div>}
     </section>
-  }
-
-  return <section className="panel section-block positivity-audit-panel">
-    <div className="section-bar">
-      <div><span>AUDITORIA DE POSITIVAÇÃO</span><h2>Fechamento do 8022</h2></div>
-      <div className={`status-pill ${closes ? 'ok' : 'warn'}`}>{closes ? 'Fechamento OK' : 'Revisar'}</div>
-    </div>
-    <div className="positivity-audit-grid">
-      <article><span>EFETIVA FATURADA</span><strong>{integer.format(billed)}</strong><small>Clientes com faturamento líquido positivo</small></article>
-      <article><span>SOMENTE A FATURAR</span><strong>+{integer.format(pending)}</strong><small>Ainda não entram no realizado efetivo</small></article>
-      <article><span>POTENCIAL TOTAL</span><strong>{integer.format(total)}</strong><small>CNPJ único, sem duplicar faturado + pendente</small></article>
-      <article className={closes ? 'ok' : 'warn'}><span>CONFERÊNCIA</span><strong>{integer.format(billed)} + {integer.format(pending)} = {integer.format(total)}</strong><small>{closes ? 'Regra fechada' : 'Existe divergência'}</small></article>
-    </div>
-  </section>
+  </div>
 }
 
 export default function PositivityAuditOverlay() {
   const [state, setState] = useState<StoredState>(() => readState())
-  const [page, setPage] = useState(() => document.documentElement.dataset.dashboardPage ?? '')
   const [target, setTarget] = useState<HTMLElement | null>(null)
 
   useEffect(() => {
     let lastRaw = localStorage.getItem(STORAGE_KEY) ?? ''
     const refresh = () => {
-      const nextPage = document.documentElement.dataset.dashboardPage ?? ''
-      setPage(nextPage)
-      setTarget(document.querySelector<HTMLElement>('.v3-main'))
+      const nextTarget = document.querySelector<HTMLElement>('.conference-grid')
+      setTarget(current => current === nextTarget ? current : nextTarget)
       const raw = localStorage.getItem(STORAGE_KEY) ?? ''
       if (raw !== lastRaw) {
         lastRaw = raw
@@ -171,7 +169,7 @@ export default function PositivityAuditOverlay() {
       }
     }
     refresh()
-    const timer = window.setInterval(refresh, 500)
+    const timer = window.setInterval(refresh, 400)
     const observer = new MutationObserver(refresh)
     observer.observe(document.body, { childList: true, subtree: true })
     return () => {
@@ -180,6 +178,6 @@ export default function PositivityAuditOverlay() {
     }
   }, [])
 
-  if (!target || !state.uploads?.sales || !['conferencia', 'equipe'].includes(page)) return null
-  return createPortal(<PositivityAudit state={state} page={page} />, target)
+  if (!target || !state.uploads?.sales) return null
+  return createPortal(<PositivityAudit state={state} />, target)
 }
