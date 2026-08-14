@@ -96,7 +96,7 @@ export default function StockTransitAuditOverlay() {
     <section className="panel section-block stock-transit-audit-panel">
       <div className="section-bar">
         <div><span>AUDITORIA DE ESTOQUE &amp; TRÂNSITO</span><h2>Base financeira usada no painel e no Excel</h2></div>
-        <div className={`status-pill ${complete ? 'ok' : 'warn'}`}>{complete ? '100% cruzado no 105' : parserFoundCodes ? 'Revisar SKUs sem correspondência' : 'SKU da Carteira não identificado'}</div>
+        <div className={`status-pill ${complete ? 'ok' : 'warn'}`}>{complete ? '100% cruzado via 286 → 105' : parserFoundCodes ? 'Revisar SKUs sem correspondência' : 'SKU da Carteira não identificado'}</div>
       </div>
       <div className="stock-transit-audit-grid">
         <article>
@@ -122,7 +122,7 @@ export default function StockTransitAuditOverlay() {
         <article className={complete ? 'ok' : 'warn'}>
           <span>TRÂNSITO • PREÇO DE VENDA</span>
           <strong>{complete ? money.format(valuation.saleValue) : 'Aguardando cruzamento completo'}</strong>
-          <small>{state.uploads?.transit && state.uploads?.position ? `${percent.format(mappedPct)} do ZINV encontrou Real/P. Venda no 105` : 'Carregue 105 e Carteira'}</small>
+          <small>{state.uploads?.transit && state.uploads?.position ? `${percent.format(mappedPct)} do ZINV cruzado pela cadeia 286 → 105` : 'Carregue 105 e Carteira'}</small>
         </article>
         <article className={complete ? 'ok' : 'neutral'}>
           <span>POSIÇÃO VENDA + TRÂNSITO</span>
@@ -131,9 +131,7 @@ export default function StockTransitAuditOverlay() {
         </article>
       </div>
       <div className="stock-transit-match-summary">
-        <span>Código direto: <b>{valuation.directSkus}</b></span>
-        <span>De/para 286: <b>{valuation.bridgedSkus}</b></span>
-        <span>Descrição única: <b>{valuation.descriptionSkus}</b></span>
+        <span>De/para oficial 286: <b>{valuation.bridgedSkus}</b></span>
         <span>Sem correspondência: <b>{valuation.unmappedSkus.length}</b></span>
       </div>
       {!complete && <div className="stock-transit-diagnostic">
@@ -150,7 +148,6 @@ export default function StockTransitAuditOverlay() {
         {valuation.missingIn286Skus.length > 0 && <span>Materiais: <b>{samples(valuation.missingIn286Skus)}</b></span>}
         <span>Encontrados no 286, mas sem Real/P. Venda válido no 105: <b>{valuation.mappedIn286MissingFinanceSkus.length}</b> • {money.format(valuation.mappedIn286MissingFinanceCost)}</span>
         {valuation.mappedIn286MissingFinanceSkus.length > 0 && <span>Materiais: <b>{samples(valuation.mappedIn286MissingFinanceSkus)}</b></span>}
-        {valuation.directMissingFinanceSkus.length > 0 && <span>Código já existe no 105, mas custo/preço está incompleto: <b>{valuation.directMissingFinanceSkus.length}</b> • {money.format(valuation.directMissingFinanceCost)} • {samples(valuation.directMissingFinanceSkus)}</span>}
       </div>}
       {!complete && <div className="stock-transit-diagnostic stock-transit-bridge-diagnostic">
         <strong>DE/PARA OFICIAL • CADASTRO 286</strong>
@@ -162,7 +159,7 @@ export default function StockTransitAuditOverlay() {
         {(bridgeDiagnostic?.examples?.length ?? 0) > 0 && <span>Exemplos de de/para: <b>{bridgeDiagnostic!.examples.join(', ')}</b></span>}
       </div>}
       <div className="stock-transit-audit-note">
-        Fonte oficial do vínculo: Carteira.Material → 286.Fábrica → código interno do 286 → 105.Código → Real/P. Venda. A descrição é usada apenas como contingência quando houver correspondência exata e única. Nenhuma correspondência aproximada é aceita. O Excel só recebe o trânsito a preço de venda quando 100% do ZINV estiver cruzado.
+        Fonte oficial do vínculo: Carteira.Material → 286.Fábrica → código interno do 286 → 105.Código → Real/P. Venda. O Material da Carteira nunca é comparado diretamente ao Código do 105, mesmo que os números coincidam. Não há correspondência por descrição nem por aproximação. O 105 é a base de referência de custo/preço carregada no painel; a data em que o arquivo foi atualizado não é tratada como uma dimensão de negócio. O Excel só recebe o trânsito a preço de venda quando 100% do ZINV estiver cruzado pela cadeia oficial.
         {!complete && valuation.unmappedSkus.length > 0 ? ` SKUs ainda sem correspondência: ${samples(valuation.unmappedSkus)}.` : ''}
       </div>
     </section>,
