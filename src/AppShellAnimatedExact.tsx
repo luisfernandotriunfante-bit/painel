@@ -17,12 +17,13 @@ const shellStyles = `
   transform: translate(-50%, -50%) !important;
   display: block !important;
   pointer-events: none !important;
-  z-index: 0 !important;
-  opacity: .52 !important;
+  z-index: 1 !important;
+  opacity: .68 !important;
   overflow: visible !important;
   background: none !important;
   perspective: none !important;
   filter: none !important;
+  mix-blend-mode: normal !important;
 }
 
 .triunfante-hq-video,
@@ -50,10 +51,12 @@ const shellStyles = `
 
 .triunfante-hq-fallback {
   background-repeat: no-repeat !important;
-  background-position: 0 0 !important;
+  background-position: 0 0;
   background-size: 300% 200% !important;
-  opacity: .22;
+  opacity: 1;
   transition: opacity 160ms ease !important;
+  image-rendering: auto !important;
+  filter: none !important;
 }
 
 .triunfante-frame-layer {
@@ -63,7 +66,7 @@ const shellStyles = `
 
 .premium-shell > .shell-content {
   position: relative !important;
-  z-index: 1 !important;
+  z-index: 2 !important;
 }
 
 @media (min-width: 761px) {
@@ -114,7 +117,7 @@ const shellStyles = `
 @media (max-width: 760px) {
   .triunfante-scroll-backdrop {
     width: min(84vw, 520px) !important;
-    opacity: .38 !important;
+    opacity: .48 !important;
   }
 }
 `
