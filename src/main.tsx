@@ -21,7 +21,6 @@ import './final-polish.css'
 import './panel-interaction-fixes.css'
 import './visual-standardization.css'
 import './movement-modern.css'
-import './movement-positives-fix.css'
 
 reconcileStoredState()
 
