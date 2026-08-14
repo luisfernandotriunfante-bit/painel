@@ -33,6 +33,7 @@ export function buildAndSaveProductBridge(headers: unknown[], rows: unknown[][],
     codeColumns: candidateColumns.map(index => String(headers[index] ?? `Coluna ${index + 1}`)),
     canonicalColumn: String(headers[canonicalColumn] ?? `Coluna ${canonicalColumn + 1}`),
     aliases: Object.keys(bridge).length,
+    ambiguousAliases: 0,
     examples,
   }
   saveProductCodeBridge(bridge, diagnostics)
