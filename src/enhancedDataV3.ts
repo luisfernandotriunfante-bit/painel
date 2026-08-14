@@ -1,9 +1,15 @@
 import * as XLSX from 'xlsx'
 import { cleanId, normalizeText, SellerSales, CustomerSales } from './data'
 import type { DailyMovement } from './enhancedData'
+import {
+  normalizeProductCode,
+  PRODUCT_LINE_NAMES as LINE_NAMES,
+  ProductLineName as LineName,
+  readProductLineMap,
+  UnclassifiedProduct,
+  writeUnclassifiedProducts,
+} from './productLineMap'
 
-const LINE_NAMES = ['Creme Dental', 'Esc + Enx + Fio', 'Sabonetes', 'Hair', 'Limpeza'] as const
-type LineName = typeof LINE_NAMES[number]
 type LineSales = Record<LineName, number>
 
 type DetailedSellerSales = SellerSales & {
@@ -186,6 +192,19 @@ function closeEnough(a: number, b: number) {
   return Math.abs(a - b) < 0.01
 }
 
+function addUnclassified(
+  map: Map<string, UnclassifiedProduct>,
+  code: string,
+  description: string,
+  value: number,
+) {
+  const key = code || `SEM-CODIGO:${normalizeText(description) || 'SEM-DESCRICAO'}`
+  const current = map.get(key) ?? { code, description, value: 0 }
+  current.value += value
+  if (!current.description && description) current.description = description
+  map.set(key, current)
+}
+
 export async function parseSalesV3(file: File): Promise<SalesV3Result> {
   const buffer = await file.arrayBuffer()
   const workbook = XLSX.read(buffer, { type: 'array', cellDates: true, dense: true })
@@ -203,11 +222,14 @@ export async function parseSalesV3(file: File): Promise<SalesV3Result> {
   const cnpjCol = findColumn(headers, ['CNPJ/CPF CLIENTE', 'CNPJ CPF CLIENTE', 'CNPJ CLIENTE', 'CPF CNPJ'])
   const clientCodeCol = findColumn(headers, ['COD CLIENTE', 'COD. CLIENTE'])
   const groupingCol = findColumn(headers, ['AGRUP', 'AGRUPAMENTO', 'COD AGRUP', 'COD. AGRUP', 'GRUPO PRODUTO'])
+  const productCodeCol = findColumn(headers, ['COD PRODUTO', 'COD. PRODUTO', 'CODIGO PRODUTO', 'CÓDIGO PRODUTO', 'COD ITEM', 'COD. ITEM', 'SKU', 'MATERIAL', 'EAN'])
   const productDescriptionCol = findColumn(headers, ['DESCRICAO PRODUTO', 'DESCRIÇÃO PRODUTO', 'NOME PRODUTO', 'DESCRICAO ITEM', 'DESCRIÇÃO ITEM', 'NOME ITEM'])
   let statusCol = findColumn(headers, ['STATUS PEDIDO', 'STATUS'])
   if (statusCol < 0) statusCol = inferStatusColumn(rows, match.index + 1)
   if (dataCol < 0 || valueCol < 0) throw new Error('O 8022 precisa conter data e valor da NF.')
 
+  const lineOverrides = readProductLineMap()
+  const unclassifiedProducts = new Map<string, UnclassifiedProduct>()
   const datedRows: { row: unknown[]; date: Date }[] = []
   for (let r = match.index + 1; r < rows.length; r += 1) {
     const row = rows[r] ?? []
@@ -263,11 +285,20 @@ export async function parseSalesV3(file: File): Promise<SalesV3Result> {
     const seller = sellerMap.get(sellerCode) ?? { name: sellerName, billed: 0, toInvoice: 0, customers: new Map<string, SplitValue>(), lineSales: emptyLines() }
     seller[kind] += value
 
+    const productCode = productCodeCol >= 0 ? normalizeProductCode(row[productCodeCol]) : ''
+    const productDescription = productDescriptionCol >= 0 ? String(row[productDescriptionCol] ?? '').trim() : ''
+    const explicitLine = productCode ? lineOverrides[productCode] : undefined
     const groupingLine = groupingCol >= 0 ? classifyByGrouping(row[groupingCol]) : ''
-    const line = groupingLine || classifyByDescription(productDescriptionCol >= 0 ? row[productDescriptionCol] : '')
-    if (LINE_NAMES.includes(line as LineName)) seller.lineSales[line as LineName] += value
-    else if (groupingLine === 'Outros') outsideFiveLinesValue += value
-    else unclassifiedValue += value
+    const line = explicitLine || groupingLine || classifyByDescription(productDescription)
+
+    if (LINE_NAMES.includes(line as LineName)) {
+      seller.lineSales[line as LineName] += value
+    } else if (line === 'Outros') {
+      outsideFiveLinesValue += value
+    } else {
+      unclassifiedValue += value
+      addUnclassified(unclassifiedProducts, productCode, productDescription, value)
+    }
 
     if (cnpj) {
       addSplit(customerMap, cnpj, kind, value)
@@ -279,6 +310,11 @@ export async function parseSalesV3(file: File): Promise<SalesV3Result> {
     }
     sellerMap.set(sellerCode, seller)
   }
+
+  const pendingProducts = [...unclassifiedProducts.values()]
+    .filter(item => Math.abs(item.value) >= 0.01)
+    .sort((a, b) => Math.abs(b.value) - Math.abs(a.value))
+  writeUnclassifiedProducts(pendingProducts)
 
   dailyMovement.forEach((movement, index) => {
     const counts = positiveCounts(dailyCustomerValues[index].values())
@@ -320,7 +356,8 @@ export async function parseSalesV3(file: File): Promise<SalesV3Result> {
   if (statusCol >= 0 && recognizedStatusRows === 0) warnings.push('Nenhum status VENDA/A FATURAR foi reconhecido no 8022.')
   if (cnpjCol < 0) warnings.push('O 8022 não apresentou CNPJ; COD. CLIENTE foi usado como contingência.')
   if (groupingCol < 0 && productDescriptionCol < 0) warnings.push('O 8022 não apresentou agrupamento nem descrição de produto; as cinco linhas de produto ainda não podem ser apuradas.')
-  if (unclassifiedValue !== 0) warnings.push(`8022: ${money(unclassifiedValue)} do Sell Out ficaram sem classificação nas cinco linhas de produto.`)
+  if (productCodeCol < 0 && unclassifiedValue !== 0) warnings.push('O 8022 não apresentou código de produto reconhecível; itens sem linha não podem receber um de/para persistente por SKU.')
+  if (unclassifiedValue !== 0) warnings.push(`8022: ${money(unclassifiedValue)} do Sell Out ficaram sem classificação nas cinco linhas de produto (${pendingProducts.length} SKU(s)/descrição(ões) pendentes em Conferência).`)
   if (outsideFiveLinesValue !== 0) warnings.push(`8022: ${money(outsideFiveLinesValue)} pertencem a agrupamentos fora das cinco linhas do painel (ex.: 7/19).`)
   if (rowsWithoutCustomer) warnings.push(`8022: ${rowsWithoutCustomer} linhas (${money(valueWithoutCustomer)}) não possuem cliente identificável; elas entram no Sell Out, mas não podem ser atribuídas a rede/positivação.`)
   if (!closeEnough(sellOut, billed + toInvoice)) warnings.push('CONFERÊNCIA 8022: Sell Out não fecha com Faturado + A Faturar.')
