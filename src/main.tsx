@@ -27,6 +27,7 @@ import './movement-modern.css'
 import './safe-layout-redistribution.css'
 import './network-meta-config.css'
 import './top-retailer.css'
+import './network-page-visibility-fix.css'
 
 reconcileStoredState()
 
