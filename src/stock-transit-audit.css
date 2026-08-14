@@ -1,0 +1,69 @@
+.stock-transit-audit-panel {
+  grid-column: 1 / -1;
+  margin-top: 18px;
+}
+
+.stock-transit-audit-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  padding: 16px;
+}
+
+.stock-transit-audit-grid article {
+  min-height: 122px;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, .18);
+  background: rgba(255, 255, 255, .055);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 7px;
+}
+
+.stock-transit-audit-grid article > span {
+  font-size: 10px;
+  letter-spacing: .11em;
+  font-weight: 800;
+  opacity: .66;
+}
+
+.stock-transit-audit-grid article > strong {
+  font-size: clamp(20px, 1.8vw, 29px);
+  line-height: 1.05;
+}
+
+.stock-transit-audit-grid article > small,
+.stock-transit-audit-note {
+  opacity: .68;
+  line-height: 1.45;
+}
+
+.stock-transit-audit-grid article.ok {
+  border-color: rgba(52, 211, 153, .30);
+}
+
+.stock-transit-audit-grid article.neutral {
+  border-color: rgba(96, 165, 250, .26);
+}
+
+.stock-transit-audit-note {
+  margin: 0 16px 16px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, .38);
+  font-size: 12px;
+}
+
+@media (max-width: 1300px) {
+  .stock-transit-audit-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .stock-transit-audit-grid {
+    grid-template-columns: 1fr;
+  }
+}

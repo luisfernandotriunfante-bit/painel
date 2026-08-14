@@ -129,9 +129,9 @@ export async function parseTransitPortfolio(file: File): Promise<TransitResult> 
     orders: orders.size,
     valueSource,
     warnings: [
-      `Carteira Colgate: ${valueSource} usada como valor do abastecimento em trânsito.`,
+      `Carteira Colgate: ${valueSource} usada como valor do abastecimento em trânsito no bloco de custo.`,
       'Regra validada para CARTEIRA 08.08: somar Net Value ( ZINV ) linha a linha.',
-      'O preço de venda continua considerando somente o estoque físico do relatório 105; a carteira não é adicionada ao estoque a preço de venda.',
+      'A Carteira não é convertida por proporção para preço de venda. O estoque a preço de venda continua vindo somente do relatório 105 até existir uma fonte oficial para o trânsito a venda.',
     ],
   }
 }
