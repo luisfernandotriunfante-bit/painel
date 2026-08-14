@@ -1,4 +1,5 @@
 import { readProductCodeBridge } from './productCodeBridge'
+import { readPositionSupplierBridge } from './positionSupplierBridge'
 import { normalizeProductDescription, readTransitProductDetail } from './transitDescriptionBridge'
 
 export const TRANSIT_DETAIL_KEY = 'painel-sell-out-milenio:transit-value-by-code:v1'
@@ -24,6 +25,7 @@ export type TransitSaleValuation = {
   mappedSkus: number
   unmappedSkus: string[]
   directSkus: number
+  supplierSkus: number
   bridgedSkus: number
   descriptionSkus: number
 }
@@ -62,9 +64,11 @@ export function valueTransitAtSale(
   let unmappedCost = 0
   let mappedSkus = 0
   let directSkus = 0
+  let supplierSkus = 0
   let bridgedSkus = 0
   let descriptionSkus = 0
   const unmappedSkus: string[] = []
+  const supplierBridge = readPositionSupplierBridge()
   const bridge = readProductCodeBridge()
   const transitDetail = readTransitProductDetail()
 
@@ -82,7 +86,15 @@ export function valueTransitAtSale(
     if (!value) continue
 
     let pair = financePair(financeByCode?.[code])
-    let method: 'direct' | 'bridge' | 'description' | '' = pair ? 'direct' : ''
+    let method: 'direct' | 'supplier' | 'bridge' | 'description' | '' = pair ? 'direct' : ''
+
+    if (!pair) {
+      const canonical = supplierBridge[code]
+      if (canonical) {
+        pair = financePair(financeByCode?.[canonical])
+        if (pair) method = 'supplier'
+      }
+    }
 
     if (!pair) {
       const canonical = bridge[code]
@@ -110,6 +122,7 @@ export function valueTransitAtSale(
       mappedCost += value
       mappedSkus += 1
       if (method === 'direct') directSkus += 1
+      if (method === 'supplier') supplierSkus += 1
       if (method === 'bridge') bridgedSkus += 1
       if (method === 'description') descriptionSkus += 1
     } else {
@@ -118,5 +131,5 @@ export function valueTransitAtSale(
     }
   }
 
-  return { saleValue, mappedCost, unmappedCost, mappedSkus, unmappedSkus, directSkus, bridgedSkus, descriptionSkus }
+  return { saleValue, mappedCost, unmappedCost, mappedSkus, unmappedSkus, directSkus, supplierSkus, bridgedSkus, descriptionSkus }
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { buildProductCodeBridgeFromFile, readProductCodeBridgeDiagnostics } from './productCodeBridge'
+import { capturePositionSupplierBridge, readPositionSupplierDiagnostics } from './positionSupplierBridge'
 import { readTransitDiagnostic, readTransitValueByCode, valueTransitAtSale } from './transitValuation'
 
 const STORAGE_KEY = 'painel-sell-out-milenio:v3'
@@ -60,12 +61,16 @@ export default function StockTransitAuditOverlay() {
       if (!file) return
       const nearbyText = input.closest('label, article, section, div')?.textContent ?? ''
       const looksLike286 = /286/.test(file.name) || /286/.test(nearbyText)
-      if (!looksLike286) return
-      void buildProductCodeBridgeFromFile(file).then(() => {
+      const looksLike105 = /105/.test(file.name) || /105/.test(nearbyText)
+
+      const jobs: Promise<unknown>[] = []
+      if (looksLike286) jobs.push(buildProductCodeBridgeFromFile(file))
+      if (looksLike105) jobs.push(capturePositionSupplierBridge(file))
+      if (!jobs.length) return
+
+      void Promise.allSettled(jobs).then(() => {
         setBridgeVersion(version => version + 1)
         setState(readState())
-      }).catch(() => {
-        setBridgeVersion(version => version + 1)
       })
     }
     document.addEventListener('change', handleFile, true)
@@ -80,6 +85,7 @@ export default function StockTransitAuditOverlay() {
   const costWithTransit = physicalCost + transitCost
   const valueByCode = readTransitValueByCode()
   const diagnostic = readTransitDiagnostic()
+  const supplierDiagnostic = readPositionSupplierDiagnostics()
   const bridgeDiagnostic = readProductCodeBridgeDiagnostics()
   const valuation = valueTransitAtSale(valueByCode, state.positionFinanceByCode ?? {}, state.positionItems ?? [])
   const mappedPct = transitCost > 0 ? Math.min(1, valuation.mappedCost / transitCost) : 0
@@ -128,6 +134,7 @@ export default function StockTransitAuditOverlay() {
       </div>
       <div className="stock-transit-match-summary">
         <span>Código direto: <b>{valuation.directSkus}</b></span>
+        <span>Cód. Fornecedor 105: <b>{valuation.supplierSkus}</b></span>
         <span>De/para de cadastro: <b>{valuation.bridgedSkus}</b></span>
         <span>Descrição única: <b>{valuation.descriptionSkus}</b></span>
         <span>Sem correspondência: <b>{valuation.unmappedSkus.length}</b></span>
@@ -141,6 +148,15 @@ export default function StockTransitAuditOverlay() {
         {sample105.length > 0 && <span>Exemplos 105: <b>{sample105.join(', ')}</b></span>}
       </div>}
       {!complete && <div className="stock-transit-diagnostic stock-transit-bridge-diagnostic">
+        <strong>CÓDIGO FORNECEDOR DO 105</strong>
+        <span>Arquivo lido: <b>{supplierDiagnostic?.source || 'recarregue o relatório 105'}</b></span>
+        <span>Código Winthor: <b>{supplierDiagnostic?.canonicalHeader || '—'}</b></span>
+        <span>Código fornecedor: <b>{supplierDiagnostic?.supplierHeader || '—'}</b></span>
+        <span>Vínculos únicos aproveitáveis: <b>{supplierDiagnostic?.aliases ?? 0}</b></span>
+        <span>Vínculos ambíguos descartados: <b>{supplierDiagnostic?.ambiguousAliases ?? 0}</b></span>
+        {(supplierDiagnostic?.examples?.length ?? 0) > 0 && <span>Exemplos: <b>{supplierDiagnostic!.examples.join(', ')}</b></span>}
+      </div>}
+      {!complete && <div className="stock-transit-diagnostic stock-transit-bridge-diagnostic">
         <strong>DE/PARA DO CADASTRO 286</strong>
         <span>Arquivo lido: <b>{bridgeDiagnostic?.source || 'recarregue o cadastro 286'}</b></span>
         <span>Código principal: <b>{bridgeDiagnostic?.canonicalColumn || '—'}</b></span>
@@ -150,7 +166,7 @@ export default function StockTransitAuditOverlay() {
         {(bridgeDiagnostic?.examples?.length ?? 0) > 0 && <span>Exemplos de de/para: <b>{bridgeDiagnostic!.examples.join(', ')}</b></span>}
       </div>}
       <div className="stock-transit-audit-note">
-        O cruzamento tenta primeiro o código direto, depois um de/para de cadastro e, por último, descrição normalizada com correspondência única entre Carteira e 105. Nenhuma correspondência aproximada é aceita. O Excel só recebe o trânsito a preço de venda quando 100% do ZINV estiver cruzado.
+        O cruzamento tenta primeiro o código direto, depois Código Fornecedor do próprio 105, depois o de/para do cadastro 286 e, por último, descrição normalizada com correspondência única. Nenhuma correspondência aproximada é aceita. O Excel só recebe o trânsito a preço de venda quando 100% do ZINV estiver cruzado.
         {!complete && valuation.unmappedSkus.length > 0 ? ` SKUs ainda sem correspondência: ${valuation.unmappedSkus.slice(0, 12).join(', ')}${valuation.unmappedSkus.length > 12 ? '…' : ''}.` : ''}
       </div>
     </section>,
