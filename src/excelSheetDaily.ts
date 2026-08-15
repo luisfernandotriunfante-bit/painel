@@ -25,7 +25,7 @@ export function fillDaily(document: XMLDocument, state: State, metrics: PanelMet
       continue
     }
 
-    const movement = metrics.daily.find(item => item.day === day)
+    const movement = metrics.daily.find((item: { day: number }) => item.day === day)
     setNumber(document, `C${row}`, excelSerial(metrics.period.year, metrics.period.month, day))
     setText(document, `D${row}`, new Date(metrics.period.year, metrics.period.month - 1, day).toLocaleDateString('pt-BR', { weekday: 'long' }).replace(/^./, letter => letter.toUpperCase()))
     setNumber(document, `E${row}`, movement?.sellOut ?? 0)
