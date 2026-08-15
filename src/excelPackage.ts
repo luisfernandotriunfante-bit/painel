@@ -1,6 +1,7 @@
 import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate'
 import { fillSheet1 } from './excelSheet1'
 import { fillTeam, updateTeamFilterDatabase } from './excelSheetTeam'
+import { buildPanelMetrics } from './panelMetrics'
 import { NS, parseXml, serializeXml } from './excelXmlCore'
 
 function requireEntry(files: Record<string, Uint8Array>, path: string) {
@@ -29,9 +30,10 @@ export function buildExcel(data: ArrayBuffer, state: any) {
   const sheet1 = parseXml(strFromU8(requireEntry(files, sheet1Path)))
   const sheet2 = parseXml(strFromU8(requireEntry(files, sheet2Path)))
   const workbook = parseXml(strFromU8(requireEntry(files, workbookPath)))
+  const metrics = buildPanelMetrics(state)
 
-  const timing = fillSheet1(sheet1, state)
-  const team = fillTeam(sheet2, state, timing.worked, timing.targetDays)
+  fillSheet1(sheet1, state, metrics)
+  const team = fillTeam(sheet2, metrics)
   updateTeamFilterDatabase(workbook, team.endRow)
   forceRecalc(workbook)
 
