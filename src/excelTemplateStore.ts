@@ -16,6 +16,13 @@ function openDatabase(): Promise<IDBDatabase> {
 }
 
 export async function saveExcelTemplate(file: File) {
+  if (!file.name.toLowerCase().endsWith('.xlsx')) {
+    throw new Error('Use como modelo o arquivo .xlsx sem “FORMULA” no nome. O .xlsm serve somente como referência de cálculo.')
+  }
+  if (file.name.toUpperCase().includes('FORMULA')) {
+    throw new Error('Selecione a planilha oficial sem “FORMULA” no nome. A versão FORMULA é apenas a referência das regras.')
+  }
+
   const data = await file.arrayBuffer()
   const workbook = XLSX.read(new Uint8Array(data), { type: 'array', bookSheets: true })
   if (!workbook.SheetNames.includes('SELL OUT - Milenio 2026') || !workbook.SheetNames.includes('EQUIPES')) {
