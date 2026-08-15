@@ -1,14 +1,4 @@
-import {
-  avg3,
-  avg3Pos,
-  monthKey,
-  n,
-  officialWorkedDays,
-  officialWorkingDays,
-  ratio,
-  sumMonth,
-  trend,
-} from './excelMath'
+import { avg3, avg3Pos, monthKey, n, officialWorkedDays, officialWorkingDays, ratio, sumMonth, trend } from './excelMath'
 
 export const EXCEL_LINE_NAMES = ['Creme Dental', 'Esc + Enx + Fio', 'Sabonetes', 'Hair', 'Limpeza'] as const
 export type ExcelLineName = typeof EXCEL_LINE_NAMES[number]
@@ -28,6 +18,24 @@ type RcaEntry = {
   name?: string
   coordinatorCode?: string
   coordinatorName?: string
+}
+
+type NetworkBucket = {
+  customers: Set<string>
+  billed: number
+  toInvoice: number
+  sellOut: number
+  previous: number
+}
+
+type DailyMetric = {
+  day: number
+  billed: number
+  toInvoice: number
+  sellOut: number
+  positives: number
+  billedPositives: number
+  toInvoicePositives: number
 }
 
 function cleanCode(value: unknown) {
@@ -55,7 +63,7 @@ function codeSort(a: string, b: string) {
   return a.localeCompare(b, 'pt-BR', { numeric: true })
 }
 
-function uploadLoaded(state: any, key: string) {
+function loaded(state: any, key: string) {
   return Boolean(state.uploads?.[key])
 }
 
@@ -64,9 +72,9 @@ function uploadDate(state: any, key: string) {
   return raw ? String(raw) : ''
 }
 
-function configuredLineShares(state: any) {
+function lineShares(state: any) {
   const raw = state.lineTargetShares ?? {}
-  const result = { ...DEFAULT_LINE_TARGET_SHARES }
+  const result: Record<ExcelLineName, number> = { ...DEFAULT_LINE_TARGET_SHARES }
   for (const name of EXCEL_LINE_NAMES) {
     const value = Number(raw[name])
     if (Number.isFinite(value) && value >= 0) result[name] = value
@@ -74,13 +82,11 @@ function configuredLineShares(state: any) {
   return result
 }
 
-function lineShareTotal(shares: Record<ExcelLineName, number>) {
-  return EXCEL_LINE_NAMES.reduce((sum, name) => sum + n(shares[name]), 0)
-}
-
 function buildTeam(state: any, workedDays: number, targetDays: number) {
   const map: Record<string, RcaEntry> = state.rcaByOldCode ?? {}
   const actual = new Map<string, any>()
+  const targets = new Map<string, any>()
+
   for (const item of state.salesSellerActuals ?? []) {
     const key = currentCode(String(item.code), map)
     const row = actual.get(key) ?? { name: '', billed: 0, toInvoice: 0, total: 0, billedPos: 0, toInvoicePos: 0, totalPos: 0 }
@@ -98,7 +104,6 @@ function buildTeam(state: any, workedDays: number, targetDays: number) {
     actual.set(key, row)
   }
 
-  const targets = new Map<string, any>()
   for (const item of state.sellerTargets ?? []) {
     const key = currentCode(String(item.code), map)
     const row = targets.get(key) ?? { name: '', target: 0, positiveTarget: 0 }
@@ -109,7 +114,7 @@ function buildTeam(state: any, workedDays: number, targetDays: number) {
   }
 
   const remainingDays = Math.max(0, targetDays - workedDays)
-  const codes = [...new Set([...targets.keys(), ...actual.keys()])].sort(codeSort)
+  const codes = [...new Set<string>([...targets.keys(), ...actual.keys()])].sort(codeSort)
   const rows = codes.map(code => {
     const goalRow = targets.get(code) ?? { name: '', target: 0, positiveTarget: 0 }
     const actualRow = actual.get(code) ?? { name: '', billed: 0, toInvoice: 0, total: 0, billedPos: 0, toInvoicePos: 0, totalPos: 0 }
@@ -121,7 +126,6 @@ function buildTeam(state: any, workedDays: number, targetDays: number) {
     const showIdeal = idealRaw > actualRow.total
     const showPositiveIdeal = idealPositiveRaw > actualRow.totalPos
     const positiveGap = positiveTarget - actualRow.totalPos
-
     return {
       code,
       name: String(entry?.name || goalRow.name || actualRow.name || `Setor ${code}`),
@@ -193,20 +197,15 @@ export function buildPanelMetrics(state: any, referenceDate = new Date()) {
   const workedDays = Math.min(targetDays, officialWorkedDays(year, month, referenceDate))
   const remainingDays = Math.max(0, targetDays - workedDays)
 
-  const daily = Array.isArray(state.dailyMovement) ? state.dailyMovement.map((item: any) => ({
-    day: n(item.day),
-    billed: n(item.billed),
-    toInvoice: n(item.toInvoice),
-    sellOut: n(item.sellOut),
-    positives: n(item.positives),
-    billedPositives: n(item.billedPositives),
-    toInvoicePositives: n(item.toInvoicePositives),
+  const daily: DailyMetric[] = Array.isArray(state.dailyMovement) ? state.dailyMovement.map((item: any) => ({
+    day: n(item.day), billed: n(item.billed), toInvoice: n(item.toInvoice), sellOut: n(item.sellOut), positives: n(item.positives),
+    billedPositives: n(item.billedPositives), toInvoicePositives: n(item.toInvoicePositives),
   })) : []
   const hasDaily = daily.length > 0
-  const dailyBilled = daily.reduce((sum: number, item: any) => sum + item.billed, 0)
-  const dailyToInvoice = daily.reduce((sum: number, item: any) => sum + item.toInvoice, 0)
-  const dailySellOut = daily.reduce((sum: number, item: any) => sum + item.sellOut, 0)
-  const dailyPositives = daily.reduce((sum: number, item: any) => sum + item.positives, 0)
+  const dailyBilled = daily.reduce((sum, item) => sum + item.billed, 0)
+  const dailyToInvoice = daily.reduce((sum, item) => sum + item.toInvoice, 0)
+  const dailySellOut = daily.reduce((sum, item) => sum + item.sellOut, 0)
+  const dailyPositives = daily.reduce((sum, item) => sum + item.positives, 0)
 
   const billed = hasDaily ? dailyBilled : n(state.billed)
   const toInvoice = hasDaily ? dailyToInvoice : n(state.toInvoice)
@@ -235,11 +234,12 @@ export function buildPanelMetrics(state: any, referenceDate = new Date()) {
   const positiveTrend = trend(positives, workedDays, targetDays)
   const positiveAverage3 = avg3Pos(state)
 
-  const networkNames = (state.strategicNetworks ?? []).slice(0, 5)
-  const buckets = new Map(networkNames.map((name: string) => [name, { customers: new Set<string>(), billed: 0, toInvoice: 0, sellOut: 0, previous: 0 }]))
+  const networkNames: string[] = Array.isArray(state.strategicNetworks) ? state.strategicNetworks.slice(0, 5).map(String) : []
+  const buckets = new Map<string, NetworkBucket>()
+  networkNames.forEach(name => buckets.set(name, { customers: new Set<string>(), billed: 0, toInvoice: 0, sellOut: 0, previous: 0 }))
   for (const customer of state.salesCustomers ?? []) {
     const cnpj = String(customer.cnpj ?? '')
-    const network = state.networkByCnpj?.[cnpj]
+    const network = String(state.networkByCnpj?.[cnpj] ?? '')
     const bucket = buckets.get(network)
     if (!bucket) continue
     bucket.customers.add(cnpj)
@@ -249,12 +249,12 @@ export function buildPanelMetrics(state: any, referenceDate = new Date()) {
   }
   const previousByCnpj = state.historyByMonth?.[monthKey(year - 1, month)] ?? {}
   for (const [cnpj, value] of Object.entries(previousByCnpj)) {
-    const network = state.networkByCnpj?.[cnpj]
+    const network = String(state.networkByCnpj?.[cnpj] ?? '')
     const bucket = buckets.get(network)
     if (bucket) bucket.previous += n(value)
   }
-  const networks = networkNames.map((name: string) => {
-    const bucket = buckets.get(name)!
+  const networks = networkNames.map(name => {
+    const bucket = buckets.get(name) ?? { customers: new Set<string>(), billed: 0, toInvoice: 0, sellOut: 0, previous: 0 }
     const networkTarget = n(state.networkTargets?.[name]?.target)
     const networkBilledTrend = trend(bucket.billed, workedDays, targetDays)
     const networkSellOutTrend = trend(bucket.sellOut, workedDays, targetDays)
@@ -275,13 +275,13 @@ export function buildPanelMetrics(state: any, referenceDate = new Date()) {
       variationVsPrevious: bucket.previous ? bucket.sellOut / bucket.previous - 1 : null,
     }
   })
-  const networkPoolTarget = n(state.networkPoolTarget) || networks.reduce((sum: number, row: any) => sum + row.target, 0)
-  const networkBilled = networks.reduce((sum: number, row: any) => sum + row.billed, 0)
-  const networkToInvoice = networks.reduce((sum: number, row: any) => sum + row.toInvoice, 0)
-  const networkSellOut = networks.reduce((sum: number, row: any) => sum + row.sellOut, 0)
+  const networkPoolTarget = n(state.networkPoolTarget) || networks.reduce((sum, row) => sum + row.target, 0)
+  const networkBilled = networks.reduce((sum, row) => sum + row.billed, 0)
+  const networkToInvoice = networks.reduce((sum, row) => sum + row.toInvoice, 0)
+  const networkSellOut = networks.reduce((sum, row) => sum + row.sellOut, 0)
 
-  const shares = configuredLineShares(state)
-  const shareTotal = lineShareTotal(shares)
+  const shares = lineShares(state)
+  const shareTotal = EXCEL_LINE_NAMES.reduce((sum, name) => sum + shares[name], 0)
   const lineBilled = Object.fromEntries(EXCEL_LINE_NAMES.map(name => [name, 0])) as Record<ExcelLineName, number>
   let hasBilledLineDetail = false
   let hasLegacyLineDetail = false
@@ -310,88 +310,57 @@ export function buildPanelMetrics(state: any, referenceDate = new Date()) {
   })
 
   const team = buildTeam(state, workedDays, targetDays)
-
+  const availability = {
+    sales: loaded(state, 'sales'), targets: loaded(state, 'targets'), rcas: loaded(state, 'rcas'), premises: loaded(state, 'premises'),
+    history: loaded(state, 'history'), position: loaded(state, 'position'), transit: loaded(state, 'transit'),
+  }
   const sources = [
-    { key: 'sales', label: '8022 • Vendas / A faturar', loaded: uploadLoaded(state, 'sales'), updatedAt: uploadDate(state, 'sales') },
-    { key: 'targets', label: 'Bússola • Metas e positivação', loaded: uploadLoaded(state, 'targets'), updatedAt: uploadDate(state, 'targets') },
-    { key: 'rcas', label: 'De-Para • RCAs / coordenação', loaded: uploadLoaded(state, 'rcas'), updatedAt: uploadDate(state, 'rcas') },
-    { key: 'premises', label: 'Premissas • CNPJ → rede', loaded: uploadLoaded(state, 'premises'), updatedAt: uploadDate(state, 'premises') },
-    { key: 'history', label: 'Histórico • comparativos', loaded: uploadLoaded(state, 'history'), updatedAt: uploadDate(state, 'history') },
-    { key: 'position', label: '105 • estoque financeiro', loaded: uploadLoaded(state, 'position'), updatedAt: uploadDate(state, 'position') },
-    { key: 'transit', label: 'Carteira • trânsito', loaded: uploadLoaded(state, 'transit'), updatedAt: uploadDate(state, 'transit') },
+    { key: 'sales', label: '8022 • Vendas / A faturar', loaded: availability.sales, updatedAt: uploadDate(state, 'sales') },
+    { key: 'targets', label: 'Bússola • Metas e positivação', loaded: availability.targets, updatedAt: uploadDate(state, 'targets') },
+    { key: 'rcas', label: 'De-Para • RCAs / coordenação', loaded: availability.rcas, updatedAt: uploadDate(state, 'rcas') },
+    { key: 'premises', label: 'Premissas • CNPJ → rede', loaded: availability.premises, updatedAt: uploadDate(state, 'premises') },
+    { key: 'history', label: 'Histórico • comparativos', loaded: availability.history, updatedAt: uploadDate(state, 'history') },
+    { key: 'position', label: '105 • estoque financeiro', loaded: availability.position, updatedAt: uploadDate(state, 'position') },
+    { key: 'transit', label: 'Carteira • trânsito', loaded: availability.transit, updatedAt: uploadDate(state, 'transit') },
   ]
-
   const checks = [
-    { block: 'Movimento diário', ok: uploadLoaded(state, 'sales') && hasDaily, detail: hasDaily ? 'Dias, faturado, a faturar, Sell Out e positivação disponíveis.' : 'Reprocesse o 8022.' },
-    { block: 'Resumo / ritmo', ok: uploadLoaded(state, 'sales') && target > 0, detail: target > 0 ? 'Meta e ritmo calculáveis.' : 'Defina a Meta Sell Out / carregue a Bússola.' },
-    { block: 'Histórico', ok: uploadLoaded(state, 'history') && previous > 0 && average3 > 0, detail: 'Mês anterior comparável e média dos últimos 3 meses.' },
-    { block: 'Estoque', ok: uploadLoaded(state, 'position') && uploadLoaded(state, 'transit'), detail: 'Posição a custo/venda, carteira e coberturas.' },
-    { block: 'Positivação', ok: uploadLoaded(state, 'sales') && positiveTarget > 0, detail: 'Meta, realizado, tendência e média histórica.' },
-    { block: 'Top 5 Redes', ok: uploadLoaded(state, 'sales') && uploadLoaded(state, 'premises') && networks.length > 0, detail: `${networks.length}/5 redes configuradas para o modelo oficial.` },
+    { block: 'Movimento diário', ok: availability.sales && hasDaily, detail: hasDaily ? 'Dias, faturado, a faturar, Sell Out e positivação disponíveis.' : 'Reprocesse o 8022.' },
+    { block: 'Resumo / ritmo', ok: availability.sales && target > 0, detail: target > 0 ? 'Meta e ritmo calculáveis.' : 'Defina a Meta Sell Out / carregue a Bússola.' },
+    { block: 'Histórico', ok: availability.history && previous > 0 && average3 > 0, detail: 'Mês anterior comparável e média dos últimos 3 meses.' },
+    { block: 'Estoque', ok: availability.position && availability.transit, detail: 'Posição a custo/venda, carteira e coberturas.' },
+    { block: 'Positivação', ok: availability.sales && positiveTarget > 0, detail: 'Meta, realizado, tendência e média histórica.' },
+    { block: 'Top 5 Redes', ok: availability.sales && availability.premises && networks.length > 0, detail: `${networks.length}/5 redes configuradas para o modelo oficial.` },
     { block: 'Linhas de produto', ok: hasBilledLineDetail && Math.abs(shareTotal - 1) < 0.0001, detail: hasBilledLineDetail ? 'Faturado por linha disponível.' : (hasLegacyLineDetail ? '8022 precisa ser reprocessado para separar Faturado de A Faturar.' : 'Sem detalhamento por linha.') },
     { block: 'Verba por linha', ok: budgetConfigured, detail: budgetConfigured ? 'Verba utilizada informada no painel.' : 'Sem fonte automática atual; informe em Configurações → Metas para preencher este bloco.' },
-    { block: 'Equipes', ok: uploadLoaded(state, 'sales') && uploadLoaded(state, 'targets') && team.rows.length > 0, detail: `${team.rows.length} RCAs com meta ou movimento.` },
+    { block: 'Equipes', ok: availability.sales && availability.targets && team.rows.length > 0, detail: `${team.rows.length} RCAs com meta ou movimento.` },
   ]
 
   return {
+    availability,
     period: { year, month, updatedAt: referenceDate.toISOString() },
     timing: { targetDays, configuredTargetDays, officialTargetDays, workedDays, remainingDays },
     daily,
     summary: {
-      target,
-      billed,
-      toInvoice,
-      sellOut,
-      billedAchievement: ratio(billed, target),
-      sellOutAchievement: ratio(sellOut, target),
-      billedTrend,
-      sellOutTrend,
-      billedTrendAchievement: ratio(billedTrend, target),
-      sellOutTrendAchievement: ratio(sellOutTrend, target),
-      previous,
-      variationTrendVsPrevious: previous ? billedTrend / previous - 1 : null,
-      average3,
-      variationTrendVsAverage3: average3 ? billedTrend / average3 - 1 : null,
-      dailyTarget,
-      currentDaily,
-      currentDailyAchievement: ratio(currentDaily, dailyTarget),
-      neededDaily,
-      neededDailyAchievement: ratio(neededDaily, dailyTarget),
+      target, billed, toInvoice, sellOut,
+      billedAchievement: ratio(billed, target), sellOutAchievement: ratio(sellOut, target),
+      billedTrend, sellOutTrend, billedTrendAchievement: ratio(billedTrend, target), sellOutTrendAchievement: ratio(sellOutTrend, target),
+      previous, variationTrendVsPrevious: previous ? billedTrend / previous - 1 : null,
+      average3, variationTrendVsAverage3: average3 ? billedTrend / average3 - 1 : null,
+      dailyTarget, currentDaily, currentDailyAchievement: ratio(currentDaily, dailyTarget), neededDaily, neededDailyAchievement: ratio(neededDaily, dailyTarget),
     },
     stock: {
-      coverageTargetDays,
-      dailyBase,
-      positionCost,
-      positionSale,
-      markup,
-      transitCost,
-      transitSale,
-      totalCost,
-      totalSale,
-      saleCoverage: ratio(positionSale, dailyBase),
-      saleCoverageGap: coverageTargetDays - ratio(positionSale, dailyBase),
-      totalSaleCoverage: ratio(totalSale, dailyBase),
-      costCoverage: ratio(positionCost, dailyBase),
-      costCoverageGap: coverageTargetDays - ratio(positionCost, dailyBase),
-      totalCostCoverage: ratio(totalCost, dailyBase),
+      coverageTargetDays, dailyBase, positionCost, positionSale, markup, transitCost, transitSale, totalCost, totalSale,
+      saleCoverage: ratio(positionSale, dailyBase), saleCoverageGap: coverageTargetDays - ratio(positionSale, dailyBase), totalSaleCoverage: ratio(totalSale, dailyBase),
+      costCoverage: ratio(positionCost, dailyBase), costCoverageGap: coverageTargetDays - ratio(positionCost, dailyBase), totalCostCoverage: ratio(totalCost, dailyBase),
     },
     positives: {
-      target: positiveTarget,
-      current: positives,
-      achievement: ratio(positives, positiveTarget),
-      trend: positiveTrend,
-      trendAchievement: ratio(positiveTrend, positiveTarget),
-      average3: positiveAverage3,
-      average3Achievement: ratio(positiveAverage3, positiveTarget),
+      target: positiveTarget, current: positives, achievement: ratio(positives, positiveTarget), trend: positiveTrend,
+      trendAchievement: ratio(positiveTrend, positiveTarget), average3: positiveAverage3, average3Achievement: ratio(positiveAverage3, positiveTarget),
     },
     networks,
     networkTotals: {
-      target: networkPoolTarget,
-      billed: networkBilled,
-      billedAchievement: ratio(networkBilled, networkPoolTarget),
-      toInvoice: networkToInvoice,
-      sellOut: networkSellOut,
-      sellOutAchievement: ratio(networkSellOut, networkPoolTarget),
+      target: networkPoolTarget, billed: networkBilled, billedAchievement: ratio(networkBilled, networkPoolTarget),
+      toInvoice: networkToInvoice, sellOut: networkSellOut, sellOutAchievement: ratio(networkSellOut, networkPoolTarget),
     },
     lines,
     lineShareTotal: shareTotal,
@@ -401,25 +370,13 @@ export function buildPanelMetrics(state: any, referenceDate = new Date()) {
     team: team.rows,
     teamTotals: team.totals,
     reconciliation: {
-      dailySellOut,
-      dailyBilled,
-      dailyToInvoice,
-      dailyPositives,
-      consolidatedSellOut: n(state.sellOut),
-      consolidatedBilled: n(state.billed),
-      consolidatedToInvoice: n(state.toInvoice),
-      consolidatedPositives: n(state.potentialPositives),
-      sellOutVsBilled: dailySellOut - dailyBilled,
-      billedDelta: n(state.billed) - dailyBilled,
-      sellOutDelta: n(state.sellOut) - dailySellOut,
-      positiveDelta: n(state.potentialPositives) - dailyPositives,
+      dailySellOut, dailyBilled, dailyToInvoice, dailyPositives,
+      consolidatedSellOut: n(state.sellOut), consolidatedBilled: n(state.billed), consolidatedToInvoice: n(state.toInvoice), consolidatedPositives: n(state.potentialPositives),
+      sellOutVsBilled: dailySellOut - dailyBilled, billedDelta: n(state.billed) - dailyBilled,
+      sellOutDelta: n(state.sellOut) - dailySellOut, positiveDelta: n(state.potentialPositives) - dailyPositives,
     },
     sources,
     checks,
-    readiness: {
-      complete: checks.every(item => item.ok),
-      pendingCount: checks.filter(item => !item.ok).length,
-      pending: checks.filter(item => !item.ok),
-    },
+    readiness: { complete: checks.every(item => item.ok), pendingCount: checks.filter(item => !item.ok).length, pending: checks.filter(item => !item.ok) },
   }
 }
