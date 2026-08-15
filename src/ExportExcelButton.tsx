@@ -1,27 +1,69 @@
 import { ChangeEvent, useEffect, useRef, useState } from 'react'
-import { exportDailyExcel } from './excelExport'
-import { hasExcelTemplate, saveExcelTemplate } from './excelTemplateStore'
+import { exportDailyExcel, getOfficialExcelFileName } from './excelExport'
+import { getExcelOutputHandle, hasExcelTemplate, saveExcelOutputHandle, saveExcelTemplate } from './excelTemplateStore'
+
+function supportsFileOverwrite() {
+  return typeof (window as any).showSaveFilePicker === 'function'
+}
+
+async function chooseOutputFile(fileName: string) {
+  return (window as any).showSaveFilePicker({
+    suggestedName: fileName,
+    types: [{
+      description: 'Planilha Excel',
+      accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] },
+    }],
+  })
+}
 
 export default function ExportExcelButton() {
   const input = useRef<HTMLInputElement | null>(null)
   const [ready, setReady] = useState(false)
+  const [outputHandle, setOutputHandle] = useState<any>(null)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
 
-  useEffect(() => { void hasExcelTemplate().then(setReady) }, [])
+  useEffect(() => {
+    void Promise.all([hasExcelTemplate(), getExcelOutputHandle()]).then(([templateReady, handle]) => {
+      setReady(templateReady)
+      setOutputHandle(handle)
+    })
+  }, [])
 
   async function run() {
     if (!ready) {
       input.current?.click()
       return
     }
+
     setBusy(true)
     setMessage('Gerando o modelo oficial...')
     try {
-      await exportDailyExcel()
-      setMessage('Excel atualizado gerado.')
-    } catch (cause) {
-      setMessage(cause instanceof Error ? cause.message : 'Falha ao gerar o Excel.')
+      const fileName = getOfficialExcelFileName()
+      let handle = outputHandle
+
+      if (supportsFileOverwrite()) {
+        if (!handle || String(handle.name ?? '') !== fileName) {
+          handle = await chooseOutputFile(fileName)
+          setOutputHandle(handle)
+          await saveExcelOutputHandle(handle)
+        } else if (typeof handle.requestPermission === 'function') {
+          const permission = await handle.requestPermission({ mode: 'readwrite' })
+          if (permission !== 'granted') {
+            handle = await chooseOutputFile(fileName)
+            setOutputHandle(handle)
+            await saveExcelOutputHandle(handle)
+          }
+        }
+      }
+
+      const result = await exportDailyExcel(handle)
+      setMessage(result.overwritten
+        ? `${result.fileName} atualizado e substituído no mesmo local.`
+        : `Download de ${result.fileName} iniciado.`)
+    } catch (cause: any) {
+      if (cause?.name === 'AbortError') setMessage('Salvamento cancelado.')
+      else setMessage(cause instanceof Error ? cause.message : 'Falha ao gerar o Excel.')
     } finally {
       setBusy(false)
     }
@@ -36,9 +78,7 @@ export default function ExportExcelButton() {
     try {
       await saveExcelTemplate(file)
       setReady(true)
-      setMessage('Modelo salvo. Gerando o Excel...')
-      await exportDailyExcel()
-      setMessage('Modelo salvo e Excel atualizado gerado.')
+      setMessage('Modelo salvo. Clique em EXCEL DO DIA para gerar e vincular o arquivo mensal.')
     } catch (cause) {
       setMessage(cause instanceof Error ? cause.message : 'Falha ao salvar o modelo.')
     } finally {
