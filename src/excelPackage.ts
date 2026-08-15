@@ -1,6 +1,6 @@
 import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate'
 import { fillSheet1 } from './excelSheet1'
-import { fillTeam } from './excelSheetTeam'
+import { fillTeam, updateTeamFilterDatabase } from './excelSheetTeam'
 import { NS, parseXml, serializeXml } from './excelXmlCore'
 
 function requireEntry(files: Record<string, Uint8Array>, path: string) {
@@ -31,7 +31,8 @@ export function buildExcel(data: ArrayBuffer, state: any) {
   const workbook = parseXml(strFromU8(requireEntry(files, workbookPath)))
 
   const timing = fillSheet1(sheet1, state)
-  fillTeam(sheet2, state, timing.worked, timing.targetDays)
+  const team = fillTeam(sheet2, state, timing.worked, timing.targetDays)
+  updateTeamFilterDatabase(workbook, team.endRow)
   forceRecalc(workbook)
 
   files[sheet1Path] = strToU8(serializeXml(sheet1))
