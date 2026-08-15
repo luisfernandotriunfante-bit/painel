@@ -1,5 +1,5 @@
 import { clearCell, setNumber, setText } from './excelXmlCore'
-import { excelSerial, monthName, n, State } from './excelMath'
+import { excelSerial, monthName, n, officialHolidays, State } from './excelMath'
 
 export function fillDaily(document: XMLDocument, state: State) {
   const days = new Date(state.periodYear, state.periodMonth, 0).getDate()
@@ -10,6 +10,14 @@ export function fillDaily(document: XMLDocument, state: State) {
   setNumber(document, 'E5', excelSerial(now.getFullYear(), now.getMonth() + 1, now.getDate(), now.getHours(), now.getMinutes(), now.getSeconds()))
   setNumber(document, 'G5', excelSerial(now.getFullYear(), now.getMonth() + 1, now.getDate()))
   setText(document, 'E6', monthName(state.periodYear, state.periodMonth))
+
+  // A planilha FORMULA usa T2:T17 como calendário oficial de feriados.
+  // Materializamos as mesmas datas para que o modelo sem fórmulas permaneça
+  // coerente com a competência carregada no painel.
+  setNumber(document, 'U1', state.periodYear)
+  officialHolidays(state.periodYear).forEach((holiday, index) => {
+    setNumber(document, `T${2 + index}`, excelSerial(holiday.getFullYear(), holiday.getMonth() + 1, holiday.getDate()))
+  })
 
   for (let index = 0; index < 31; index += 1) {
     const row = 8 + index
