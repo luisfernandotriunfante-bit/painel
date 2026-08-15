@@ -1,6 +1,267 @@
-/* The older product-line card used combined Sell Out (Faturado + A Faturar).
-   The official Excel block uses Faturado only, now exposed by ExcelSourceOfTruthOverlay.
-   Keep only the audited surface to avoid two different readings on Resumo. */
-html[data-dashboard-page="resumo"] .safe-product-lines {
+/* =========================================================
+   SOURCE-OF-TRUTH UI OVERRIDES
+   Keep the validated dashboard surfaces as the visible product UI.
+   The Excel audit remains available only where it adds new information:
+   Configuracoes > Conferencia and the Excel-specific parameters in Metas.
+   ========================================================= */
+
+/* The audit overlay must not duplicate information that already exists in the
+   validated Resumo, Gerencial, Redes or Estoque screens. */
+html[data-dashboard-page="resumo"] .excel-source-of-truth,
+html[data-dashboard-page="gerencial"] .excel-source-of-truth,
+html[data-dashboard-page="estoque"] .excel-source-of-truth,
+html[data-dashboard-page="equipe"] .excel-source-of-truth,
+html[data-dashboard-page="redes"] .excel-source-of-truth {
   display: none !important;
+}
+
+/* Restore the already validated product-line surface on Resumo. */
+html[data-dashboard-page="resumo"] .safe-product-lines {
+  display: block !important;
+}
+
+/* Conferencia already has a richer audited view. Remove the older duplicated
+   source/warning pair so the page has one clear information hierarchy. */
+html[data-dashboard-page="conferencia"] .v3-main > .conference-grid {
+  display: none !important;
+}
+
+/* Keep the animated Triunfante mark behind the audit content. The cards remain
+   glassy, but with enough density/blur to preserve text readability. */
+html[data-dashboard-page="conferencia"] .excel-source-of-truth {
+  position: relative !important;
+  z-index: 30 !important;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+html[data-dashboard-page="conferencia"] .excel-source-of-truth > .excel-truth-panel {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  background: rgba(5, 12, 22, .78) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(112%) brightness(.72) !important;
+  backdrop-filter: blur(28px) saturate(112%) brightness(.72) !important;
+}
+
+html[data-dashboard-page="conferencia"] .excel-source-of-truth > .excel-truth-panel:first-child {
+  grid-column: 1 / -1;
+}
+
+html[data-dashboard-page="conferencia"] .excel-source-of-truth > .excel-truth-panel:nth-child(2) .excel-truth-grid.four {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+html[data-dashboard-page="conferencia"] .excel-source-of-truth > .excel-truth-panel:nth-child(3) .excel-source-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* =========================================================
+   UPLOAD DE DADOS
+   Reuse the same compact block language validated in Conferencia.
+   No parser or upload behavior is changed here.
+   ========================================================= */
+html[data-dashboard-page="upload"] .upload-grid.compact-upload {
+  position: relative;
+  z-index: 30;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0 0 18px;
+  padding: 82px 30px 28px;
+  border: 1px solid rgba(255,255,255,.09);
+  border-radius: 24px;
+  background: rgba(5, 12, 22, .78);
+  -webkit-backdrop-filter: blur(28px) saturate(112%) brightness(.72);
+  backdrop-filter: blur(28px) saturate(112%) brightness(.72);
+  box-shadow: 0 18px 50px rgba(0,0,0,.16);
+  overflow: hidden;
+}
+
+html[data-dashboard-page="upload"] .upload-grid.compact-upload::before {
+  content: "UPLOAD DE DADOS";
+  position: absolute;
+  top: 28px;
+  left: 30px;
+  color: #ff5f75;
+  font-size: .68rem;
+  font-weight: 800;
+  letter-spacing: .22em;
+}
+
+html[data-dashboard-page="upload"] .upload-grid.compact-upload::after {
+  content: "BASES QUE ALIMENTAM O PAINEL";
+  position: absolute;
+  top: 47px;
+  left: 30px;
+  color: rgba(198, 211, 228, .50);
+  font-size: .62rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+}
+
+html[data-dashboard-page="upload"] .upload-card {
+  position: relative;
+  display: grid !important;
+  grid-template-columns: 30px minmax(0, 1fr);
+  grid-template-rows: auto auto auto;
+  column-gap: 12px;
+  row-gap: 5px;
+  align-items: start;
+  min-height: 92px;
+  padding: 16px !important;
+  border: 1px solid rgba(255,255,255,.075) !important;
+  border-radius: 16px !important;
+  background: rgba(2, 8, 17, .31) !important;
+  box-shadow: none !important;
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color .18s ease, background .18s ease, transform .18s ease;
+}
+
+html[data-dashboard-page="upload"] .upload-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(255, 95, 117, .28) !important;
+  background: rgba(6, 13, 24, .48) !important;
+}
+
+html[data-dashboard-page="upload"] .upload-card::before {
+  content: "↑";
+  grid-column: 1;
+  grid-row: 1 / 4;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(255, 95, 117, .11);
+  color: #ff6076;
+  font-size: .9rem;
+  font-weight: 900;
+}
+
+html[data-dashboard-page="upload"] .upload-card > div,
+html[data-dashboard-page="upload"] .upload-card > strong,
+html[data-dashboard-page="upload"] .upload-card > small {
+  grid-column: 2;
+  min-width: 0;
+}
+
+html[data-dashboard-page="upload"] .upload-card > div span {
+  display: block;
+  color: rgba(246,249,255,.88);
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .04em;
+}
+
+html[data-dashboard-page="upload"] .upload-card > strong {
+  overflow: hidden;
+  color: rgba(218, 229, 244, .72) !important;
+  font-size: .68rem !important;
+  font-weight: 700 !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html[data-dashboard-page="upload"] .upload-card > small {
+  color: rgba(188, 204, 224, .50) !important;
+  font-size: .64rem !important;
+  line-height: 1.35;
+}
+
+html[data-dashboard-page="upload"] .upload-card input[type="file"] {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+html[data-dashboard-page="upload"] .storage.compact-storage {
+  position: relative;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 0;
+  padding: 20px 24px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 18px;
+  background: rgba(5, 12, 22, .70);
+  -webkit-backdrop-filter: blur(24px) saturate(110%) brightness(.74);
+  backdrop-filter: blur(24px) saturate(110%) brightness(.74);
+}
+
+html[data-dashboard-page="upload"] .storage.compact-storage span {
+  color: #ff6076;
+  font-size: .62rem;
+  font-weight: 800;
+  letter-spacing: .16em;
+}
+
+html[data-dashboard-page="upload"] .storage.compact-storage h3 {
+  margin: 6px 0 0;
+  color: rgba(245,248,253,.90);
+  font-size: .88rem;
+}
+
+html[data-dashboard-page="upload"] .storage.compact-storage button {
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 95, 117, .24);
+  border-radius: 12px;
+  background: rgba(255,255,255,.035);
+  color: rgba(238,243,250,.78);
+  font: inherit;
+  font-size: .68rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+html[data-dashboard-page="upload"] .storage.compact-storage button:hover {
+  border-color: rgba(255, 95, 117, .42);
+  background: rgba(255, 95, 117, .07);
+  color: #fff;
+}
+
+@media (max-width: 1180px) {
+  html[data-dashboard-page="conferencia"] .excel-source-of-truth {
+    grid-template-columns: 1fr;
+  }
+
+  html[data-dashboard-page="conferencia"] .excel-source-of-truth > .excel-truth-panel:first-child {
+    grid-column: auto;
+  }
+
+  html[data-dashboard-page="upload"] .upload-grid.compact-upload {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  html[data-dashboard-page="conferencia"] .excel-source-of-truth > .excel-truth-panel:nth-child(2) .excel-truth-grid.four,
+  html[data-dashboard-page="conferencia"] .excel-source-of-truth > .excel-truth-panel:nth-child(3) .excel-source-grid,
+  html[data-dashboard-page="upload"] .upload-grid.compact-upload {
+    grid-template-columns: 1fr;
+  }
+
+  html[data-dashboard-page="upload"] .upload-grid.compact-upload {
+    padding: 82px 16px 18px;
+  }
+
+  html[data-dashboard-page="upload"] .upload-grid.compact-upload::before,
+  html[data-dashboard-page="upload"] .upload-grid.compact-upload::after {
+    left: 18px;
+  }
+
+  html[data-dashboard-page="upload"] .storage.compact-storage {
+    align-items: stretch;
+    flex-direction: column;
+  }
 }
