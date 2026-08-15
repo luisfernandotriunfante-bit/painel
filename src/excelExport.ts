@@ -2,6 +2,13 @@ import { buildExcel } from './excelPackage'
 import { loadState } from './excelState'
 import { getExcelTemplate } from './excelTemplateStore'
 
+function officialFileName(year: number, month: number) {
+  const rawMonth = new Date(year, month - 1, 1).toLocaleDateString('pt-BR', { month: 'long' })
+  const displayMonth = rawMonth.charAt(0).toUpperCase() + rawMonth.slice(1)
+  const shortYear = String(year).slice(-2)
+  return `Painel Sell Out MILENIO-${displayMonth}'${shortYear}.xlsx`
+}
+
 export async function exportDailyExcel() {
   const state = loadState()
   if (!state.salesSellerActuals?.length && !state.dailyMovement?.length) throw new Error('Carregue o relatório 8022 antes de gerar o Excel do dia.')
@@ -12,7 +19,7 @@ export async function exportDailyExcel() {
   const url = URL.createObjectURL(blob)
   const anchor = document.createElement('a')
   anchor.href = url
-  anchor.download = `Painel Sell Out MILENIO - ${String(state.periodMonth).padStart(2, '0')}-${state.periodYear} - ${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.xlsx`
+  anchor.download = officialFileName(state.periodYear, state.periodMonth)
   document.body.appendChild(anchor)
   anchor.click()
   anchor.remove()
