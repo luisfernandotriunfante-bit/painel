@@ -1,0 +1,6 @@
+/* The older product-line card used combined Sell Out (Faturado + A Faturar).
+   The official Excel block uses Faturado only, now exposed by ExcelSourceOfTruthOverlay.
+   Keep only the audited surface to avoid two different readings on Resumo. */
+html[data-dashboard-page="resumo"] .safe-product-lines {
+  display: none !important;
+}
