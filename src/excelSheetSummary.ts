@@ -1,4 +1,4 @@
-import { setNumber, setText } from './excelXmlCore'
+import { clearCell, setNumber, setText } from './excelXmlCore'
 import { monthName } from './excelMath'
 import type { PanelMetrics } from './panelMetrics'
 
@@ -20,8 +20,16 @@ export function fillSummary(document: XMLDocument, metrics: PanelMetrics) {
   setNumber(document, 'M12', summary.sellOutTrend)
   setNumber(document, 'N12', summary.sellOutTrendAchievement)
   setText(document, 'I15', `Sell Out ${monthName(metrics.period.year, metrics.period.month)} ${metrics.period.year - 1}`)
-  setNumber(document, 'M15', summary.previous)
-  setNumber(document, 'N15', summary.variationTrendVsPrevious ?? 0)
-  setNumber(document, 'M16', summary.average3)
-  setNumber(document, 'N16', summary.variationTrendVsAverage3 ?? 0)
+
+  if (metrics.availability.history) {
+    setNumber(document, 'M15', summary.previous)
+    if (summary.variationTrendVsPrevious == null) clearCell(document, 'N15')
+    else setNumber(document, 'N15', summary.variationTrendVsPrevious)
+    setNumber(document, 'M16', summary.average3)
+    if (summary.variationTrendVsAverage3 == null) clearCell(document, 'N16')
+    else setNumber(document, 'N16', summary.variationTrendVsAverage3)
+  } else {
+    clearCell(document, 'M15'); clearCell(document, 'N15')
+    clearCell(document, 'M16'); clearCell(document, 'N16')
+  }
 }
