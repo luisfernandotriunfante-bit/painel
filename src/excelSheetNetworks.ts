@@ -17,7 +17,8 @@ export function fillNetworks(document: XMLDocument, metrics: PanelMetrics) {
     }
 
     setText(document, `Q${row - 1}`, `REDE ${item.name}`)
-    setNumber(document, `R${row - 1}`, item.previous)
+    if (metrics.availability.history) setNumber(document, `R${row - 1}`, item.previous)
+    else clearCell(document, `R${row - 1}`)
     setText(document, `P${row}`, `REDE ${item.name}`)
     clearCell(document, `Q${row}`)
     clearCell(document, `R${row}`)
