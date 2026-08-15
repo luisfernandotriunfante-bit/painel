@@ -7,13 +7,22 @@ const SHARES = [0.525, 0.095, 0.20, 0.095, 0.085]
 export function fillLines(document: XMLDocument, state: State, worked: number, targetDays: number) {
   const target = n(state.sellOutTarget) || n(state.industryTarget)
   const actual = [0, 0, 0, 0, 0]
-  let hasDetail = false
+  let hasBilledDetail = false
+  let hasLegacyCombinedDetail = false
 
   for (const seller of state.salesSellerActuals ?? []) {
-    const source = seller.lineBilledSales ?? seller.lineSales
+    if (seller.lineSales && Object.keys(seller.lineSales).length) hasLegacyCombinedDetail = true
+    const source = seller.lineBilledSales
     if (!source || !Object.keys(source).length) continue
-    hasDetail = true
+    hasBilledDetail = true
     LINE_NAMES.forEach((name, index) => { actual[index] += n(source[name]) })
+  }
+
+  // Versões anteriores do painel gravavam apenas lineSales, que mistura
+  // Faturado + A Faturar. A planilha FORMULA apura LINHAS exclusivamente pelo
+  // faturado do 12.310; portanto não estimamos nem rateamos essa diferença.
+  if (!hasBilledDetail && hasLegacyCombinedDetail) {
+    throw new Error('Para preencher as 5 linhas exatamente como a planilha FORMULA, reprocesse o relatório 8022 uma vez nesta versão do painel e gere o Excel novamente.')
   }
 
   const targetValues = SHARES.map(share => target * share)
@@ -25,7 +34,7 @@ export function fillLines(document: XMLDocument, state: State, worked: number, t
     setNumber(document, `${column}54`, lineTarget)
   })
 
-  if (!hasDetail) {
+  if (!hasBilledDetail) {
     for (let index = 0; index < 5; index += 1) {
       const column = String.fromCharCode(74 + index)
       for (const row of [40, 41, 42, 55, 56, 57]) clearCell(document, `${column}${row}`)
