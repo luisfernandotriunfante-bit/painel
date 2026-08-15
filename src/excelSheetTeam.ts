@@ -1,5 +1,5 @@
 import { excelSerial, monthName, n, ratio, State } from './excelMath'
-import { clearCell, setNumber, setText } from './excelXmlCore'
+import { clearCell, clearParts, NS, setNumber, setText } from './excelXmlCore'
 
 type RcaEntry = {
   currentCode?: string
@@ -31,6 +31,48 @@ function codeSort(a: string, b: string) {
   const na = Number(a), nb = Number(b)
   if (Number.isFinite(na) && Number.isFinite(nb)) return na - nb
   return a.localeCompare(b, 'pt-BR', { numeric: true })
+}
+
+function rowNumber(row: Element) {
+  return Number(row.getAttribute('r')) || 0
+}
+
+function ensureTeamRows(document: XMLDocument, requiredEndRow: number) {
+  const sheetData = document.getElementsByTagNameNS(NS, 'sheetData')[0]
+  if (!sheetData) throw new Error('A aba EQUIPES do modelo não possui a estrutura de linhas esperada.')
+
+  const rows = Array.from(sheetData.getElementsByTagNameNS(NS, 'row'))
+  const currentEndRow = rows.reduce((max, row) => Math.max(max, rowNumber(row)), 0)
+  if (!currentEndRow) throw new Error('A aba EQUIPES do modelo está vazia.')
+
+  if (requiredEndRow > currentEndRow) {
+    const templateRow = rows.find(row => rowNumber(row) === currentEndRow) ?? rows[rows.length - 1]
+    for (let nextRow = currentEndRow + 1; nextRow <= requiredEndRow; nextRow += 1) {
+      const clone = templateRow.cloneNode(true) as Element
+      clone.setAttribute('r', String(nextRow))
+      for (const cell of Array.from(clone.getElementsByTagNameNS(NS, 'c'))) {
+        const reference = cell.getAttribute('r') ?? 'A1'
+        const column = reference.match(/^[A-Z]+/)?.[0] ?? 'A'
+        cell.setAttribute('r', `${column}${nextRow}`)
+        clearParts(cell)
+        cell.removeAttribute('t')
+      }
+      sheetData.appendChild(clone)
+    }
+  }
+
+  const endRow = Math.max(currentEndRow, requiredEndRow)
+  const dimension = document.getElementsByTagNameNS(NS, 'dimension')[0]
+  if (dimension) dimension.setAttribute('ref', `A1:W${endRow}`)
+  const autoFilter = document.getElementsByTagNameNS(NS, 'autoFilter')[0]
+  if (autoFilter) autoFilter.setAttribute('ref', `A3:W${endRow}`)
+  return endRow
+}
+
+export function updateTeamFilterDatabase(workbook: XMLDocument, endRow: number) {
+  const names = Array.from(workbook.getElementsByTagNameNS(NS, 'definedName'))
+  const filter = names.find(item => item.getAttribute('name') === '_xlnm._FilterDatabase' && String(item.textContent ?? '').includes('EQUIPES!'))
+  if (filter) filter.textContent = `EQUIPES!$A$3:$W$${endRow}`
 }
 
 export function fillTeam(document: XMLDocument, state: State, worked: number, targetDays: number) {
@@ -65,9 +107,7 @@ export function fillTeam(document: XMLDocument, state: State, worked: number, ta
   }
 
   const codes = [...new Set([...targets.keys(), ...actual.keys()])].sort(codeSort)
-  if (codes.length > 24) {
-    throw new Error(`O modelo oficial possui 24 linhas de equipe, mas o painel tem ${codes.length} RCAs com meta ou movimento. Ajuste o modelo antes de exportar para não perder vendedor.`)
-  }
+  const capacityEndRow = ensureTeamRows(document, Math.max(27, 3 + codes.length))
 
   const month = monthName(state.periodYear, state.periodMonth)
   setText(document, 'E2', `SELL-OUT MÊS ${month}`)
@@ -151,7 +191,7 @@ export function fillTeam(document: XMLDocument, state: State, worked: number, ta
     totals.dailyPos += dailyPos ?? 0
   })
 
-  for (let row = 4 + codes.length; row <= 27; row += 1) {
+  for (let row = 4 + codes.length; row <= capacityEndRow; row += 1) {
     for (const column of 'ABCDEFGHIJKLMNOPQRSTUVW') clearCell(document, `${column}${row}`)
   }
 
@@ -178,4 +218,6 @@ export function fillTeam(document: XMLDocument, state: State, worked: number, ta
   setNumber(document, 'V1', totals.posGap)
   if (remainingDays <= 0) clearCell(document, 'W1')
   else setNumber(document, 'W1', totals.dailyPos)
+
+  return { endRow: capacityEndRow }
 }
