@@ -1,32 +1,66 @@
 import { clearCell, setNumber } from './excelXmlCore'
 import { n, ratio, State, trend } from './excelMath'
 
+const LINE_NAMES = ['Creme Dental', 'Esc + Enx + Fio', 'Sabonetes', 'Hair', 'Limpeza'] as const
+const SHARES = [0.525, 0.095, 0.20, 0.095, 0.085]
+
 export function fillLines(document: XMLDocument, state: State, worked: number, targetDays: number) {
-  const shares = [0.525, 0.095, 0.20, 0.095, 0.085]
   const target = n(state.sellOutTarget) || n(state.industryTarget)
+  const actual = [0, 0, 0, 0, 0]
+  let hasDetail = false
+
+  for (const seller of state.salesSellerActuals ?? []) {
+    const source = seller.lineBilledSales ?? seller.lineSales
+    if (!source || !Object.keys(source).length) continue
+    hasDetail = true
+    LINE_NAMES.forEach((name, index) => { actual[index] += n(source[name]) })
+  }
+
+  const targetValues = SHARES.map(share => target * share)
   setNumber(document, 'I54', target)
-  const hasDetail = (state.salesSellerActuals ?? []).some((seller: any) => seller.lineSales && Object.keys(seller.lineSales).length)
+
+  targetValues.forEach((lineTarget, index) => {
+    const column = String.fromCharCode(74 + index)
+    setNumber(document, `${column}39`, lineTarget)
+    setNumber(document, `${column}54`, lineTarget)
+  })
+
   if (!hasDetail) {
     for (let index = 0; index < 5; index += 1) {
       const column = String.fromCharCode(74 + index)
-      setNumber(document, `${column}54`, target * shares[index])
-      clearCell(document, `${column}55`)
-      clearCell(document, `${column}56`)
-      clearCell(document, `${column}57`)
+      for (const row of [40, 41, 42, 55, 56, 57]) clearCell(document, `${column}${row}`)
+      setNumber(document, `${column}58`, 0)
+      setNumber(document, `${column}59`, 0)
     }
+    clearCell(document, 'I52')
+    setNumber(document, 'I53', 0)
+    setNumber(document, 'J52', 0)
     return
   }
-  const actual = [0, 0, 0, 0, 0]
-  for (const seller of state.salesSellerActuals ?? []) {
-    const values = Object.values(seller.lineSales ?? {}).slice(0, 5)
-    values.forEach((value: unknown, index: number) => { actual[index] += n(value) })
-  }
+
+  const totalActual = actual.reduce((sum, value) => sum + value, 0)
+  setNumber(document, 'I52', totalActual)
+  setNumber(document, 'I53', 0)
+  setNumber(document, 'J52', 0)
+
   actual.forEach((value, index) => {
     const column = String.fromCharCode(74 + index)
-    const lineTarget = target * shares[index]
-    setNumber(document, `${column}54`, lineTarget)
+    const lineTarget = targetValues[index]
+    const coverage = ratio(value, lineTarget)
+    const tendency = trend(value, worked, targetDays)
+
+    setNumber(document, `${column}40`, value)
+    setNumber(document, `${column}41`, coverage)
+    setNumber(document, `${column}42`, tendency)
+
     setNumber(document, `${column}55`, value)
-    setNumber(document, `${column}56`, ratio(value, lineTarget))
-    setNumber(document, `${column}57`, trend(value, worked, targetDays))
+    setNumber(document, `${column}56`, coverage)
+    setNumber(document, `${column}57`, tendency)
+
+    // A planilha de referência reserva estas linhas para verba utilizada.
+    // O painel atual não possui essa origem, portanto elas são materializadas
+    // em zero em vez de manter valores antigos do modelo.
+    setNumber(document, `${column}58`, 0)
+    setNumber(document, `${column}59`, 0)
   })
 }
