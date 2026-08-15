@@ -54,11 +54,14 @@ export function officialWorkingDays(year:number,month:number){
 }
 export function officialWorkedDays(year:number,month:number,reference=new Date()){
   const start=new Date(year,month-1,1),end=new Date(year,month,0)
-  if(reference<start)return 0
-  const through=reference>end?end:reference
-  // Espelha a planilha oficial: NETWORKDAYS(início; hoje; feriados) - 1,
-  // pois o dia corrente ainda não é considerado um dia concluído.
-  return Math.max(0,businessDays(start,through,officialHolidays(year))-1)
+  const today=new Date(reference.getFullYear(),reference.getMonth(),reference.getDate())
+  if(today<start)return 0
+  // A fórmula original usa NETWORKDAYS(...;TODAY();...)-1 para excluir o dia
+  // corrente. Aqui preservamos a intenção sem o erro de fim de semana/feriado:
+  // contamos até ontem. Para competências já encerradas, contamos o mês inteiro.
+  if(today>end)return businessDays(start,end,officialHolidays(year))
+  const yesterday=addDays(today,-1)
+  return Math.max(0,businessDays(start,yesterday,officialHolidays(year)))
 }
 
 function shift(y:number,m:number,o:number){const d=new Date(y,m-1+o,1);return[d.getFullYear(),d.getMonth()+1] as const}
