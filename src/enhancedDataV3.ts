@@ -12,6 +12,7 @@ type DetailedSellerSales = SellerSales & {
   billedPositives: number
   toInvoicePositives: number
   lineSales: LineSales
+  lineBilledSales: LineSales
 }
 
 type DetailedCustomerSales = CustomerSales & {
@@ -49,6 +50,7 @@ type SellerAccumulator = {
   toInvoice: number
   customers: Map<string, SplitValue>
   lineSales: LineSales
+  lineBilledSales: LineSales
 }
 
 function emptyLines(): LineSales {
@@ -260,13 +262,22 @@ export async function parseSalesV3(file: File): Promise<SalesV3Result> {
     const sellerCode = cleanId(row[sellerCodeCol]) || normalizeText(row[sellerNameCol]) || 'SEM SETOR'
     const sellerName = String(row[sellerNameCol] ?? '').trim() || `Setor ${sellerCode}`
     const cnpj = cleanId(row[cnpjCol]) || cleanId(row[clientCodeCol])
-    const seller = sellerMap.get(sellerCode) ?? { name: sellerName, billed: 0, toInvoice: 0, customers: new Map<string, SplitValue>(), lineSales: emptyLines() }
+    const seller = sellerMap.get(sellerCode) ?? {
+      name: sellerName,
+      billed: 0,
+      toInvoice: 0,
+      customers: new Map<string, SplitValue>(),
+      lineSales: emptyLines(),
+      lineBilledSales: emptyLines(),
+    }
     seller[kind] += value
 
     const groupingLine = groupingCol >= 0 ? classifyByGrouping(row[groupingCol]) : ''
     const line = groupingLine || classifyByDescription(productDescriptionCol >= 0 ? row[productDescriptionCol] : '')
-    if (LINE_NAMES.includes(line as LineName)) seller.lineSales[line as LineName] += value
-    else if (groupingLine === 'Outros') outsideFiveLinesValue += value
+    if (LINE_NAMES.includes(line as LineName)) {
+      seller.lineSales[line as LineName] += value
+      if (kind === 'billed') seller.lineBilledSales[line as LineName] += value
+    } else if (groupingLine === 'Outros') outsideFiveLinesValue += value
     else unclassifiedValue += value
 
     if (cnpj) {
@@ -301,6 +312,7 @@ export async function parseSalesV3(file: File): Promise<SalesV3Result> {
         billedPositives: counts.billed,
         toInvoicePositives: counts.toInvoice,
         lineSales: value.lineSales,
+        lineBilledSales: value.lineBilledSales,
       }
     })
     .sort((a, b) => b.sellOut - a.sellOut)
