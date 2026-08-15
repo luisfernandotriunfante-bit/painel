@@ -35,10 +35,19 @@ export function fillDaily(document: XMLDocument, state: State) {
     setNumber(document, `G${row}`, n(movement.positives))
   }
 
-  setNumber(document, 'E39', n(state.sellOut))
-  setNumber(document, 'F39', n(state.billed))
-  setNumber(document, 'G39', n(state.potentialPositives))
-  setNumber(document, 'E41', n(state.toInvoice))
-  setNumber(document, 'F41', 0)
-  setNumber(document, 'G41', 0)
+  const dailySellOut = (state.dailyMovement ?? []).reduce((sum: number, item: any) => sum + n(item.sellOut), 0)
+  const dailyBilled = (state.dailyMovement ?? []).reduce((sum: number, item: any) => sum + n(item.billed), 0)
+  const dailyPositives = (state.dailyMovement ?? []).reduce((sum: number, item: any) => sum + n(item.positives), 0)
+
+  // E39:G41 reproduzem a área de conferência do modelo FORMULA:
+  // linha 39 = soma do movimento diário; linha 40 = total consolidado da base;
+  // linha 41 = diferença entre as duas leituras.
+  setNumber(document, 'E39', dailySellOut)
+  setNumber(document, 'F39', dailyBilled)
+  setNumber(document, 'G39', dailyPositives)
+  setNumber(document, 'F40', n(state.billed))
+  setNumber(document, 'G40', n(state.potentialPositives))
+  setNumber(document, 'E41', dailySellOut - dailyBilled)
+  setNumber(document, 'F41', n(state.billed) - dailyBilled)
+  setNumber(document, 'G41', n(state.potentialPositives) - dailyPositives)
 }
